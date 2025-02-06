@@ -14,9 +14,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id               String  @id @default(uuid())
+  name             String 
+  email            String  @unique
+  password         String?  // Null if using Google OAuth
+  oauthProvider    String?  // 'google' or null for email signup
+  oauthId          String?  @unique  // Stores Google user ID
+  refreshToken     String?  // Stores refresh token for JWT refresh
+  profilePicture   String?  // Profile image URL
+  username         String?  @unique // Set after onboarding
+  isVerified       Boolean  @default(false) // For email verification
+  verificationToken String? @unique // Stores email verification token
+  createdAt        DateTime @default(now())
 }
+
+
