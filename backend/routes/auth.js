@@ -20,8 +20,13 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.GOOGLE_CALLBACK_URL,
     },
-    async (profile, done) => {
+    async (accessToken, refreshToken, profile, done) => {
       try {
+
+        if(!profile.id)
+        {
+          return done(new Error("Google profile ID is missing"), null);
+        }
         // Check if user already exists with oauthId
         let user = await prisma.user.findUnique({ where: { oauthId: profile.id } });
 
