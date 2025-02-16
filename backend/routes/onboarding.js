@@ -1,9 +1,10 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
+import { requireAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
-
+router.use(requireAuth);
 // onboarding
 router.post("/complete", async (req, res) => {
     const { username, role, college, collegesServed } = req.body;

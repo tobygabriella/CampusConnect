@@ -22,7 +22,7 @@ model User {
   oauthId          String?  @unique  // Stores Google user ID
   refreshToken     String?  // Stores refresh token for JWT refresh
   profilePicture   String?  // Profile image URL
-  role             String
+  role             String?
   username         String?  @unique // Set after onboarding
   college          String?  // Stores single college for students
   collegesServed   String[] @default([]) // Stores multiple colleges for service providers
