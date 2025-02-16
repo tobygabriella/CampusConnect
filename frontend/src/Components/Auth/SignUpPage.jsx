@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
+import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -33,7 +33,7 @@ const SignupPage = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5001/auth/signup", formData, { withCredentials: true });
+      const response = await api.post("http://localhost:5001/auth/signup", formData, { withCredentials: true });
 
       toast.success("Signup successful! Redirecting...");
       

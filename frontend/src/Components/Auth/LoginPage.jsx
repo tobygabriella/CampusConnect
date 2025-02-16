@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
+import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -21,14 +21,16 @@ const LoginPage = () => {
     setErrorMessage(""); // Reset previous errors
 
     try {
-      const response = await axios.post("http://localhost:5001/auth/login", formData, { withCredentials: true });
+      const response = await api.post("http://localhost:5001/auth/login", formData, { withCredentials: true });
 
       toast.success("Login successful! Redirecting...");
       
       if (response.data.onboarding) {
-        navigate("/onboarding"); // Redirect to onboarding if username is missing
+        navigate("/onboarding");
+      } else if (response.data.user?.role === "service_provider") {
+        navigate("/service-provider-info");
       } else {
-        navigate("/dashboard");
+        navigate("/home"); // Default route for authenticated users
       }
     } catch (error) {
       console.error("Login Error:", error.response);
