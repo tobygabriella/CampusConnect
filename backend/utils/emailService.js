@@ -23,7 +23,6 @@ export const sendVerificationEmail = async (email, verificationToken) => {
       html: `<p>Click the link below to verify your email:</p>
              <a href="${verificationLink}">${verificationLink}</a>`,
     });
-    console.log("Verification email sent to:", email);
   } catch (error) {
     console.error("Email sending error:", error);
     throw new Error("Failed to send verification email");

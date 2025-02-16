@@ -6,11 +6,13 @@ import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import crypto from "crypto";
 import { sendVerificationEmail } from "../utils/emailService.js";
+import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from "../utils/tokenService.js"; 
+import { requireAuth } from "../middleware/authMiddleware.js"; 
+import { setAuthCookies } from "../utils/cookieService.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-const JWT_SECRET = process.env.JWT_SECRET;
 
 //google auth strategy
 passport.use(
@@ -55,8 +57,14 @@ passport.use(
         }
 
         // Generate JWT token
-        const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "15m" });
-        done(null, { user, token });
+        const newAccessToken = generateAccessToken(user.id);
+        const newRefreshToken = generateRefreshToken(user.id);
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { refreshToken: newRefreshToken },
+        });
+
+        done(null, { user, accessToken: newAccessToken, refreshToken: newRefreshToken });
       } catch (error) {
         console.error("Google OAuth Error:", error);
         done(error, null);
@@ -68,14 +76,29 @@ passport.use(
 
 //google log in
 router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
-
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
-  (req, res) => {
-    const { token } = req.user;
-    res.cookie("authToken", token, { httpOnly: true, secure: true });
-    res.redirect("http://localhost:5173/onboarding");
+  async (req, res) => {
+    const { accessToken, refreshToken, user } = req.user;
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:5173');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Ensure both tokens exist before setting cookies
+    if (accessToken && refreshToken) {
+      setAuthCookies(res, accessToken, refreshToken);
+    } else {
+      console.error('Missing tokens in Google callback');
+    }
+
+    // Check if user has completed onboarding
+    if (!user.username) {
+      res.redirect("http://localhost:5173/onboarding");
+    } else if (user.role === "student") {
+      res.redirect("http://localhost:5173/home");
+    } else if (user.role === "service_provider") {
+      res.redirect("http://localhost:5173/service-provider-info");
+    }
   }
 );
 
@@ -114,10 +137,11 @@ router.post("/signup", async (req, res) => {
     await sendVerificationEmail(email, verificationToken);
 
     // Generate JWT Token
-    const token = jwt.sign({ userId: newUser.id }, JWT_SECRET, { expiresIn: "15m" });
+    const accessToken = generateAccessToken(newUser.id);
+    const refreshToken = generateRefreshToken(newUser.id);
 
     // Set the token in an HTTP-only cookie
-    res.cookie("authToken", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
+    setAuthCookies(res, accessToken, refreshToken);
 
     // Redirect to onboarding
     res.json({ message: "Signup successful. Please complete your profile.", onboarding: true });
@@ -127,16 +151,6 @@ router.post("/signup", async (req, res) => {
   }
 });
 
-// email verification
-router.get("/verify/:token", async (req, res) => {
-  try {
-    const { email } = jwt.verify(req.params.token, JWT_SECRET);
-    await prisma.user.update({ where: { email }, data: { isVerified: true } });
-    res.redirect("http://localhost:5173/login");
-  } catch (error) {
-    res.status(400).json({ message: "Invalid or expired token" });
-  }
-});
 
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
@@ -175,9 +189,25 @@ router.post("/login", async (req, res) => {
       return res.status(403).json({ message: "Complete onboarding first.", onboarding: true });
     }
 
-    const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "15m" });
-    res.cookie("authToken", token, { httpOnly: true, secure: process.env.NODE_ENV === "production" });
-    res.json({ message: "Login successful"});
+    const accessToken = generateAccessToken(user.id);
+    const refreshToken = generateRefreshToken(user.id);
+
+    // Store refresh token in the database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { refreshToken },
+    });
+    setAuthCookies(res, accessToken, refreshToken);
+
+    res.json({ 
+      message: "Login successful",
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        username: user.username
+      }
+    });
   } catch (error) {
     console.error("Login Server Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -186,24 +216,22 @@ router.post("/login", async (req, res) => {
 
 
 //log out
-router.post("/logout", (req, res) => {
-  res.clearCookie("authToken");
+router.post("/logout", requireAuth, async (req, res) => {
+  const userId = req.user?.userId;
+  if (userId) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { refreshToken: null }, // Clear refresh token from DB
+    });
+  }
+
+  res.cookie("authToken", "", { httpOnly: true, secure: true, sameSite: "lax", maxAge: 0 });
+  res.cookie("refreshToken", "", { httpOnly: true, secure: true, sameSite: "lax", maxAge: 0 });
+
   res.json({ message: "Logged out successfully" });
 });
 
-//verify token
-router.get("/verify-token", (req, res) => {
-  const token = req.cookies.authToken;
-  if (!token) return res.status(401).json({ message: "Unauthorized" });
-
-  try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    res.json({ message: "Valid token", userId: decoded.userId });
-  } catch (error) {
-    res.status(401).json({ message: "Invalid token" });
-  }
-});
-
+//email verification
 router.get("/verify-email/:token", async (req, res) => {
   try {
     const { token } = req.params;
@@ -227,6 +255,58 @@ router.get("/verify-email/:token", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+router.post("/refresh-token", async (req, res) => {
+  const refreshToken = req.cookies.refreshToken;
+  if (!refreshToken) return res.status(401).json({ message: "Refresh token required" });
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.REFRESH_SECRET);
+
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    if (!user || user.refreshToken !== refreshToken) {
+      return res.status(403).json({ message: "Invalid refresh token" });
+    }
+
+    const newAccessToken = generateAccessToken(user.id);
+    res.cookie("authToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.json({ message: "Token refreshed", accessToken: newAccessToken });
+  } catch (error) {
+    console.error("Refresh Token Error:", error);
+    res.status(403).json({ message: "Invalid or expired refresh token" });
+  }
+});
+
+router.get("/verify-token", async (req, res) => {
+  const token = req.cookies.authToken;
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized - No token found" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      select: { id: true, username: true, role: true, email: true }, // Only return necessary data
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Unauthorized - User not found" });
+    }
+
+    res.status(200).json({ message: "Valid token", user });
+  } catch (error) {
+    res.status(401).json({ message: "Invalid or expired token" });
+  }
+});
+
+
 
 
 export default router;
