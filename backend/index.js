@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.js";
 import onboardingRoutes from "./routes/onboarding.js";
 import uploadRoutes from "./routes/upload.js";
 import collegeRoutes from "./routes/colleges.js";
+import serviceProviderRoutes from "./routes/serviceProvider.js";
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use("/auth", authRoutes);
 app.use("/onboarding", onboardingRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/colleges", collegeRoutes);
+app.use("/service-provider", serviceProviderRoutes);
 app.use((req, res, next) => {
   next();
 });

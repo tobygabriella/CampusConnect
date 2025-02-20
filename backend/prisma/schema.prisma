@@ -29,6 +29,44 @@ model User {
   isVerified       Boolean  @default(false) // For email verification
   verificationToken String? @unique // Stores email verification token
   createdAt        DateTime @default(now())
+  serviceProvider  ServiceProvider?
 }
 
+model College {
+  id         String   @id @default(uuid())
+  name       String
+  state      String
+  city       String
+  originalId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model ServiceProvider {
+  id            String    @id @default(uuid())
+  userId        String    @unique
+  user          User      @relation(fields: [userId], references: [id])
+  profession    String
+  policy        String?   @db.Text
+  biography     String?   @db.Text
+  experience    String?   @db.Text
+  location      String?
+  workImages    String[]
+  certifications String[]
+  services      Service[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+
+model Service {
+  id                String          @id @default(uuid())
+  name              String
+  price            Float
+  duration         Int              // Duration in minutes
+  serviceProviderId String
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
 
