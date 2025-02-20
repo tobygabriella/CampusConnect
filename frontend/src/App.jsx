@@ -2,11 +2,11 @@ import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import LoginPage from "./Components/Auth/Loginpage.jsx";
 import SignupPage from "./Components/Auth/SignupPage.jsx";
 import OnboardingPage from "./Components/Onboarding/OnboardingPage.jsx";
-import HomePage from "./Components/HomePage.jsx";
-import ServiceProviderInfo from "./Components/ServiceProviderInfo.jsx";
+import ServiceProviderDetails from "./Components/Onboarding/ServiceProviderDetails.jsx";
 import ProtectedRoute from "./Components/Auth/ProtectedRoute.jsx";
 import { AuthProvider } from "./Components/context/AuthContext.jsx";
 import RedirectIfAuthenticated from "./Components/Auth/RedirectIfAuthenticated.jsx";
+import ProfilePage from "./Components/ProfilePage";
 
 function App() {
   return (
@@ -25,11 +25,11 @@ function App() {
             element={
               <ProtectedRoute 
                 requiresAuth={true} 
-                allowedRoles={["student"]} 
+                allowedRoles={["student", "service_provider"]} 
               />
             }
           >
-            <Route path="/home" element={<HomePage />} />
+            <Route path="/profile" element={<ProfilePage />} />
           </Route>
 
           {/* Service provider-only route */}
@@ -41,7 +41,7 @@ function App() {
               />
             }
           >
-            <Route path="/service-provider-info" element={<ServiceProviderInfo />} />
+            <Route path="/service-provider-info" element={<ServiceProviderDetails />} />
           </Route>
         </Routes>
       </Router>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button"; // ShadCN Button
 import { Input } from "@/components/ui/input"; // ShadCN Input
@@ -21,6 +22,7 @@ const OnboardingPage = () => {
   const [college, setCollege] = useState("");
   const [collegesServed, setCollegesServed] = useState([]);
   const navigate = useNavigate();
+  const { verifyAuth } = useAuth(); 
 
   // Check username availability
   useEffect(() => {
@@ -67,7 +69,6 @@ const OnboardingPage = () => {
         withCredentials: true,
         headers: { "Content-Type": "multipart/form-data" },
       });
-
       toast.success("Profile picture uploaded!");
       setImagePreview(response.data.imageUrl);
     } catch (error) {
@@ -96,9 +97,9 @@ const OnboardingPage = () => {
       setError("Please select at least one college you serve.");
       return;
     }
-
+  
     try {
-      await api.post(
+      const response = await api.post(
         "http://localhost:5001/onboarding/complete",
         { 
           username, 
@@ -109,12 +110,17 @@ const OnboardingPage = () => {
         { withCredentials: true }
       );
       toast.success("Onboarding complete! Redirecting...");
+      await verifyAuth();
+      
+      // Update this navigation logic
       if (role === "service_provider") {
-        navigate("/service-provider-info");
+        navigate("/service-provider-info", { replace: true });
       } else {
-        navigate("/home");
+        navigate("/profile", { replace: true });
       }
     } catch (error) {
+      console.error("Onboarding Error:", error); 
+      console.error("Error Response Data:", error.response?.data);
       setError(error.response?.data?.message || "Failed to complete onboarding.");
     }
   };
