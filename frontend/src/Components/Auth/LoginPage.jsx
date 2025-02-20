@@ -30,7 +30,7 @@ const LoginPage = () => {
       } else if (response.data.user?.role === "service_provider") {
         navigate("/service-provider-info");
       } else {
-        navigate("/home"); // Default route for authenticated users
+        navigate("/profile"); // Default route for authenticated users
       }
     } catch (error) {
       console.error("Login Error:", error.response);

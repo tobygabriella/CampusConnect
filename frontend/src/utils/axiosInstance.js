@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { logoutUser } from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/authUtils.js";
+
 
 const api = axios.create({
   baseURL: 'http://localhost:5001',
@@ -24,42 +26,53 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => response, // Return valid responses as they are
   async (error) => {
     const originalRequest = error.config;
 
+    console.error("API Error:", {
+      status: error.response?.status,
+      url: originalRequest.url,
+      isRetry: originalRequest._retry,
+      isRefreshing
+    });
+
     // If it's not 401 or it's already been retried, reject
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (
+      error.response?.status !== 401 || 
+      originalRequest._retry || 
+      originalRequest.url.includes('/auth/refresh-token') // Don't retry refresh requests
+    ) {
       return Promise.reject(error);
     }
 
+    // Handle multiple requests waiting for refresh
     if (isRefreshing) {
-      // If we're already refreshing, queue this request
       return new Promise((resolve, reject) => {
         failedQueue.push({ resolve, reject });
       })
-        .then(() => {
-          return api(originalRequest);
-        })
-        .catch(err => {
-          return Promise.reject(err);
-        });
+        .then(() => api(originalRequest))
+        .catch(err => Promise.reject(err));
     }
 
+    //Start refresh process
     originalRequest._retry = true;
     isRefreshing = true;
 
     try {
-      // Attempt to refresh the token
-      await axios.post('/auth/refresh-token', {}, { 
-        withCredentials: true,
-        baseURL: 'http://localhost:5001'
-      });
-      
-      processQueue(null);
-      return api(originalRequest);
+      const refreshResponse = await api.post('/auth/refresh-token', { withCredentials: true });
+
+      if (refreshResponse.status === 200) {
+        processQueue(null);
+        return api(originalRequest); // Retry original request
+      }
     } catch (refreshError) {
+      console.error("Refresh token failed:", refreshError.response?.status);
+      
+      // Prevent infinite loop by logging out without reloading
       processQueue(refreshError, null);
+      logoutUser({ reload: false }); // Custom logout function without reload
+
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;
