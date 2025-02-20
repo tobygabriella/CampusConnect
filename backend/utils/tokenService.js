@@ -4,7 +4,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const REFRESH_SECRET = process.env.REFRESH_SECRET;
 
 export const generateAccessToken = (userId) => {
-  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "15m" }); // Short-lived access token
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "2h" }); // Short-lived access token
 };
 
 export const generateRefreshToken = (userId) => {

@@ -95,7 +95,7 @@ router.get(
     if (!user.username) {
       res.redirect("http://localhost:5173/onboarding");
     } else if (user.role === "student") {
-      res.redirect("http://localhost:5173/home");
+      res.redirect("http://localhost:5173/profile");
     } else if (user.role === "service_provider") {
       res.redirect("http://localhost:5173/service-provider-info");
     }
@@ -285,27 +285,37 @@ router.post("/refresh-token", async (req, res) => {
 
 router.get("/verify-token", async (req, res) => {
   const token = req.cookies.authToken;
+  
   if (!token) {
-    return res.status(401).json({ message: "Unauthorized - No token found" });
+    return res.status(401).json({ 
+      message: "No token found",
+      isExpired: true 
+    });
   }
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, username: true, role: true, email: true }, // Only return necessary data
+      select: { id: true, username: true, role: true, email: true },
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Unauthorized - User not found" });
+      return res.status(401).json({ 
+        message: "User not found",
+        isExpired: true 
+      });
     }
 
     res.status(200).json({ message: "Valid token", user });
   } catch (error) {
-    res.status(401).json({ message: "Invalid or expired token" });
+    // Don't try to refresh if the token is invalid
+    return res.status(401).json({ 
+      message: "Invalid or expired token",
+      isExpired: true 
+    });
   }
 });
-
 
 
 
