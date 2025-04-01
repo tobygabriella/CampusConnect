@@ -37,6 +37,41 @@ h1 {
   line-height: 1.1;
 }
 
+html, body {
+  overflow-x: hidden;
+}
+ 
+.rbc-month-view .rbc-date-cell {
+  font-size: 0.875rem;
+  color: #1e3a8a !important; 
+  font-weight: 600;
+  padding-right: 4px;
+  text-align: right;
+}
+
+/* WEEK/AGENDA view – Day labels at top ( "Saturday 29") */
+.rbc-time-view .rbc-header {
+  color: #1e3a8a !important;
+  font-weight: 600;
+  font-size: 0.9rem;
+  background-color: #f9f9ff;
+}
+
+/* TIME GUTTER – the left side times (7 AM, etc.) */
+.rbc-time-gutter .rbc-timeslot-group {
+  color: #1e3a8a !important;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.rbc-toolbar-label {
+  color: #1e3a8a;
+  font-size: 1.25rem;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+
 button {
   border-radius: 8px;
   border: 1px solid transparent;
