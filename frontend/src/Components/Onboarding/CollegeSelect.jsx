@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
-import { Check } from "lucide-react";
+import { Check, X } from "lucide-react";
 import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
 
 const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange }) => {
@@ -87,12 +87,13 @@ const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange 
 
   return (
     <div className="relative w-full">
-      <Command className="border rounded-lg" shouldFilter={false}>
+      {/* Command Input and Dropdown */}
+      <Command className="border border-gray-300 rounded-lg" shouldFilter={false}>
         <CommandInput
           placeholder="Start typing to search colleges (min. 2 characters)..."
           value={search}
           onValueChange={setSearch}
-          className="border-none focus:ring-0"
+          className="border-none focus:ring-0 text-[#062970] placeholder:text-gray-400"
         />
         <CommandList>
           <CommandEmpty className="py-2 text-sm text-gray-500">
@@ -110,10 +111,10 @@ const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange 
                 key={college.id}
                 value={college.name}
                 onSelect={() => handleSelect(college)}
-                className="flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-gray-100"
+                className="flex items-center justify-between py-2 px-3 cursor-pointer hover:bg-[#f3e8ff]"
               >
                 <div>
-                  <div className="font-medium">{college.name}</div>
+                  <div className="font-medium text-[#062970]">{college.name}</div>
                   <div className="text-sm text-gray-500">
                     {college.city}, {college.state}
                   </div>
@@ -121,11 +122,11 @@ const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange 
                 {multiple ? (
                   <Check
                     className={`h-4 w-4 ${
-                      value.includes(college.id) ? 'opacity-100' : 'opacity-0'
+                      value.includes(college.id) ? 'opacity-100 text-[#062970]' : 'opacity-0'
                     }`}
                   />
                 ) : (
-                  value === college.id && <Check className="h-4 w-4" />
+                  value === college.id && <Check className="h-4 w-4 text-[#062970]" />
                 )}
               </CommandItem>
             ))}
@@ -141,14 +142,14 @@ const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange 
             .map(college => (
               <span
                 key={college.id}
-                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-gray-200"
+                className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-[#f3e8ff] text-[#062970]"
               >
                 {college.name}
                 <button
                   onClick={() => handleSelect(college)}
-                  className="ml-2 text-gray-500 hover:text-gray-700"
+                  className="ml-2 text-[#062970]"
                 >
-                  ×
+                  <X size={14} className="bg-[#f3e8ff]"/>
                 </button>
               </span>
             ))}
