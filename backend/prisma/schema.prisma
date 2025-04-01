@@ -30,6 +30,22 @@ model User {
   verificationToken String? @unique // Stores email verification token
   createdAt        DateTime @default(now())
   serviceProvider  ServiceProvider?
+  followers Follow[] @relation(name: "UserFollowers")
+  following Follow[] @relation(name: "UserFollowing")
+  appointmentsAsClient Appointment[] @relation("ClientAppointments")
+  stripeCustomerId String?
+}
+model Follow {
+  id          String @id @default(uuid())
+  followerId  String
+  followingId String
+
+  follower   User @relation(name: "UserFollowers", fields: [followerId], references: [id])
+  following  User @relation(name: "UserFollowing", fields: [followingId], references: [id])
+
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId]) // Prevent duplicate follows
 }
 
 model College {
@@ -54,8 +70,19 @@ model ServiceProvider {
   workImages    String[]
   certifications String[]
   services      Service[]
+  availability   Availability? @relation()
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  appointments Appointment[] @relation("ProviderAppointments")
+}
+
+model Availability {
+  id                String  @id @default(uuid())
+  serviceProviderId String  @unique
+  serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
+  availabilityData  Json // Stores available time slots as JSON
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
 
@@ -63,10 +90,47 @@ model Service {
   id                String          @id @default(uuid())
   name              String
   price            Float
+  depositAmount     Float?
   duration         Int              // Duration in minutes
   serviceProviderId String
   serviceProvider   ServiceProvider @relation(fields: [serviceProviderId], references: [id])
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
+  bufferBefore  Int @default(0)
+  bufferAfter   Int @default(0)
+  appointments Appointment[] @relation("ServiceAppointments")
+
 }
 
+model Appointment {
+  id                String   @id @default(uuid())
+  clientId          String
+  serviceId         String
+  serviceProviderId String
+  startTime         DateTime
+  endTime           DateTime
+  status            String   @default("confirmed")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  client          User            @relation("ClientAppointments", fields: [clientId], references: [id])
+  service         Service         @relation("ServiceAppointments", fields: [serviceId], references: [id])
+  serviceProvider ServiceProvider @relation("ProviderAppointments", fields: [serviceProviderId], references: [id])
+
+  stripePayments StripePayment[]
+  
+  @@index([serviceProviderId, startTime, endTime])
+}
+
+model StripePayment {
+  id              String   @id @default(uuid())
+  paymentIntentId String   @unique
+  appointmentId   String
+  type            String   // 'deposit' or 'remaining'
+  status          String   // 'succeeded', 'failed', etc.
+  amount          Int      // in cents
+  currency        String   @default("usd")
+  createdAt       DateTime @default(now())
+
+  appointment     Appointment @relation(fields: [appointmentId], references: [id])
+}
