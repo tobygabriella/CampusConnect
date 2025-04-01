@@ -1,7 +1,8 @@
+
 import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
 import { useEffect, useState } from "react";
-import api from "@/utils/axiosInstance"; // Adjust this import path as needed
+import api from "@/utils/axiosInstance";
 
 const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -11,17 +12,17 @@ const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
 
   useEffect(() => {
     const checkServiceProviderDetails = async () => {
-      if (user?.role === 'service_provider') {
+      if (user?.role === "service_provider") {
         setCheckingDetails(true);
         try {
-          const response = await api.get('/service-provider/details', { withCredentials: true });
+          const response = await api.get("/service-provider/details", { withCredentials: true });
           setHasProviderDetails(!!response.data);
         } catch (error) {
           setHasProviderDetails(false);
         } finally {
           setCheckingDetails(false);
         }
-      }  
+      }
     };
 
     if (isAuthenticated && user) {
@@ -42,14 +43,14 @@ const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
     }
 
     // Special handling for service providers
-    if (user?.role === 'service_provider') {
+    if (user?.role === "service_provider") {
       // If we're not on the service-provider-info page and provider hasn't submitted details
-      if (!hasProviderDetails && location.pathname !== '/service-provider-info') {
+      if (!hasProviderDetails && location.pathname !== "/service-provider-info") {
         return <Navigate to="/service-provider-info" replace />;
       }
-      
+
       // If we're on the service-provider-info page and provider has submitted details
-      if (hasProviderDetails && location.pathname === '/service-provider-info') {
+      if (hasProviderDetails && location.pathname === "/service-provider-info") {
         return <Navigate to="/profile" replace />;
       }
     }
@@ -69,6 +70,3 @@ const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
 };
 
 export default ProtectedRoute;
-
-
-

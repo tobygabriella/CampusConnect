@@ -1,14 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
+import AroLogo from "@/assets/aro.png";
+import GoogleLogo from "@/assets/google.png";
+import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
+
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
-
+  const { login} = useAuth();
   const [errorMessage, setErrorMessage] = useState(""); // Store error messages
   const navigate = useNavigate();
 
@@ -21,17 +24,8 @@ const LoginPage = () => {
     setErrorMessage(""); // Reset previous errors
 
     try {
-      const response = await api.post("http://localhost:5001/auth/login", formData, { withCredentials: true });
-
+      await login(formData, navigate);
       toast.success("Login successful! Redirecting...");
-      
-      if (response.data.onboarding) {
-        navigate("/onboarding");
-      } else if (response.data.user?.role === "service_provider") {
-        navigate("/service-provider-info");
-      } else {
-        navigate("/profile"); // Default route for authenticated users
-      }
     } catch (error) {
       console.error("Login Error:", error.response);
 
@@ -49,49 +43,55 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen w-screen bg-[#0b1c42]">
-      <div className="bg-white p-8 shadow-lg rounded-lg w-full max-w-md">
-        <h1 className="text-4xl font-bold text-center text-[#1d3557] mb-4">
-          aro<span className="text-[#457b9d]">➝</span>
-        </h1>
-        <form onSubmit={handleLogin} className="flex flex-col gap-4">
-          <label className="text-sm font-semibold text-black">Email or Username</label>
-          <input
-            type="text"
-            name="email"
-            placeholder="Enter Email or Username"
-            className="p-3 border border-gray-300 rounded-lg bg-white text-black"
-            onChange={handleChange}
-            required
-          />
+    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
+      <img src={AroLogo} alt="ARO Logo" className="h-40 mb-6" />
+      
+      {/* Google Login Button */}
+      <a
+        href="http://localhost:5001/auth/google"
+        className="flex items-center justify-center w-80 bg-white text-black py-3 rounded-full shadow-md hover:bg-gray-100 transition-all duration-300 border"
+      >
+        <img src={GoogleLogo} alt="Google Logo" className="h-6 w-6 mr-3" />
+        Continue with Google
+      </a>
+      
+      {/* Separator */}
+      <p className="text-gray-500 my-4">or log in with email and password</p>
+      
+      {/* Login Form */}
+      <form onSubmit={handleLogin} className="flex flex-col gap-4 w-80">
+        <label className="text-sm font-semibold text-[#062970]">Email or Username <span className="text-red-500">*</span></label>
+        <input
+          type="text"
+          name="email"
+          placeholder="Enter Email or Username"
+          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          onChange={handleChange}
+          required
+        />
 
-          <label className="text-sm font-semibold text-black">Password</label>
-          <input
-            type="password"
-            name="password"
-            placeholder="Enter Password"
-            className="p-3 border border-gray-300 rounded-lg bg-white text-black"
-            onChange={handleChange}
-            required
-          />
+        <label className="text-sm font-semibold text-[#062970]">Password <span className="text-red-500">*</span></label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter Password"
+          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          onChange={handleChange}
+          required
+        />
 
-          {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>} {/* Display error */}
+        {/* Display error message */}
+        {errorMessage && <p className="text-red-500 text-sm text-center">{errorMessage}</p>}
 
-          <button type="submit" className="w-full bg-black text-white py-2 rounded-lg hover:opacity-80 transition">
-            Log In
-          </button>
-
-          <a href="http://localhost:5001/auth/google" className="w-full text-center bg-gray-400 text-white py-2 rounded-lg hover:bg-gray-500">
-            Log In with Google
-          </a>
-        </form>
-      </div>
+        <button
+          type="submit"
+          className="flex items-center justify-center w-80 bg-[#062970] text-white py-3 rounded-full shadow-md hover:bg-[#051f5c] transition-all duration-300"
+        >
+          Log In
+        </button>
+      </form>
     </div>
   );
 };
 
 export default LoginPage;
-
-
-
-

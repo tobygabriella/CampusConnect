@@ -1,22 +1,32 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
-import LandingPage from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/LandingPage/LandingPage.jsx";
+import GettingStarted from "../LandingPage/GettingStarted.jsx";
 
 const RedirectIfAuthenticated = () => {
-  const { isAuthenticated, isLoading, user } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  const location = useLocation();
 
   if (isLoading) {
     return <div>Loading...</div>;
   }
 
-  if (isAuthenticated) {
-    if (user?.role === 'service_provider') {
-      return <Navigate to="/service-provider-info" replace />;
-    }
+  // If the user is authenticated and tries to access the getting-started page, redirect to profile
+  if (isAuthenticated && location.pathname === "/getting-started") {
     return <Navigate to="/profile" replace />;
   }
 
-  return <LandingPage />;
+  // If the user is not authenticated and tries to access the getting-started page, allow it
+  if (!isAuthenticated && location.pathname === "/getting-started") {
+    return <GettingStarted />;
+  }
+
+  // If the user is not authenticated and tries to access any other page, redirect to getting-started
+  if (!isAuthenticated) {
+    return <Navigate to="/getting-started" replace />;
+  }
+
+  // If none of the above, allow the user to proceed
+  return <Navigate to="/" replace />;
 };
 
 export default RedirectIfAuthenticated;
