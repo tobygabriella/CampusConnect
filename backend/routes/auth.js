@@ -160,7 +160,6 @@ router.post("/login", async (req, res) => {
   }
 
   try {
-
     // Find user by email OR username
     const user = await prisma.user.findFirst({
       where: {
@@ -172,8 +171,8 @@ router.post("/login", async (req, res) => {
       return res.status(400).json({ message: "User not found." });
     }
 
-     // Check if user is verified
-     if (!user.isVerified) {
+    // Check if user is verified
+    if (!user.isVerified) {
       return res.status(403).json({ message: "Please verify your email before logging in." });
     }
 
@@ -182,7 +181,6 @@ router.post("/login", async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
-    
 
     // Ensure onboarding is complete
     if (!user.username) {
@@ -197,22 +195,34 @@ router.post("/login", async (req, res) => {
       where: { id: user.id },
       data: { refreshToken },
     });
+
     setAuthCookies(res, accessToken, refreshToken);
 
-    res.json({ 
+    // Check if user is a service provider and fetch details
+    let serviceProvider = null;
+    if (user.role === "service_provider") {
+      serviceProvider = await prisma.serviceProvider.findUnique({
+        where: { userId: user.id },
+        include: { services: true }, 
+      });
+    }
+
+    res.json({
       message: "Login successful",
       user: {
         id: user.id,
         email: user.email,
         role: user.role,
-        username: user.username
-      }
+        username: user.username,
+        serviceProvider,
+      },
     });
   } catch (error) {
     console.error("Login Server Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 //log out
