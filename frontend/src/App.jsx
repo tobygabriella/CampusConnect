@@ -16,6 +16,10 @@ import BookingPage from "./Components/Appointment/BookingPage.jsx";
 import AppointmentsPage from "./Components/Appointment/AppointmentsPage.jsx";
 import EditProfilePage from "./Components/Profile/EditProfilePage.jsx";
 import CheckoutPage from "./Components/Appointment/CheckoutPage.jsx";
+import CommunityPage from "./Components/Forum/CommunityPage.jsx";
+import PostDetailPage from "./Components/Forum/PostDetailPage.jsx";
+import CreatePostModal from "./Components/Forum/CreatePostModal.jsx";
+import CommentThreadPage from "./Components/Forum/CommentThreadPage.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -47,13 +51,14 @@ function App() {
             <Route path="/book/:username" element={<BookingPage />} />
             <Route path="/appointments" element={<AppointmentsPage />} />
             <Route path="/edit-profile" element={<EditProfilePage />} />
-            <Route 
-              path="/checkout" 
-              element={
+            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community/posts/:postId" element={<PostDetailPage />} />
+            <Route path="/create-post" element={<CreatePostModal />} />
+            <Route path="/comments/:commentId/thread" element={<CommentThreadPage />} />
+            <Route path="/checkout" element={
                 <Elements stripe={stripePromise}>
                   <CheckoutPage />
-                </Elements>
-              } 
+                </Elements>} 
             />
           </Route>
 

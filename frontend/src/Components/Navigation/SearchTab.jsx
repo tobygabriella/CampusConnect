@@ -3,6 +3,7 @@ import { Input, List, Avatar, Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { SearchOutlined, FilterOutlined } from "@ant-design/icons";
 import api from "@/utils/axiosInstance";
+import defaultProfile from "@/assets/default-profile.jpg";
 
 const SearchBarWithDropdown = () => {
   const [query, setQuery] = useState("");
@@ -127,7 +128,7 @@ const SearchBarWithDropdown = () => {
               >
                 <List.Item.Meta
                   avatar={
-                    <Avatar src={item.profilePicture || "/default-profile.jpg"} />
+                    <Avatar src={item.profilePicture || defaultProfile} />
                   }
                   title={<span>{item.name || item.username || "Unknown"}</span>}
                   description={

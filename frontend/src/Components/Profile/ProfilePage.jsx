@@ -232,7 +232,7 @@ const ProfilePage = () => {
                         <p className="text-gray-600">${service.price}</p>
                       </div>
                       <Button
-                        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]  "
+                        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                         onClick={() => navigate(`/book/${profile.username}?service=${service.id}`)}
                       >
                         Book Now
