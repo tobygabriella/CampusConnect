@@ -14,8 +14,7 @@ import searchRoutes from "./routes/search.js"
 import bookingRoutes from "./routes/bookings.js"
 import paymentsRoutes from "./routes/payments.js";
 import connectRoutes from "./routes/connect.js";
-
-
+import forumRoutes from "./routes/forum.js";
 
 dotenv.config();
 
@@ -56,6 +55,8 @@ app.use("/availability", availabilityRoutes);
 app.use("/bookings", bookingRoutes)
 app.use("/payments", paymentsRoutes);
 app.use("/connect", connectRoutes);
+app.use("/forum", forumRoutes);
+
 app.use((req, res, next) => {
   next();
 });

@@ -24,8 +24,10 @@ model User {
   profilePicture   String?  // Profile image URL
   role             String?
   username         String?  @unique // Set after onboarding
-  college          String?  // Stores single college for students
-  collegesServed   String[] @default([]) // Stores multiple colleges for service providers
+  collegeId       String?
+  college         College? @relation("StudentCollege", fields: [collegeId], references: [id])
+
+  collegesServed  College[] @relation("CollegesServedByUser")
   isVerified       Boolean  @default(false) // For email verification
   verificationToken String? @unique // Stores email verification token
   createdAt        DateTime @default(now())
@@ -34,7 +36,14 @@ model User {
   following Follow[] @relation(name: "UserFollowing")
   appointmentsAsClient Appointment[] @relation("ClientAppointments")
   stripeCustomerId String?
+
+  forumPosts       ForumPost[]
+  comments         Comment[]
+  upvotes          Upvote[]
+  downvotes        Downvote[]
+  mentions         Mention[]
 }
+
 model Follow {
   id          String @id @default(uuid())
   followerId  String
@@ -56,6 +65,10 @@ model College {
   originalId String?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
+
+  serviceProviders User[]   @relation("CollegesServedByUser")
+  students         User[]   @relation("StudentCollege") 
+  forumPosts       ForumPost[]  @relation("CollegeForumPosts")
 }
 
 model ServiceProvider {
@@ -133,4 +146,77 @@ model StripePayment {
   createdAt       DateTime @default(now())
 
   appointment     Appointment @relation(fields: [appointmentId], references: [id])
+}
+
+model ForumPost {
+  id          String      @id @default(uuid())
+  title       String
+  content     String      @db.Text
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+  collegeId String?
+  college     College?    @relation("CollegeForumPosts", fields: [collegeId], references: [id])
+  tags        String[]    @default([])
+  upvotes     Upvote[]
+  downvotes   Downvote[]
+  comments    Comment[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([collegeId]) // For filtering by college
+}
+
+model Comment {
+  id          String      @id @default(uuid())
+  content     String      @db.Text
+  authorId    String
+  author      User        @relation(fields: [authorId], references: [id])
+  postId      String
+  post        ForumPost   @relation(fields: [postId], references: [id])
+  parentId    String?     // For nested comments
+  parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[]   @relation("CommentReplies")
+  upvotes     Upvote[]
+  downvotes   Downvote[]
+  mentions    Mention[]   // For @mentions
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@index([postId])
+  @@index([parentId])
+}
+
+model Upvote {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  postId      String?
+  post        ForumPost?  @relation(fields: [postId], references: [id])
+  commentId   String?
+  comment     Comment?    @relation(fields: [commentId], references: [id])
+  createdAt   DateTime    @default(now())
+
+  @@unique([userId, postId, commentId]) // Prevent duplicate votes
+}
+
+model Downvote {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  postId      String?
+  post        ForumPost?  @relation(fields: [postId], references: [id])
+  commentId   String?
+  comment     Comment?    @relation(fields: [commentId], references: [id])
+  createdAt   DateTime    @default(now())
+
+  @@unique([userId, postId, commentId]) // Prevent duplicate votes
+}
+
+model Mention {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  commentId   String
+  comment     Comment     @relation(fields: [commentId], references: [id])
+  createdAt   DateTime    @default(now())
 }
