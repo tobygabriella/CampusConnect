@@ -38,10 +38,15 @@ router.post("/complete", async (req, res) => {
         data: {
           username: formattedUsername,
           role,
-          college: role === "student" ? college : null,
-          collegesServed: role === "service_provider" ? collegesServed : [],
+          college: role === "student"
+            ? { connect: { id: college } }
+            : undefined,
+          collegesServed: role === "service_provider"
+            ? { set: collegesServed.map((id) => ({ id })) }
+            : undefined,
         },
       });
+      
   
       res.json({ message: "Onboarding complete!", role, college, collegesServed });
     } catch (error) {
@@ -49,6 +54,7 @@ router.post("/complete", async (req, res) => {
       res.status(500).json({ message: "Server error" });
     }
   });
+  
   
   
 
