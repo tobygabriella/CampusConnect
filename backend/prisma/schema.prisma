@@ -75,6 +75,7 @@ model ServiceProvider {
   id            String    @id @default(uuid())
   userId        String    @unique
   user          User      @relation(fields: [userId], references: [id])
+  stripeAccountId String? 
   profession    String
   policy        String?   @db.Text
   biography     String?   @db.Text

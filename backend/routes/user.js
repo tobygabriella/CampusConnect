@@ -119,6 +119,7 @@ router.get("/profile/:username", requireAuth, async (req, res) => {
           location: serviceProvider.location,
           workImages: serviceProvider.workImages,
           certificationImages: serviceProvider.certificationImages,
+          stripeAccountId: serviceProvider.stripeAccountId,
         };
       }
     }
