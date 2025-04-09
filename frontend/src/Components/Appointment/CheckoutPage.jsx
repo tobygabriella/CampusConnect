@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import {useSearchParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import api from "@/utils/axiosInstance";
@@ -7,26 +7,45 @@ import dayjs from "dayjs";
 import { Button } from "antd";
 
 const CheckoutPage = () => {
-  const { state } = useLocation();
+  const [searchParams] = useSearchParams();
+  const providerUsername = searchParams.get("provider");
+  const serviceId = searchParams.get("service");
+  const date = searchParams.get("date");
+  const startTime = searchParams.get("start");
+  const duration = searchParams.get("duration");
+  const [cardError, setCardError] = useState("");
+
+
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
 
   const [serviceDetails, setServiceDetails] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const parsedDuration = parseInt(duration, 10);
+  const formattedDate = date ? dayjs(date).format("ddd, MMM D YYYY") : "";
+
+
+  useEffect(() => {
+    if (!providerUsername || !serviceId || !date || !startTime || !duration) {
+      toast.error("Invalid or missing booking information.");
+      navigate("/");
+    }
+  }, [providerUsername, serviceId, date, startTime, duration, navigate]);
 
   useEffect(() => {
     const fetchService = async () => {
       try {
-        const res = await api.get(`/users/profile/${state.providerUsername}`);
-        const service = res.data.services.find((s) => s.id === state.serviceId);
+        const res = await api.get(`/users/profile/${providerUsername}`);
+        const service = res.data.services.find((s) => s.id === serviceId);
         setServiceDetails(service);
       } catch (err) {
         toast.error("Error loading service details");
       }
     };
+    
     fetchService();
-  }, [state.providerUsername, state.serviceId]);
+  }, [providerUsername, serviceId]);
 
   const handlePayment = async () => {
     setIsProcessing(true);
@@ -36,33 +55,37 @@ const CheckoutPage = () => {
         type: "card",
         card: cardElement,
       });
-
+  
       if (paymentMethod.error) {
-        toast.error(paymentMethod.error.message);
+        setCardError(paymentMethod.error.message); // Show above button
         return setIsProcessing(false);
-      }
-
+      }      
+  
       const response = await api.post(
         "/payments/create-deposit",
         {
-          providerUsername: state.providerUsername,
-          serviceId: state.serviceId,
+          providerUsername,
+          serviceId,
           paymentMethodId: paymentMethod.paymentMethod.id,
-          date: state.date,
-          startTime: state.startTime,
-          duration: state.duration,
+          date,
+          startTime,
+          duration,
         },
         { withCredentials: true }
       );
-
+  
       toast.success("Payment successful!");
-      navigate(`/profile/${state.providerUsername}`);
+      navigate(`/profile/${providerUsername}`);
     } catch (err) {
-      toast.error(err.response?.data?.message || "Payment failed");
-    } finally {
+      const errorMsg = err.response?.data?.message || "Something went wrong with your card.";
+      setCardError(errorMsg); // update error display
+      toast.error(errorMsg);  // optional
+    }
+     finally {
       setIsProcessing(false);
     }
   };
+  
 
   const formatDate = (date) => dayjs(date).format("ddd, MMM D YYYY");
 
@@ -94,21 +117,22 @@ const CheckoutPage = () => {
         </div>
 
         <div className="space-y-3 mb-6">
-          <p className="flex justify-between">
-            <span className="text-gray-600">Service:</span>
-            <span className="font-medium">{serviceDetails?.name || "Loading..."}</span>
-          </p>
+        <p className="flex justify-between items-start">
+          <span className="text-gray-600">Service:</span>
+          <span className="font-medium text-gray-600 text-right w-2/3 break-words">{serviceDetails?.name || "Loading..."}</span>
+        </p>
+
           <p className="flex justify-between">
             <span className="text-gray-600">Date:</span>
-            <span className="font-medium">{formatDate(state.date)}</span>
+            <span className="font-medium text-gray-600">{formattedDate}</span>
           </p>
           <p className="flex justify-between">
             <span className="text-gray-600">Time:</span>
-            <span className="font-medium">{state.startTime}</span>
+            <span className="font-medium text-gray-600">{startTime}</span>
           </p>
           <p className="flex justify-between">
             <span className="text-gray-600">Duration:</span>
-            <span className="font-medium">{state.duration / 60} hour(s)</span>
+            <span className="font-medium text-gray-600">{parsedDuration / 60} hour(s)</span>
           </p>
         </div>
 
@@ -138,6 +162,11 @@ const CheckoutPage = () => {
               <span className="font-bold text-[#062970]">${serviceDetails?.depositAmount || "0.00"}</span>
             </p>
           </div>
+          {cardError && (
+            <div className="mb-4 p-3 bg-red-100 border border-red-300 text-red-700 rounded text-sm">
+              {cardError}
+            </div>
+          )}
 
           <Button
             onClick={handlePayment}

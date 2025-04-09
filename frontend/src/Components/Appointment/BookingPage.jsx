@@ -92,15 +92,10 @@ const BookingPage = () => {
       return;
     }
   
-    navigate("/checkout", {
-      state: {
-        providerUsername: username,
-        serviceId: selectedService,
-        date: selectedDate.format("YYYY-MM-DD"),
-        startTime: selectedTimeSlot.split(" - ")[0],
-        duration,
-      },
-    });
+    navigate(
+      `/checkout?provider=${username}&service=${selectedService}&date=${selectedDate.format("YYYY-MM-DD")}&start=${selectedTimeSlot.split(" - ")[0]}&duration=${duration}`
+    );
+    
   };
 
   return (
