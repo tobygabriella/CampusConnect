@@ -33,7 +33,6 @@ const CommunityPage = () => {
     try {
       const res = await api.get("/forum/tags");
       setAvailableTags(res.data);
-      console.log("Fetched tags from API:", res.data);
     } catch (error) {
       console.error("Error fetching tags:", error);
     }
@@ -100,7 +99,6 @@ const fetchPosts = async (page = 1, collegeId = null,  tag = selectedTag) => {
 };
 
 const handleCollegeSelect = (collegeId) => {
-  console.log("Selected college:", collegeId);
   if (collegeId !== selectedCollege) {
     // Reset to page 1 when changing colleges
     fetchPosts(1, collegeId);

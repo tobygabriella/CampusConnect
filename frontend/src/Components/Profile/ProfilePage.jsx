@@ -20,6 +20,7 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("posts");
   const [searchVisible, setSearchVisible] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState(null);
 
   const isOwnProfile = user?.username === username || !username;
 
@@ -29,6 +30,18 @@ const ProfilePage = () => {
         const profileUsername = username || user.username;
         const response = await api.get(`/users/profile/${profileUsername}`, { withCredentials: true });
         setProfile(response.data);
+        if (
+          response.data?.role === "service_provider" &&
+          response.data?.stripeAccountId &&
+          isOwnProfile
+        ) {
+          try {
+            const { data } = await api.get("/payments/check-onboarding-status");
+            setStripeStatus(data);
+          } catch (error) {
+            console.warn("Failed to fetch Stripe onboarding status:", error);
+          }
+        }
       } catch (error) {
         toast.error("Error loading profile.");
       } finally {
@@ -219,14 +232,67 @@ const ProfilePage = () => {
               </div>
             </div>
           )}
-
           {activeTab === "services" && isServiceProvider && (
             <div className="max-w-4xl mx-auto">
               <h3 className="font-semibold text-lg text-[#062970]">Services Offered</h3>
+              {isOwnProfile && stripeStatus && (!stripeStatus.payoutsEnabled || !stripeStatus.detailsSubmitted) && (
+                <div className="bg-yellow-100 text-yellow-800 border-l-4 border-yellow-400 p-4 mb-4 rounded-md">
+                  <p className="font-semibold">🔔 Payout Setup Incomplete</p>
+                  <p className="text-sm">
+                    Stripe requires more information to enable payouts.{" "}
+                    <span
+                      className="text-blue-600 underline cursor-pointer"
+                      onClick={async () => {
+                        try {
+                          const { data } = await api.post("/payments/create-onboarding-link");
+                          window.location.href = data.url;
+                        } catch (err) {
+                          toast.error("Could not resume onboarding");
+                          console.error(err);
+                        }
+                      }}
+                    >
+                      Click here to resume onboarding
+                    </span>{" "}
+                    or check your email for instructions from Stripe.
+                  </p>
+                </div>
+              )}
+
+              {/* Onboarding Button (only show if it's their own profile and they haven't onboarded) */}
+              {isOwnProfile && !profile.stripeAccountId && (
+                <div className="mb-4">
+                  <Button
+                    className="bg-purple-600 text-white hover:bg-purple-700"
+                    onClick={async () => {
+                      try {
+                        const { data } = await api.post("/payments/create-onboarding-link");
+                        setTimeout(() => {
+                          const link = document.createElement("a");
+                          link.href = data.url;
+                          link.target = "_self";
+                          document.body.appendChild(link);
+                          link.click();
+                        }, 100);
+                        
+                      } catch (err) {
+                        toast.error("Failed to start Stripe onboarding");
+                        console.error(err);
+                      }
+                    }}
+                  >
+                    Set up Payouts
+                  </Button>
+                </div>
+              )}
+
               <div className="mt-2">
                 {profile.services && profile.services.length > 0 ? (
                   profile.services.map((service) => (
-                    <div key={service.id} className="p-3 border rounded-lg bg-gray-50 mb-2 flex justify-between items-center">
+                    <div
+                      key={service.id}
+                      className="p-3 border rounded-lg bg-gray-50 mb-2 flex justify-between items-center"
+                    >
                       <div>
                         <p className="font-semibold text-[#062970]">{service.name}</p>
                         <p className="text-gray-600">${service.price}</p>
@@ -245,7 +311,6 @@ const ProfilePage = () => {
               </div>
             </div>
           )}
-
           {activeTab === "availability" && isServiceProvider && (
             <div className="max-w-7xl mx-auto">
               <h3 className="font-semibold text-lg text-[#062970] mb-2">My Availability</h3>
