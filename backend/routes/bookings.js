@@ -183,4 +183,48 @@ router.get("/", requireAuth, async (req, res) => {
     }
   });
 
+  router.post('/validate-booking', requireAuth, async (req, res) => {
+    const { serviceId, date, startTime, duration } = req.body;
+  
+    try {
+      //Validate service exists
+      const service = await prisma.service.findUnique({
+        where: { id: serviceId },
+        include: { serviceProvider: true }
+      });
+  
+      if (!service) return res.status(404).json({ error: "Service not found" });
+  
+      const providerId = service.serviceProvider.id;
+      const bufferBefore = service.bufferBefore || 0;
+      const bufferAfter = service.bufferAfter || 0;
+  
+      // Convert times
+      const startMin = toMinutes(startTime);
+      const endMin = startMin + parseInt(duration);
+      const adjustedStart = getDateTime(date, startMin - bufferBefore);
+      const adjustedEnd = getDateTime(date, endMin + bufferAfter);
+  
+      //Check for overlapping appointments
+      const overlapping = await prisma.appointment.findFirst({
+        where: {
+          serviceProviderId: providerId,
+          startTime: { lt: adjustedEnd },
+          endTime: { gt: adjustedStart },
+        },
+      });
+  
+      if (overlapping) {
+        return res.status(409).json({ error: "This time slot was just booked. Please pick another." });
+      }
+  
+      //Slot is available!
+      res.status(200).json({ available: true });
+    } catch (err) {
+      console.error("validate-booking error:", err);
+      res.status(500).json({ error: "Error validating booking" });
+    }
+  });
+  
+
 export default router;

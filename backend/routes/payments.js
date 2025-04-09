@@ -2,7 +2,9 @@ import express from "express";
 import Stripe from "stripe";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { PrismaClient } from "@prisma/client";
+import dotenv from 'dotenv';
 
+dotenv.config();
 const router = express.Router();
 const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -51,10 +53,17 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
       payment_method: paymentMethodId,
       confirm: true,
       setup_future_usage: "off_session",
+      payment_method_types: ['card'],
       metadata: {
-        appointmentId,
         type: "deposit",
+        serviceId,
+        providerId: serviceProvider.serviceProvider.id,
+        clientId: userId,
+        date: req.body.date,
+        startTime: req.body.startTime,
+        duration: req.body.duration,
       },
+      
       transfer_data: {
         destination: serviceProvider.serviceProvider.stripeAccountId,
       },
@@ -79,8 +88,12 @@ router.post("/charge-remaining", requireAuth, async (req, res) => {
       where: { id: appointmentId },
       include: {
         client: true,
-        service: true,
-      },
+        service: {
+          include: {
+            serviceProvider: true, 
+          },
+        },
+      }
     });
 
     if (!appointment) return res.status(404).json({ message: "Appointment not found" });
@@ -105,9 +118,13 @@ router.post("/charge-remaining", requireAuth, async (req, res) => {
       customer: customerId,
       confirm: true,
       off_session: true,
+      payment_method_types: ['card'],
       metadata: {
         appointmentId,
         type: "remaining",
+      },
+      transfer_data: {
+        destination: appointment.service.serviceProvider.stripeAccountId,
       },
     });
 
@@ -156,29 +173,10 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         clientId,
         date,
         startTime,
-        duration
+        duration,
       } = intent.metadata || {};
-
-      // 1. Save Stripe payment log
-      const existing = await prisma.stripePayment.findUnique({
-        where: { paymentIntentId: intent.id },
-      });
-
-      if (!existing) {
-        await prisma.stripePayment.create({
-          data: {
-            paymentIntentId: intent.id,
-            appointmentId: appointmentId || null,
-            type,
-            status: "succeeded",
-            amount: intent.amount,
-            currency: intent.currency || "usd",
-          },
-        });
-      }
-
-      // 2. If it's a deposit, create the appointment now
-      if (type === "deposit" && !appointmentId) {
+      
+      if (type === "deposit" && (!appointmentId || appointmentId === "undefined")) {
         const toMinutes = (time) => {
           const [h, m] = time.split(":").map(Number);
           return h * 60 + m;
@@ -196,33 +194,58 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         const startTimeDate = toDate(date, startMin);
         const endTimeDate = toDate(date, endMin);
 
-        // Check if appointment already exists
-        const exists = await prisma.appointment.findFirst({
+        //Check for overlapping appointment
+        const overlapping = await prisma.appointment.findFirst({
           where: {
             serviceProviderId: providerId,
-            startTime: startTimeDate,
-            clientId,
+            startTime: { lt: endTimeDate },
+            endTime: { gt: startTimeDate },
           },
         });
 
-        if (!exists) {
-          const created = await prisma.appointment.create({
+        if (overlapping) {
+          console.warn("⚠️ Race condition detected — issuing refund");
+
+          await stripe.refunds.create({
+            payment_intent: intent.id,
+          });
+
+          await prisma.stripePayment.create({
             data: {
-              clientId,
-              serviceId,
-              serviceProviderId: providerId,
-              startTime: startTimeDate,
-              endTime: endTimeDate,
-              status: "confirmed",
+              paymentIntentId: intent.id,
+              appointmentId: null,
+              type,
+              status: "refunded",
+              amount: intent.amount,
+              currency: intent.currency || "usd",
             },
           });
 
-          //update StripePayment with this appointmentId
-          await prisma.stripePayment.update({
-            where: { paymentIntentId: intent.id },
-            data: { appointmentId: created.id },
-          });
+          return res.status(200).json({ message: "Payment refunded due to time conflict." });
         }
+
+        // Create appointment + log payment
+        const createdAppointment = await prisma.appointment.create({
+          data: {
+            clientId,
+            serviceId,
+            serviceProviderId: providerId,
+            startTime: startTimeDate,
+            endTime: endTimeDate,
+            status: "confirmed",
+          },
+        });
+
+        await prisma.stripePayment.create({
+          data: {
+            paymentIntentId: intent.id,
+            appointmentId: createdAppointment.id,
+            type,
+            status: "succeeded",
+            amount: intent.amount,
+            currency: intent.currency || "usd",
+          },
+        });
       }
 
       break;
@@ -247,12 +270,88 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
       break;
     }
-
-    default:
-      console.log(`Unhandled event type: ${event.type}`);
   }
-
-  res.json({ received: true });
+  res.status(200).json({ received: true });
 });
+
+
+
+
+router.post("/create-onboarding-link", requireAuth, async (req, res) => {
+  const userId = req.user.userId;
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+
+  try {
+    const serviceProvider = await prisma.serviceProvider.findUnique({
+      where: { userId },
+    });
+
+    if (!serviceProvider) {
+      return res.status(404).json({ message: "Service provider not found" });
+    }
+
+    let accountId = serviceProvider.stripeAccountId;
+
+    // If no Stripe Connect account, create one
+    if (!accountId) {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "US",
+        email: req.user.email,
+        capabilities: {
+          card_payments: { requested: true },
+          transfers: { requested: true },
+        },
+      });
+
+      accountId = account.id;
+
+      await prisma.serviceProvider.update({
+        where: { userId },
+        data: { stripeAccountId: accountId },
+      });
+    }
+
+    // Create an onboarding link
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${process.env.FRONTEND_URL}/onboarding/refresh`,
+      return_url: `${process.env.FRONTEND_URL}/profile/${user.username}`,
+      type: 'account_onboarding',
+    });
+
+    res.status(200).json({ url: accountLink.url });
+  } catch (error) {
+    console.error("Onboarding error:", error);
+    res.status(500).json({ message: "Failed to create onboarding link", error: error.message });
+  }
+});
+
+router.get("/check-onboarding-status", requireAuth, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const provider = await prisma.serviceProvider.findUnique({
+      where: { userId },
+    });
+
+    if (!provider?.stripeAccountId) {
+      return res.status(400).json({ message: "No Stripe account ID found" });
+    }
+
+    const account = await stripe.accounts.retrieve(provider.stripeAccountId);
+
+    res.status(200).json({
+      payoutsEnabled: account.payouts_enabled,
+      chargesEnabled: account.charges_enabled,
+      detailsSubmitted: account.details_submitted,
+    });
+
+  } catch (error) {
+    console.error("Stripe onboarding check failed:", error);
+    res.status(500).json({ message: "Failed to check onboarding status", error: error.message });
+  }
+});
+
 
 export default router;
