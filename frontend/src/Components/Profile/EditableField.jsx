@@ -14,53 +14,55 @@ export const EditableField = ({
   onSave,
   isTextarea = false,
   required = false,
-  error
+  error,
+  mode = "editable", 
 }) => {
+  const isEditMode = mode === "editable";
+
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <Label className="text-lg font-semibold text-[#062970]">
           {label} {required && <span className="text-red-500">*</span>}
         </Label>
-        {!isEditing ? (
+        {isEditMode && !isEditing && (
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={onEdit}
-            className="h-6 w-6 text-[#062970] hover:bg-[#f3e8ff]"
+            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
           >
             <Edit2 size={16} />
           </Button>
-        ) : (
+        )}
+        {isEditMode && isEditing && (
           <Button
             type="button"
             variant="ghost"
             size="icon"
             onClick={onSave}
-            className="h-6 w-6 text-green-600 hover:bg-green-50"
+            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
           >
             <Save size={16} />
           </Button>
         )}
       </div>
 
-      {isEditing ? (
-        isTextarea ? (
-          <Textarea
-            {...register(name)}
-            className="h-32 bg-white text-[#062970] border-2 border-[#062970]"
-          />
-        ) : (
-          <Input
-            {...register(name)}
-            className="bg-white text-[#062970] border-2 border-[#062970]"
-          />
-        )
-      ) : (
+      {isEditMode && !isEditing ? (
         <p className="p-2 bg-white rounded border border-transparent">
           {value || <span className="text-gray-400">Not provided</span>}
         </p>
+      ) : isTextarea ? (
+        <Textarea
+          {...register(name)}
+          className="h-32 bg-white text-[#062970] border-2 border-[#062970]"
+        />
+      ) : (
+        <Input
+          {...register(name)}
+          className="bg-white text-[#062970] border-2 border-[#062970]"
+        />
       )}
 
       {error && (
@@ -69,5 +71,6 @@ export const EditableField = ({
     </div>
   );
 };
+
 
 export default EditableField;

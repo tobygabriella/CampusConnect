@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import api from "@/utils/axiosInstance";
@@ -11,34 +10,15 @@ import { CameraIcon } from "lucide-react";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { CollegeInfoSection } from "./CollegeInfoSection";
 import { ServiceProviderSection } from "./ServiceProviderSection";
-
-// Create separate schemas for different roles
-const baseSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  college: z.string().optional(),
-  collegesServed: z.array(z.string()).optional(),
-});
-
-const serviceProviderSchema = z.object({
-  profession: z.string().min(1, "Profession is required"),
-  biography: z.string().min(1, "Biography is required"),
-  experience: z.string().min(1, "Experience is required"),
-  location: z.string().min(1, "Location is required"),
-  policy: z.string().min(1, "Policy is required"),
-  services: z.array(
-    z.object({
-      id: z.string().optional(),
-      name: z.string().min(1, "Service name required"),
-      price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Enter a valid price"),
-      duration: z.string().regex(/^\d+$/, "Duration must be a number"),
-    })
-  ).min(1, "At least one service is required"),
-});
+import SidebarNav from "@/Components/Navigation/SideBarNav";
+import TopNavbar from "@/Components/Navigation/TopNavBar";
+import { toast } from "react-toastify";
+import useUsernameAvailability from "@/hooks/useUsernameAvailability";
+import ProfessionSelect from "@/Components/Onboarding/ProfessionSelect";
+import { getCombinedSchema } from "@/utils/schema";
 
 export const EditProfileForm = () => {
   const { user, verifyAuth } = useAuth();
-  const username = user?.username;
   const navigate = useNavigate();
   const [profilePicture, setProfilePicture] = useState(null);
   const [imagePreview, setImagePreview] = useState(user?.profilePicture || defaultProfile);
@@ -47,16 +27,21 @@ export const EditProfileForm = () => {
   const [existingWorkImages, setExistingWorkImages] = useState([]);
   const [existingCertifications, setExistingCertifications] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [isAvailable, setIsAvailable] = useState(null);
-  const [usernameError, setUsernameError] = useState("");
   const [editingField, setEditingField] = useState(null);
-  const [isSwitchingRole, setIsSwitchingRole] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPreparingSwitch, setIsPreparingSwitch] = useState(false);
+  const [removedWork, setRemovedWork] = useState([]);
+  const [removedCert, setRemovedCert] = useState([]);
 
-  // Dynamic schema based on role
-  const schema = user?.role === "service_provider" 
-    ? baseSchema.merge(serviceProviderSchema) 
-    : baseSchema;
+  const fileChangesExist = (
+    profilePicture !== null ||
+    workImages.length > 0 ||
+    certificationImages.length > 0 ||
+    removedWork.length > 0 ||
+    removedCert.length > 0
+  );
+
+  
 
   const {
     register,
@@ -67,7 +52,7 @@ export const EditProfileForm = () => {
     reset,
     formState: { errors, isDirty },
   } = useForm({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(getCombinedSchema(user?.role, isPreparingSwitch)),
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -75,7 +60,21 @@ export const EditProfileForm = () => {
     name: "services",
   });
 
+  useEffect(() => {
+    const subscription = watch((value, { name }) => {
+      if (name === "role") {
+        reset({ ...value }, { keepValues: true, keepDirty: true }); // keep current values
+      }
+    });
+    return () => subscription.unsubscribe?.();
+  }, [watch, reset, isPreparingSwitch]);
+  
+
   const role = watch("role", user?.role);
+  const watchedUsername = watch("username");
+  const initialUsername = user?.username;
+
+  const { isAvailable, error: usernameError } = useUsernameAvailability(watchedUsername, initialUsername);
 
   // Load profile data when component mounts
   useEffect(() => {
@@ -83,54 +82,51 @@ export const EditProfileForm = () => {
       try {
         const response = await api.get(`/users/profile/${user.username}`);
         const profileData = response.data;
-        
-        // Set basic user info
+  
+        // Reset the form with all fields at once
         reset({
           name: profileData.name,
           username: profileData.username,
-          college: profileData.college || "",
-          collegesServed: profileData.collegesServed || [],
+          college: profileData.collegeId,
+          collegesServed: profileData.collegesServedIds,
           role: profileData.role,
+          profession: profileData.profession || "",
+          biography: profileData.biography || "",
+          experience: profileData.experience || "",
+          location: profileData.location || "",
+          policy: profileData.policy || "",
+          cancellationWindow: profileData.cancellationWindow || "24",
+          rescheduleFee: profileData.rescheduleFee || "0",
+          services: profileData.services?.map(service => ({
+            id: service.id,
+            name: service.name,
+            price: service.price.toString(),
+            duration: service.duration.toString(),
+            depositAmount: service.depositAmount?.toString() || "0"
+          })) || [],
         });
-
-        // Set service provider data if applicable
+  
+        // Set service provider images if applicable
         if (profileData.role === "service_provider") {
-          setValue("profession", profileData.profession || "");
-          setValue("biography", profileData.biography || "");
-          setValue("experience", profileData.experience || "");
-          setValue("location", profileData.location || "");
-          setValue("policy", profileData.policy || "");
-          
-          // Set services
-          if (profileData.services) {
-            setValue("services", profileData.services.map(service => ({
-              id: service.id,
-              name: service.name,
-              price: service.price.toString(),
-              duration: service.duration.toString(),
-            })));
-          }
-          
-          // Set existing images
           setExistingWorkImages(profileData.workImages || []);
           setExistingCertifications(profileData.certificationImages || []);
         }
-
+  
         // Set profile picture
-        if (profileData.profilePicture) {
-          setImagePreview(profileData.profilePicture);
-        }
+        setImagePreview(profileData.profilePicture || defaultProfile);
+  
       } catch (error) {
         console.error("Failed to load profile data:", error);
       } finally {
         setIsLoading(false);
       }
     };
-
+  
     if (user?.username) {
       loadProfileData();
     }
-  }, [user?.username, reset, setValue]);
+  }, [user?.username, reset]);
+  
 
   const onSubmit = async (data) => {
     setIsUploading(true);
@@ -156,28 +152,17 @@ export const EditProfileForm = () => {
         formData.append("location", data.location);
         formData.append("policy", data.policy);
         formData.append("services", JSON.stringify(data.services));
-        
-        // Append new work images
-        workImages.forEach((file, index) => {
-          formData.append(`workImages`, file);
-        });
-        
-        // Append new certification images
-        certificationImages.forEach((file, index) => {
-          formData.append(`certificationImages`, file);
-        });
-        
-        // Append removed images
-        formData.append("removedWorkImages", JSON.stringify(
-          existingWorkImages.filter(img => !data.workImages?.includes(img))
-        ));
-        formData.append("removedCertifications", JSON.stringify(
-          existingCertifications.filter(img => !data.certificationImages?.includes(img))
-        ));
+        formData.append("rescheduleFee", data.rescheduleFee || "0");
+        // Get removed images by comparing existing with what's kept
+        formData.append("removedWorkImages", JSON.stringify(removedWork));
+        formData.append("removedCertifications", JSON.stringify(removedCert));
+        // Append new files
+        workImages.forEach(file => formData.append("workImages", file));
+        certificationImages.forEach(file => formData.append("certificationImages", file));
       }
       
       // Submit to API
-      await axios.put("/api/profile/profile", formData, {
+      await api.put("/users/profile", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -188,49 +173,54 @@ export const EditProfileForm = () => {
       navigate(`/profile/${data.username}`);
     } catch (error) {
       console.error("Profile update failed:", error);
-      // Handle error
+      toast.error(error.response?.data?.message || "Failed to update profile");
     } finally {
       setIsUploading(false);
     }
   };
 
   const handleFileChange = (e, type) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const files = Array.from(e.target.files).filter(file => {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        toast.error('Only image files are allowed');
+        return false;
+      }
+      // Validate file size (e.g., 5MB max)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('File size must be less than 5MB');
+        return false;
+      }
+      return true;
+    }); // Get all selected files
+    if (!files.length) return;
     
     if (type === 'profile') {
-      setProfilePicture(file);
-      setImagePreview(URL.createObjectURL(file));
+      // For profile picture, only take the first file
+      setProfilePicture(files[0]);
+      setImagePreview(URL.createObjectURL(files[0]));
     } else if (type === 'work') {
-      setWorkImages(prev => [...prev, file]);
+      setWorkImages(prev => [...prev, ...files]); // Add all new files
     } else if (type === 'certification') {
-      setCertificationImages(prev => [...prev, file]);
+      setCertificationImages(prev => [...prev, ...files]); // Add all new files
     }
   };
 
-  const removeWorkImage = (index) => {
-    setWorkImages(prev => prev.filter((_, i) => i !== index));
+  const removeWorkImage = (index, isExisting = false) => {
+    if (isExisting) {
+      setRemovedWork(prev => [...prev, existingWorkImages[index]]);
+      setExistingWorkImages(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setWorkImages(prev => prev.filter((_, i) => i !== index));
+    }
   };
-
-  const removeCertification = (index) => {
-    setCertificationImages(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleRoleSwitch = async () => {
-    setIsSwitchingRole(true);
-    try {
-      const newRole = role === "student" ? "service_provider" : "student";
-      await axios.post("/api/profile/switch-role", { role: newRole });
-      await verifyAuth();
-      // Reset form with new role
-      reset({
-        ...watch(),
-        role: newRole,
-      });
-    } catch (error) {
-      console.error("Role switch failed:", error);
-    } finally {
-      setIsSwitchingRole(false);
+  
+  const removeCertification = (index, isExisting = false) => {
+    if (isExisting) {
+      setRemovedCert(prev => [...prev, existingCertifications[index]]);
+      setExistingCertifications(prev => prev.filter((_, i) => i !== index));
+    } else {
+      setCertificationImages(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -239,8 +229,10 @@ export const EditProfileForm = () => {
   }
 
   return (
-    <div className="min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
-      <div className="max-w-4xl mx-auto p-4 md:p-8">
+    <div className="min-h-screen flex w-screen bg-gradient-to-b from-[#f3e8ff] overflow-x-hidden to-white">
+      <SidebarNav />
+      <div className="max-w-4xl mx-auto p-4 md:p-8 ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16" >
+      <TopNavbar />
         <h1 className="text-3xl font-bold text-[#062970] mb-8">Edit Profile</h1>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
@@ -283,21 +275,25 @@ export const EditProfileForm = () => {
               <h3 className="font-semibold text-[#062970]">
                 Current Role: <span className="capitalize">{role}</span>
               </h3>
-              <p className="text-sm text-gray-600">
-                {role === "student" 
-                  ? "Switch to service provider to offer services"
-                  : "Switch back to student if you no longer want to offer services"}
-              </p>
+              {user?.role === "student" && !isPreparingSwitch && (
+                <p className="text-sm text-gray-600 mt-1">
+                  Switch to service provider to offer services
+                </p>
+              )}
+              {user?.role === "student" && !isPreparingSwitch && (
+                <Button
+                  className="mt-2"
+                  onClick={() => {
+                    setIsPreparingSwitch(true);
+                    setValue("role", "service_provider", { shouldDirty: true }); // Temporary UI update
+                  }}
+                >
+                  Switch to Service Provider
+                </Button>
+              )}
             </div>
-            <Button
-              type="button"
-              onClick={handleRoleSwitch}
-              disabled={isSwitchingRole}
-              className="bg-[#062970] hover:bg-[#051f5c] text-white"
-            >
-              {isSwitchingRole ? "Processing..." : `Switch to ${role === "student" ? "Service Provider" : "Student"}`}
-            </Button>
           </div>
+
 
           <BasicInfoSection
             register={register}
@@ -315,13 +311,22 @@ export const EditProfileForm = () => {
             setValue={setValue}
           />
 
-          {role === "service_provider" && (
+          {(role === "service_provider"|| isPreparingSwitch) && (
             <ServiceProviderSection
+            ProfessionInput={
+              <ProfessionSelect
+                value={watch("profession")}
+                onChange={(val) => setValue("profession", val, { shouldDirty: true })}
+                error={errors.profession?.message}
+              />
+            }
               register={register}
               errors={errors}
               editingField={editingField}
               setEditingField={setEditingField}
               watch={watch}
+              setValue={setValue}
+              control={control}
               fields={fields}
               append={append}
               remove={remove}
@@ -334,21 +339,30 @@ export const EditProfileForm = () => {
               removeCertification={removeCertification}
             />
           )}
+          {isPreparingSwitch && (
+            <div className="text-red-600 text-sm font-semibold">
+              ⚠️ Switching to a service provider is permanent and cannot be undone.
+            </div>
+          )}
 
           {/* Submit Button */}
           <div className="flex justify-end gap-4">
             <Button
               type="button"
               variant="outline"
-              className="text-[#062970] border-[#062970]"
+              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
               onClick={() => navigate(-1)}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="bg-[#062970] hover:bg-[#051f5c] text-white"
-              disabled={isUploading || (username && isAvailable === false) || !isDirty}
+              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+              disabled={
+                isUploading || 
+                (watchedUsername && isAvailable === false && watchedUsername !== initialUsername) || 
+                (!isDirty && !fileChangesExist)
+              }
             >
               {isUploading ? "Saving..." : "Save Changes"}
             </Button>

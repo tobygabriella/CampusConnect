@@ -4,11 +4,13 @@ import { ServiceList } from "./ServiceList";
 import { ImageUploadSection } from "./ImageUploadSection";
 
 export const ServiceProviderSection = ({
+  ProfessionInput,
   register,
   errors,
   editingField,
   setEditingField,
   watch,
+  setValue,
   fields,
   append,
   remove,
@@ -18,21 +20,13 @@ export const ServiceProviderSection = ({
   certificationImages,
   handleFileChange,
   removeWorkImage,
-  removeCertification
+  removeCertification,
+  control,
+  mode = "editable",
 }) => {
   return (
-    <>
-      <EditableField
-        name="profession"
-        label="Profession"
-        register={register}
-        value={watch("profession")}
-        isEditing={editingField === "profession"}
-        onEdit={() => setEditingField("profession")}
-        onSave={() => setEditingField(null)}
-        required
-        error={errors.profession?.message}
-      />
+    <div className="space-y-6 text-[#062970]">
+      {ProfessionInput}
       
       <EditableField
         name="biography"
@@ -45,6 +39,7 @@ export const ServiceProviderSection = ({
         isTextarea
         required
         error={errors.biography?.message}
+        mode={mode}
       />
       
       <EditableField
@@ -58,6 +53,7 @@ export const ServiceProviderSection = ({
         isTextarea
         required
         error={errors.experience?.message}
+        mode={mode}
       />
       
       <EditableField
@@ -70,6 +66,7 @@ export const ServiceProviderSection = ({
         onSave={() => setEditingField(null)}
         required
         error={errors.location?.message}
+        mode={mode}
       />
       
       <EditableField
@@ -83,7 +80,37 @@ export const ServiceProviderSection = ({
         isTextarea
         required
         error={errors.policy?.message}
+        mode={mode}
       />
+
+      {/* Add Cancellation Policy Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <EditableField
+          name="cancellationWindow"
+          label="Cancellation Window (hours)"
+          register={register}
+          value={watch("cancellationWindow")}
+          isEditing={editingField === "cancellationWindow"}
+          onEdit={() => setEditingField("cancellationWindow")}
+          onSave={() => setEditingField(null)}
+          required
+          error={errors.cancellationWindow?.message}
+          mode={mode}
+        />
+        
+        <EditableField
+          name="rescheduleFee"
+          label="Reschedule Fee (%)"
+          register={register}
+          value={watch("rescheduleFee")}
+          isEditing={editingField === "rescheduleFee"}
+          onEdit={() => setEditingField("rescheduleFee")}
+          onSave={() => setEditingField(null)}
+          required
+          error={errors.rescheduleFee?.message}
+          mode={mode}
+        />
+      </div>
 
       <ServiceList 
         fields={fields}
@@ -91,6 +118,9 @@ export const ServiceProviderSection = ({
         append={append}
         remove={remove}
         errors={errors}
+        watch={watch}
+        setValue={setValue}
+        control={control}
       />
 
       <ImageUploadSection
@@ -99,8 +129,8 @@ export const ServiceProviderSection = ({
         newImages={workImages}
         onFileChange={handleFileChange}
         onRemoveExisting={(index) => removeWorkImage(index, true)}
-        onRemoveNew={removeWorkImage}
-        name="workImages"
+        onRemoveNew={(index) => removeWorkImage(index, false)}
+        name="work"
       />
 
       <ImageUploadSection
@@ -109,10 +139,10 @@ export const ServiceProviderSection = ({
         newImages={certificationImages}
         onFileChange={handleFileChange}
         onRemoveExisting={(index) => removeCertification(index, true)}
-        onRemoveNew={removeCertification}
-        name="certificationImages"
+        onRemoveNew={(index) => removeCertification(index, false)}
+        name="certification"
       />
-    </>
+    </div>
   );
 };
 

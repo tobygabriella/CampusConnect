@@ -2,13 +2,16 @@ import CollegeSelect from "@/Components/Onboarding/CollegeSelect";
 import { Label } from "@/components/ui/label";
 
 export const CollegeInfoSection = ({ role, watch, setValue }) => {
+  const collegeValue = watch("college") || ""; // Ensure string for student
+  const collegesServedValue = watch("collegesServed") || []; // Ensure string[] for provider
+
   return (
     <>
       {role === "student" && (
         <div className="space-y-2">
           <Label className="text-lg font-semibold text-[#062970]">Your College</Label>
           <CollegeSelect 
-            value={watch("college")} 
+            value={collegeValue} 
             onChange={(value) => setValue("college", value, { shouldDirty: true })}
             singleSelect
           />
@@ -19,7 +22,7 @@ export const CollegeInfoSection = ({ role, watch, setValue }) => {
         <div className="space-y-2">
           <Label className="text-lg font-semibold text-[#062970]">Colleges You Serve</Label>
           <CollegeSelect 
-            value={watch("collegesServed") || []} 
+            value={Array.isArray(collegesServedValue) ? collegesServedValue : []}
             onChange={(values) => setValue("collegesServed", values, { shouldDirty: true })}
             multiple
           />
@@ -28,4 +31,5 @@ export const CollegeInfoSection = ({ role, watch, setValue }) => {
     </>
   );
 };
+
 export default CollegeInfoSection;

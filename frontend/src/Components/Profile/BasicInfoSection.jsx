@@ -1,5 +1,3 @@
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Check, X } from "lucide-react";
 import { EditableField } from "./EditableField";
 
@@ -13,7 +11,7 @@ export const BasicInfoSection = ({
   usernameError
 }) => {
   return (
-    <div className="grid gap-6 md:grid-cols-2">
+    <div className="grid gap-6 md:grid-cols-2 text-[#062970]">
       <EditableField
         name="name"
         label="Full Name"
@@ -27,37 +25,30 @@ export const BasicInfoSection = ({
       />
       
       <div className="space-y-2">
-        <Label className="text-lg font-semibold text-[#062970]">Username</Label>
-        <div className="relative">
-          <Input
-            {...register("username")}
-            className="bg-white text-[#062970] border-2 border-[#062970]"
-            placeholder="Your username"
-          />
+        <EditableField
+          name="username"
+          label="Username"
+          register={register}
+          value={watch("username")}
+          isEditing={editingField === "username"}
+          onEdit={() => setEditingField("username")}
+          onSave={() => setEditingField(null)}
+          required
+          error={errors.username?.message}
+        />
+        
+        <div className="ml-2">
           {isAvailable === true && (
-            <span className="absolute right-2 top-2 text-green-500">
-              <Check size={20} />
-            </span>
+            <p className="text-green-500 text-sm flex items-center">
+              <Check className="mr-1" size={16} /> Username available
+            </p>
           )}
           {isAvailable === false && (
-            <span className="absolute right-2 top-2 text-red-500">
-              <X size={20} />
-            </span>
+            <p className="text-red-500 text-sm flex items-center">
+              <X className="mr-1" size={16} /> {usernameError}
+            </p>
           )}
         </div>
-        {isAvailable === true && (
-          <p className="text-green-500 text-sm flex items-center">
-            <Check className="mr-1" size={16} /> Username available
-          </p>
-        )}
-        {isAvailable === false && (
-          <p className="text-red-500 text-sm flex items-center">
-            <X className="mr-1" size={16} /> {usernameError}
-          </p>
-        )}
-        {errors.username && (
-          <p className="text-red-500 text-sm">{errors.username.message}</p>
-        )}
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Calendar, dateFnsLocalizer} from "react-big-calendar";
+import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import format from "date-fns/format";
 import parse from "date-fns/parse";
 import startOfWeek from "date-fns/startOfWeek";
@@ -17,11 +17,10 @@ dayjs.extend(timezone);
 const localizer = dateFnsLocalizer({
   format,
   parse,
-  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }), // Monday as start
+  startOfWeek: () => startOfWeek(new Date(), { weekStartsOn: 1 }), 
   getDay,
   locales: { "en-US": enUS },
 });
-
 
 const formats = {
   monthHeaderFormat: (date) => format(date, "MMMM yyyy"),
@@ -32,12 +31,13 @@ const formats = {
   dateFormat: "d",
   timeGutterFormat: "h:mm a",
   eventTimeRangeFormat: ({ start, end }) => {
-    const localStart = dayjs.utc(start).local();
-    const localEnd = dayjs.utc(end).local();
+    const localStart = dayjs(start).tz(userTimezone);
+    const localEnd = dayjs(end).tz(userTimezone);
     return `${localStart.format("h:mm a")} - ${localEnd.format("h:mm a")}`;
   },
 };
 
+const userTimezone = dayjs.tz.guess();
 
 const AvailabilityCalendar = () => {
   const [events, setEvents] = useState([]);
@@ -51,7 +51,7 @@ const AvailabilityCalendar = () => {
       try {
         const [availabilityRes, appointmentsRes] = await Promise.all([
           api.get("/availability/get-availability"),
-          api.get("/bookings")
+          api.get("/appointments")
         ]);
 
         const availability = availabilityRes.data.availabilityData || {};
@@ -60,24 +60,29 @@ const AvailabilityCalendar = () => {
         const slots = Object.entries(availability).flatMap(([date, times]) =>
           times.map(range => {
             const [start, end] = range.split(" - ");
+            // Parse as UTC and convert to local time
+            const localStart = dayjs.utc(`${date}T${start}`).local().toDate();
+            const localEnd = dayjs.utc(`${date}T${end}`).local().toDate();
             return {
               title: "Available",
-              start: new Date(`${date}T${start}`),
-              end: new Date(`${date}T${end}`),
+              start: localStart,
+              end: localEnd,
               allDay: false,
               type: "availability"
             };
           })
         );
 
-        const appts = appointments.map(appt => ({
+        const appts = appointments
+        .filter(appt => appt.status !== "cancelled") // Exclude cancelled
+        .map(appt => ({
           title: appt.service.name,
-          start: new Date(appt.startTime), 
-          end: new Date(appt.endTime), 
+          start: dayjs.utc(appt.startTime).local().toDate(),
+          end: dayjs.utc(appt.endTime).local().toDate(),
           allDay: false,
           type: "appointment",
           client: appt.client.name
-        }));
+        }));      
 
         setEvents([...slots, ...appts]);
       } catch (err) {
@@ -88,62 +93,92 @@ const AvailabilityCalendar = () => {
     loadEvents();
   }, []);
 
-  const handleSelectSlot = (slotInfo) => {
-    setSelectedDate(slotInfo.start);
-    setNewTimeSlot({ start: null, end: null });
-    setEditingEvent(null);
-    setIsModalVisible(true);
-  };
-
-  const handleSelectEvent = (event) => {
-    if (event.type === "availability") {
-      setSelectedDate(event.start);
-      setNewTimeSlot({ start: dayjs(event.start), end: dayjs(event.end) });
-      setEditingEvent(event);
-      setIsModalVisible(true);
-    }
-  };
-
   const handleAddOrUpdateTimeSlot = async () => {
     if (!newTimeSlot.start || !newTimeSlot.end) {
       message.error("Please select both start and end times.");
       return;
     }
-
+  
     const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
-    const newSlot = `${dayjs(newTimeSlot.start).format("HH:mm")} - ${dayjs(newTimeSlot.end).format("HH:mm")}`;
-
+  
+    // Convert local times to UTC strings for backend storage
+    const startUtc = dayjs(newTimeSlot.start).utc().format("HH:mm");
+    const endUtc = dayjs(newTimeSlot.end).utc().format("HH:mm");
+    const newSlot = `${startUtc} - ${endUtc}`;
+  
     try {
-      const existingSlots = events.filter(e =>
-        dayjs(e.start).format("YYYY-MM-DD") === dateKey &&
-        e.type === "availability" &&
-        (!editingEvent || e !== editingEvent)
-      ).map(e => `${dayjs(e.start).format("HH:mm")} - ${dayjs(e.end).format("HH:mm")}`);
-
+      // Get all existing slots for this date (except the one being edited if applicable)
+      const existingSlots = events
+        .filter(e => 
+          dayjs(e.start).isSame(selectedDate, 'day') && 
+          e.type === "availability" &&
+          (!editingEvent || e !== editingEvent)
+        )
+        .map(e => {
+          const start = dayjs(e.start).utc().format("HH:mm");
+          const end = dayjs(e.end).utc().format("HH:mm");
+          return `${start} - ${end}`;
+        });
+  
+      // Combine existing slots with the new one
       const updatedSlots = [...existingSlots, newSlot];
-
+  
+      // Get all availability data from the backend first
+      const availabilityRes = await api.get("/availability/get-availability");
+      const currentAvailability = availabilityRes.data.availabilityData || {};
+  
+      // Create the updated availability object
+      const updatedAvailability = {
+        ...currentAvailability,
+        [dateKey]: updatedSlots
+      };
+  
+      // Send the complete updated availability to the backend
       await api.post("/availability/set-availability", {
-        availability: { [dateKey]: updatedSlots }
+        availability: updatedAvailability
       });
+  
+      // Refresh the events
+      const loadEvents = async () => {
+        const [availabilityRes, appointmentsRes] = await Promise.all([
+          api.get("/availability/get-availability"),
+          api.get("/appointments")
+        ]);
+  
+        const availability = availabilityRes.data.availabilityData || {};
+        const appointments = appointmentsRes.data;
+  
+        const slots = Object.entries(availability).flatMap(([date, times]) =>
+          times.map(range => {
+            const [start, end] = range.split(" - ");
+            const localStart = dayjs.utc(`${date}T${start}`).local().toDate();
+            const localEnd = dayjs.utc(`${date}T${end}`).local().toDate();
+            return {
+              title: "Available",
+              start: localStart,
+              end: localEnd,
+              allDay: false,
+              type: "availability"
+            };
+          })
+        );
 
-      const updatedEvents = events.filter(e =>
-        !(dayjs(e.start).format("YYYY-MM-DD") === dateKey && e.type === "availability")
-      );
-
-      setEvents([
-        ...updatedEvents,
-        ...updatedSlots.map(slot => {
-          const [start, end] = slot.split(" - ");
-          return {
-            title: "Available",
-            start: new Date(`${dateKey}T${start}`),
-            end: new Date(`${dateKey}T${end}`),
-            allDay: false,
-            type: "availability"
-          };
-        })
-      ]);
-
+        const appts = appointments
+        .filter(appt => appt.status !== "cancelled") // Exclude cancelled
+        .map(appt => ({
+          title: appt.service.name,
+          start: dayjs.utc(appt.startTime).local().toDate(),
+          end: dayjs.utc(appt.endTime).local().toDate(),
+          allDay: false,
+          type: "appointment",
+          client: appt.client.name
+        }));
+      
+  
+        setEvents([...slots, ...appts]);
+      };
+  
+      await loadEvents();
       message.success("Availability saved!");
       setIsModalVisible(false);
     } catch (err) {
@@ -156,14 +191,14 @@ const AvailabilityCalendar = () => {
     if (!editingEvent) return;
 
     const dateKey = dayjs(editingEvent.start).format("YYYY-MM-DD");
-    const slotToRemove = `${dayjs(editingEvent.start).format("HH:mm")} - ${dayjs(editingEvent.end).format("HH:mm")}`;
+    const slotToRemove = `${dayjs(editingEvent.start).utc().format("HH:mm")} - ${dayjs(editingEvent.end).utc().format("HH:mm")}`;
 
     try {
       const remainingSlots = events.filter(e =>
-        dayjs(e.start).format("YYYY-MM-DD") === dateKey &&
+        dayjs(e.start).isSame(editingEvent.start, 'day') &&
         e.type === "availability" &&
-        `${dayjs(e.start).format("HH:mm")} - ${dayjs(e.end).format("HH:mm")}` !== slotToRemove
-      ).map(e => `${dayjs(e.start).format("HH:mm")} - ${dayjs(e.end).format("HH:mm")}`);
+        `${dayjs(e.start).utc().format("HH:mm")} - ${dayjs(e.end).utc().format("HH:mm")}` !== slotToRemove
+      ).map(e => `${dayjs(e.start).utc().format("HH:mm")} - ${dayjs(e.end).utc().format("HH:mm")}`);
 
       await api.post("/availability/set-availability", {
         availability: { [dateKey]: remainingSlots }
@@ -178,6 +213,11 @@ const AvailabilityCalendar = () => {
     }
   };
 
+  // Helper function to convert dayjs object to local time Date object
+  const toLocalDate = (dayjsObj) => {
+    return dayjsObj ? dayjsObj.toDate() : null;
+  };
+
   return (
     <div className="p-6 bg-white rounded shadow max-w-7xl mx-auto">
       <Calendar
@@ -190,8 +230,23 @@ const AvailabilityCalendar = () => {
         startAccessor="start"
         endAccessor="end"
         style={{ height: "80vh" }}
-        onSelectSlot={handleSelectSlot}
-        onSelectEvent={handleSelectEvent}
+        onSelectSlot={(slotInfo) => {
+          setSelectedDate(slotInfo.start);
+          setNewTimeSlot({ start: null, end: null });
+          setEditingEvent(null);
+          setIsModalVisible(true);
+        }}
+        onSelectEvent={(event) => {
+          if (event.type === "availability") {
+            setSelectedDate(event.start);
+            setNewTimeSlot({ 
+              start: dayjs(event.start), 
+              end: dayjs(event.end) 
+            });            
+            setEditingEvent(event);
+            setIsModalVisible(true);
+          }
+        }}
         formats={formats}
         eventPropGetter={(event) => ({
           style: {
@@ -223,19 +278,23 @@ const AvailabilityCalendar = () => {
           <div>
             <label className="block mb-2">Start Time</label>
             <TimePicker
-              format="HH:mm"
+              format="h:mm a"
               value={newTimeSlot.start}
               onChange={(time) => setNewTimeSlot({ ...newTimeSlot, start: time })}
               className="w-full"
+              use12Hours
+              showNow={false}
             />
           </div>
           <div>
             <label className="block mb-2">End Time</label>
             <TimePicker
-              format="HH:mm"
+              format="h:mm a"
               value={newTimeSlot.end}
               onChange={(time) => setNewTimeSlot({ ...newTimeSlot, end: time })}
               className="w-full"
+              use12Hours
+              showNow={false}
             />
           </div>
         </div>
