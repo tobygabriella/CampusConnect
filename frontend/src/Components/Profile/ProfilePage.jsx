@@ -113,7 +113,11 @@ const ProfilePage = () => {
                         } text-white hover:opacity-75`}
                         onClick={handleFollowToggle}
                       >
-                        {profile.isFollowing ? "Unfollow" : "Follow"}
+                        {profile.isFollowing
+                          ? "Unfollow"
+                          : profile.followsYou
+                            ? "Follow Back"
+                            : "Follow"}
                       </Button>
 
                       {isServiceProvider && (
