@@ -1,7 +1,7 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { uploadToS3, deleteFromS3 } from "../utils/s3Uploader.js";
 import dotenv from "dotenv";
 import crypto from "crypto";
 import { requireAuth } from "../middleware/authMiddleware.js";
@@ -9,64 +9,48 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 dotenv.config();
 const router = express.Router();
 const prisma = new PrismaClient();
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
 
 // Multer setup for file uploads
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post("/details", requireAuth, upload.fields([
+  { name: "profilePicture", maxCount: 1 },
   { name: "workImages" },
   { name: "certificationImages" }
 ]), async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { profession, services, policy, biography, experience, location } = req.body;
+    const { profession, services, policy, biography, experience, location, cancellationWindow, rescheduleFee } = req.body;
 
-    let workImageUrls = [], certificationImageUrls = [];
-
-    // Upload work images to S3
-    if (req.files["workImages"]) {
-      workImageUrls = await Promise.all(req.files["workImages"].map(async (file) => {
-        const fileName = `work-images/${crypto.randomUUID()}-${file.originalname}`;
-        await s3.send(new PutObjectCommand({
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: fileName,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-          ACL: "public-read",
-        }));
-        return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-      }));
+    // Validate inputs
+    if (!cancellationWindow || parseInt(cancellationWindow) > 72) {
+      return res.status(400).json({ message: "Cancellation window must be between 1 and 72 hours." });
     }
 
-    // Upload certification images to S3
-    if (req.files["certificationImages"]) {
-      certificationImageUrls = await Promise.all(req.files["certificationImages"].map(async (file) => {
-        const fileName = `certifications/${crypto.randomUUID()}-${file.originalname}`;
-        await s3.send(new PutObjectCommand({
-          Bucket: process.env.AWS_BUCKET_NAME,
-          Key: fileName,
-          Body: file.buffer,
-          ContentType: file.mimetype,
-          ACL: "public-read",
-        }));
-        return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-      }));
+    // Check if profession exists or create it
+    let professionRecord = await prisma.profession.findUnique({
+      where: { name: profession }
+    });
+
+    if (!professionRecord) {
+      professionRecord = await prisma.profession.create({
+        data: { name: profession }
+      });
     }
+
+    const [profilePictureUrl, workImageUrls, certificationImageUrls] = await Promise.all([
+      req.files["profilePicture"] ? uploadToS3(req.files["profilePicture"][0], 'profile-pictures') : null,
+      req.files["workImages"] ? uploadMultipleToS3(req.files["workImages"], 'work-images') : [],
+      req.files["certificationImages"] ? uploadMultipleToS3(req.files["certificationImages"], 'certifications') : []
+    ]);
+    const parsedServices = JSON.parse(services);
 
     // Check if user already has a service provider profile
     const existingServiceProvider = await prisma.serviceProvider.findUnique({
       where: { userId },
+      include: { profession: true }
     });
-
-    const parsedServices = JSON.parse(services);
 
     if (existingServiceProvider) {
       // Delete existing services
@@ -76,16 +60,23 @@ router.post("/details", requireAuth, upload.fields([
 
       // Update service provider and create new services
       await prisma.$transaction([
+        profilePictureUrl ? prisma.user.update({
+          where: { id: userId },
+          data: { profilePicture: profilePictureUrl }
+        }) : Promise.resolve(),
+        
         prisma.serviceProvider.update({
           where: { userId },
           data: {
-            profession,
+            professionId: professionRecord.id,
             policy,
+            cancellationWindow: parseInt(cancellationWindow),
+            rescheduleFee: parseFloat(rescheduleFee),
             biography,
             experience,
             location,
             workImages: workImageUrls.length ? workImageUrls : existingServiceProvider.workImages,
-            certificationImages: certificationImageUrls.length ? certificationImageUrls : existingServiceProvider.certificationImages,
+            certifications: certificationImageUrls.length ? certificationImageUrls : existingServiceProvider.certifications,
           },
         }),
         ...parsedServices.map(service => 
@@ -94,7 +85,8 @@ router.post("/details", requireAuth, upload.fields([
               name: service.name,
               price: parseFloat(service.price),
               duration: parseInt(service.duration),
-              serviceProviderId: existingServiceProvider.id
+              depositAmount: parseFloat(service.depositAmount),
+              serviceProviderId: existingServiceProvider.id,
             }
           })
         )
@@ -102,26 +94,37 @@ router.post("/details", requireAuth, upload.fields([
 
       return res.status(200).json({ message: "Service provider details updated successfully!" });
     } else {
-      // Create new service provider with services
-      await prisma.serviceProvider.create({
-        data: {
-          userId,
-          profession,
-          policy,
-          biography,
-          experience,
-          location,
-          workImages: workImageUrls,
-          certifications: certificationImageUrls,
-          services: {
-            create: parsedServices.map(service => ({
-              name: service.name,
-              price: parseFloat(service.price),
-              duration: parseInt(service.duration)
-            }))
+      await prisma.$transaction([
+        // Update user's profile picture if provided
+        profilePictureUrl ? prisma.user.update({
+          where: { id: userId },
+          data: { profilePicture: profilePictureUrl }
+        }) : Promise.resolve(),
+        
+        // Create service provider
+        prisma.serviceProvider.create({
+          data: {
+            userId,
+            professionId: professionRecord.id,
+            policy,
+            cancellationWindow: parseInt(cancellationWindow),
+            rescheduleFee: parseFloat(rescheduleFee || 0),
+            biography,
+            experience,
+            location,
+            workImages: workImageUrls,
+            certifications: certificationImageUrls,
+            services: {
+              create: parsedServices.map(service => ({
+                name: service.name,
+                price: parseFloat(service.price),
+                duration: parseInt(service.duration),
+                depositAmount: parseFloat(service.depositAmount)
+              }))
+            }
           }
-        },
-      });
+        })
+      ]);   
 
       res.status(201).json({ message: "Service provider details saved successfully!" });
     }
@@ -130,7 +133,6 @@ router.post("/details", requireAuth, upload.fields([
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 router.get("/details", requireAuth, async (req, res) => {
   try {
@@ -151,6 +153,33 @@ router.get("/details", requireAuth, async (req, res) => {
   } catch (error) {
     console.error("Error fetching service provider details:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+router.get("/professions", async (req, res) => {
+  try {
+    const professions = await prisma.profession.findMany({
+      orderBy: { name: "asc" },
+    });
+    res.json(professions);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch professions" });
+  }
+});
+
+router.post("/professions", async (req, res) => {
+  const { name } = req.body;
+  if (!name) return res.status(400).json({ message: "Name required" });
+
+  try {
+    const profession = await prisma.profession.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    res.status(201).json(profession);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to create profession" });
   }
 });
 

@@ -71,13 +71,22 @@ model College {
   forumPosts       ForumPost[]  @relation("CollegeForumPosts")
 }
 
+model Profession {
+  id   String @id @default(uuid())
+  name String @unique
+  users ServiceProvider[] @relation("ServiceProviderProfession")
+}
+
 model ServiceProvider {
   id            String    @id @default(uuid())
   userId        String    @unique
   user          User      @relation(fields: [userId], references: [id])
   stripeAccountId String? 
-  profession    String
+  professionId String?
+  profession   Profession? @relation("ServiceProviderProfession", fields: [professionId], references: [id])
   policy        String?   @db.Text
+  cancellationWindow Int        @default(48)
+  rescheduleFee Float @default(0)
   biography     String?   @db.Text
   experience    String?   @db.Text
   location      String?
@@ -123,7 +132,13 @@ model Appointment {
   serviceProviderId String
   startTime         DateTime
   endTime           DateTime
-  status            String   @default("confirmed")
+  status            String   @default("confirmed")// e.g. confirmed, completed, cancelled, disputed, no_show_client, no_show_provider
+  clientConfirmed   Boolean  @default(false)
+  providerConfirmed Boolean  @default(false)
+  clientConfirmedAt DateTime?
+  providerConfirmedAt DateTime?
+  autoCompleted     Boolean  @default(false)
+  notes             String?  // optional field for leaving details after session
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
   
@@ -139,14 +154,14 @@ model Appointment {
 model StripePayment {
   id              String   @id @default(uuid())
   paymentIntentId String   @unique
-  appointmentId   String
+  appointmentId   String?
   type            String   // 'deposit' or 'remaining'
   status          String   // 'succeeded', 'failed', etc.
   amount          Int      // in cents
   currency        String   @default("usd")
   createdAt       DateTime @default(now())
 
-  appointment     Appointment @relation(fields: [appointmentId], references: [id])
+  appointment     Appointment? @relation(fields: [appointmentId], references: [id])
 }
 
 model ForumPost {
