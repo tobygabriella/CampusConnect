@@ -5,13 +5,12 @@ import bodyParser from "body-parser";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.js";
 import onboardingRoutes from "./routes/onboarding.js";
-import uploadRoutes from "./routes/upload.js";
 import collegeRoutes from "./routes/colleges.js";
 import serviceProviderRoutes from "./routes/serviceProvider.js";
 import userRoutes from "./routes/user.js";
 import availabilityRoutes from "./routes/availability.js";
 import searchRoutes from "./routes/search.js"
-import bookingRoutes from "./routes/bookings.js"
+import apppointmentRoutes from "./routes/appointments.js"
 import paymentsRoutes from "./routes/payments.js";
 import connectRoutes from "./routes/connect.js";
 import forumRoutes from "./routes/forum.js";
@@ -32,7 +31,7 @@ app.use(
   cors({
     origin: "http://localhost:5173",
     credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowedHeaders: [
       "Content-Type", 
       "Authorization", 
@@ -46,13 +45,12 @@ app.options('*', cors());
 // Routes
 app.use("/auth", authRoutes);
 app.use("/onboarding", onboardingRoutes);
-app.use("/upload", uploadRoutes);
 app.use("/colleges", collegeRoutes);
 app.use("/service-provider", serviceProviderRoutes);
 app.use("/users", userRoutes);  
 app.use("/search", searchRoutes);
 app.use("/availability", availabilityRoutes);
-app.use("/bookings", bookingRoutes)
+app.use("/appointments", apppointmentRoutes)
 app.use("/payments", paymentsRoutes);
 app.use("/connect", connectRoutes);
 app.use("/forum", forumRoutes);

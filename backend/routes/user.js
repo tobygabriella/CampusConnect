@@ -1,58 +1,26 @@
 import express from "express";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { PrismaClient } from "@prisma/client";
-import multer from "multer";
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import crypto from "crypto";
+import { uploadToS3, uploadMultipleToS3, deleteFromS3, deleteMultipleFromS3 } from "../utils/s3Uploader.js";
 import dotenv from "dotenv";
+import multer from "multer";
 
 dotenv.config();
 const router = express.Router();
 const prisma = new PrismaClient();
-
-// Configure AWS S3 Client
-const s3 = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
-});
-
-// Multer setup for memory storage (for file uploads)
 const storage = multer.memoryStorage();
-const upload = multer({ 
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+const upload = multer({ storage });
 
-// Helper function to upload to S3
-const uploadToS3 = async (file, folder) => {
-  const fileName = `${folder}/${crypto.randomUUID()}-${file.originalname}`;
-  const uploadParams = {
-    Bucket: process.env.AWS_BUCKET_NAME,
-    Key: fileName,
-    Body: file.buffer,
-    ContentType: file.mimetype,
-    ACL: "public-read",
-  };
-
-  await s3.send(new PutObjectCommand(uploadParams));
-  return `https://${process.env.AWS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-};
-
-// Helper function to delete from S3
-const deleteFromS3 = async (url) => {
+const parseJsonArray = (input) => {
+  if (!input || input === "undefined") return [];
+  if (Array.isArray(input)) return input;
   try {
-    const key = url.split('.com/')[1];
-    await s3.send(new DeleteObjectCommand({
-      Bucket: process.env.AWS_BUCKET_NAME,
-      Key: key,
-    }));
-  } catch (error) {
-    console.error("Error deleting from S3:", error);
+    return JSON.parse(input);
+  } catch {
+    return [];
   }
 };
+
 
 // Get user profile
 router.get("/profile/:username", requireAuth, async (req, res) => {
@@ -69,8 +37,8 @@ router.get("/profile/:username", requireAuth, async (req, res) => {
         role: true,
         email: true,
         profilePicture: true,
-        college: true,
-        collegesServed: true,
+        college: { select: { id: true, name: true } }, // Include more fields
+        collegesServed: { select: { id: true, name: true } },
         followers: { select: { followerId: true } },
         following: { select: { followingId: true } },
       },
@@ -94,31 +62,51 @@ router.get("/profile/:username", requireAuth, async (req, res) => {
       },
     }) ? true : false;
 
+    // Check if this profile is following the authenticated user
+    const followsYou = await prisma.follow.findUnique({
+      where: {
+        followerId_followingId: {
+          followerId: user.id,
+          followingId: authenticatedUserId,
+        },
+      },
+    }) ? true : false;
+
+
     let responseData = {
       ...user,
+      college: user.college,               // { id, name }
+      collegeId: user.college?.id || null, // string for form use
+    
+      collegesServed: user.collegesServed,                  // array of { id, name }
+      collegesServedIds: user.collegesServed.map(c => c.id), // array of string
       followersCount,
       followingCount,
       isFollowing,
+      followsYou,
     };
 
     // Include service provider details if applicable
     if (user.role === "service_provider") {
       const serviceProvider = await prisma.serviceProvider.findUnique({
         where: { userId: user.id },
-        include: { services: true },
+        include: { services: true,
+          profession: true },
       });
 
       if (serviceProvider) {
         responseData = {
           ...responseData,
-          profession: serviceProvider.profession,
+          profession: serviceProvider.profession?.name || null,
           services: serviceProvider.services,
           policy: serviceProvider.policy,
           biography: serviceProvider.biography,
           experience: serviceProvider.experience,
           location: serviceProvider.location,
           workImages: serviceProvider.workImages,
-          certificationImages: serviceProvider.certificationImages,
+          certificationImages: serviceProvider.certifications,
+          cancellationWindow: serviceProvider.cancellationWindow?.toString() || "24",
+          rescheduleFee: serviceProvider.rescheduleFee?.toString() || "0",
           stripeAccountId: serviceProvider.stripeAccountId,
         };
       }
@@ -131,8 +119,8 @@ router.get("/profile/:username", requireAuth, async (req, res) => {
   }
 });
 
-// Update user profile
 router.put("/profile", requireAuth, upload.fields([
+  { name: 'profilePicture', maxCount: 1 },
   { name: 'workImages', maxCount: 10 },
   { name: 'certificationImages', maxCount: 10 }
 ]), async (req, res) => {
@@ -153,107 +141,115 @@ router.put("/profile", requireAuth, upload.fields([
   } = req.body;
 
   try {
-    // Parse JSON arrays if they're strings
-    const collegesServedArray = Array.isArray(collegesServed) ? 
-      collegesServed : 
-      (collegesServed ? JSON.parse(collegesServed) : []);
-    
-    const servicesArray = Array.isArray(services) ? 
-      services : 
-      (services ? JSON.parse(services) : []);
+    // Parse arrays
+    const collegesServedArray = parseJsonArray(collegesServed);
+    const servicesArray = parseJsonArray(services);
+    const removedWorkImagesArray = parseJsonArray(removedWorkImages);
+    const removedCertificationsArray = parseJsonArray(removedCertifications);    
 
-    // Update basic user info
+    // Upload files
+    const [newWorkImages, newCertifications] = await Promise.all([
+      req.files['workImages'] ? uploadMultipleToS3(req.files['workImages'], 'work-images') : [],
+      req.files['certificationImages'] ? uploadMultipleToS3(req.files['certificationImages'], 'certifications') : []
+    ]);
+
+    // Delete removed images from S3
+    await deleteMultipleFromS3(removedWorkImagesArray);
+    await deleteMultipleFromS3(removedCertificationsArray);
+
+    // Upload profile picture
+    let profilePictureUrl;
+    if (req.files['profilePicture']) {
+      profilePictureUrl = await uploadToS3(req.files['profilePicture'][0], 'profile-pictures');
+    }
+
+    // Profession record
+    let professionRecord = null;
+    if (profession) {
+      professionRecord = await prisma.profession.findUnique({ where: { name: profession } });
+      if (!professionRecord) {
+        professionRecord = await prisma.profession.create({ data: { name: profession } });
+      }
+    }
+
+    // Update user basic info
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         name,
         username,
-        college: college || null,
-        collegesServed: collegesServedArray,
+        collegeId: college || null,
+        collegesServed: { set: collegesServedArray.map(id => ({ id })) },
+        ...(profilePictureUrl && { profilePicture: profilePictureUrl }),
       },
     });
 
-    // Handle service provider updates if user is one
-    if (updatedUser.role === 'service_provider') {
-      const existingProvider = await prisma.serviceProvider.findUnique({
-        where: { userId }
-      });
+    const existingProvider = await prisma.serviceProvider.findUnique({ where: { userId } });
 
-      // Handle removed images
-      if (removedWorkImages.length > 0) {
-        await Promise.all(removedWorkImages.map(url => deleteFromS3(url)));
-      }
-      if (removedCertifications.length > 0) {
-        await Promise.all(removedCertifications.map(url => deleteFromS3(url)));
-      }
+    const filteredWorkImages = existingProvider?.workImages?.filter(img => !removedWorkImagesArray.includes(img)) || [];
+    const filteredCertifications = existingProvider?.certifications?.filter(img => !removedCertificationsArray.includes(img)) || [];
 
-      // Upload new images
-      let newWorkImages = [];
-      let newCertifications = [];
+    const isTryingToBecomeProvider = updatedUser.role === 'student' && profession && biography && experience && location && policy;
 
-      if (req.files['workImages']) {
-        newWorkImages = await Promise.all(
-          req.files['workImages'].map(file => uploadToS3(file, 'work-images'))
-        );
-      }
-
-      if (req.files['certificationImages']) {
-        newCertifications = await Promise.all(
-          req.files['certificationImages'].map(file => uploadToS3(file, 'certifications'))
-        );
-      }
-
-      // Filter out removed images from existing ones
-      const filteredWorkImages = existingProvider?.workImages?.filter(
-        img => !removedWorkImages.includes(img)
-      ) || [];
-
-      const filteredCertifications = existingProvider?.certificationImages?.filter(
-        img => !removedCertifications.includes(img)
-      ) || [];
-
-      // Update service provider record
-      await prisma.serviceProvider.upsert({
-        where: { userId },
-        update: {
-          profession,
-          biography,
-          experience,
-          location,
-          policy,
-          workImages: [...filteredWorkImages, ...newWorkImages],
-          certificationImages: [...filteredCertifications, ...newCertifications],
-        },
-        create: {
+    if (isTryingToBecomeProvider) {
+      // Create service provider record
+      await prisma.serviceProvider.create({
+        data: {
           userId,
-          profession,
+          professionId: professionRecord?.id,
           biography,
           experience,
           location,
           policy,
           workImages: newWorkImages,
-          certificationImages: newCertifications,
+          certifications: newCertifications,
         },
       });
 
-      // Handle services updates if provider exists
-      if (existingProvider && servicesArray.length > 0) {
-        // Delete services not in the updated list
+      await prisma.user.update({ where: { id: userId }, data: { role: 'service_provider' } });
+    }
+
+    if (updatedUser.role === 'service_provider') {
+      await prisma.serviceProvider.upsert({
+        where: { userId },
+        update: {
+          professionId: professionRecord?.id,
+          biography,
+          experience,
+          location,
+          policy,
+          workImages: [...filteredWorkImages, ...newWorkImages],
+          certifications: [...filteredCertifications, ...newCertifications],
+        },
+        create: {
+          userId,
+          professionId: professionRecord?.id,
+          biography,
+          experience,
+          location,
+          policy,
+          workImages: newWorkImages,
+          certifications: newCertifications,
+        },
+      });
+
+      const provider = await prisma.serviceProvider.findUnique({ where: { userId } });
+      if (servicesArray.length > 0 && provider) {
         await prisma.service.deleteMany({
           where: {
-            serviceProviderId: existingProvider.id,
+            serviceProviderId: provider.id,
             id: { notIn: servicesArray.filter(s => s.id).map(s => s.id) }
           }
         });
 
-        // Update or create services
-        for (const service of servicesArray) {
+        await Promise.all(servicesArray.map(async (service) => {
           if (service.id) {
             await prisma.service.update({
               where: { id: service.id },
               data: {
                 name: service.name,
                 price: parseFloat(service.price),
+                depositAmount: parseFloat(service.depositAmount),
                 duration: parseInt(service.duration),
               }
             });
@@ -263,18 +259,19 @@ router.put("/profile", requireAuth, upload.fields([
                 name: service.name,
                 price: parseFloat(service.price),
                 duration: parseInt(service.duration),
-                serviceProviderId: existingProvider.id,
+                depositAmount: parseFloat(service.depositAmount),
+                serviceProviderId: provider.id,
               }
             });
           }
-        }
+        }));
       }
     }
 
     res.json({ message: "Profile updated successfully", user: updatedUser });
   } catch (error) {
     console.error("Profile update error:", error);
-    res.status(500).json({ message: "Failed to update profile" });
+    res.status(500).json({ message: "Failed to update profile", error: error.message });
   }
 });
 
@@ -387,6 +384,5 @@ router.get("/check-username/:username", async (req, res) => {
     res.status(500).json({ message: "Error checking username availability" });
   }
 });
-
 
 export default router;
