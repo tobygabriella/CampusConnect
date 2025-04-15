@@ -26,6 +26,20 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
       return res.status(404).json({ message: "Service provider not found" });
     }
 
+    const stripeAccountId = serviceProvider.serviceProvider.stripeAccountId;
+    if (!stripeAccountId) {
+      return res.status(400).json({
+        message: "This provider has not completed Stripe onboarding and cannot accept bookings.",
+      });
+    }
+
+    const stripeAccount = await stripe.accounts.retrieve(stripeAccountId);
+    if (!stripeAccount.payouts_enabled || !stripeAccount.details_submitted) {
+      return res.status(400).json({
+        message: "This provider has not completed Stripe setup and cannot accept payments.",
+      });
+    }
+
     const service = serviceProvider.serviceProvider.services.find((s) => s.id === serviceId);
     if (!service) return res.status(404).json({ message: "Service not found" });
 
@@ -78,76 +92,6 @@ router.post("/create-deposit", requireAuth, async (req, res) => {
   }
 });
 
-// Charge Remaining Balance
-router.post("/charge-remaining", requireAuth, async (req, res) => {
-  const { appointmentId } = req.body;
-  const userId = req.user.userId;
-
-  try {
-    const appointment = await prisma.appointment.findUnique({
-      where: { id: appointmentId },
-      include: {
-        client: true,
-        service: {
-          include: {
-            serviceProvider: true, 
-          },
-        },
-      }
-    });
-
-    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
-
-    const { service, client } = appointment;
-
-    const customerId = client.stripeCustomerId;
-    if (!customerId) {
-      return res.status(400).json({ message: "Client does not have a Stripe customer ID" });
-    }
-
-    const deposit = service.depositAmount ?? 0;
-    const remainingAmount = service.price - deposit;
-
-    if (remainingAmount <= 0) {
-      return res.status(400).json({ message: "No remaining balance to charge" });
-    }
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(remainingAmount * 100),
-      currency: "usd",
-      customer: customerId,
-      confirm: true,
-      off_session: true,
-      payment_method_types: ['card'],
-      metadata: {
-        appointmentId,
-        type: "remaining",
-      },
-      transfer_data: {
-        destination: appointment.service.serviceProvider.stripeAccountId,
-      },
-    });
-
-    await prisma.appointment.update({
-      where: { id: appointmentId },
-      data: { status: "paid" },
-    });
-
-    res.status(200).json({ message: "Remaining balance charged", paymentIntentId: paymentIntent.id });
-  } catch (error) {
-    console.error("Charge remaining error:", error);
-
-    if (error.code === "authentication_required" || error.code === "card_declined") {
-      return res.status(402).json({
-        message: "Payment failed: " + error.message,
-        stripeErrorCode: error.code,
-      });
-    }
-
-    res.status(500).json({ message: "Failed to charge remaining balance" });
-  }
-});
-
 // Stripe Webhook
 router.post("/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   const sig = req.headers["stripe-signature"];
@@ -175,13 +119,44 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         startTime,
         duration,
       } = intent.metadata || {};
+
+      const toMinutes = (time) => {
+        const [h, m] = time.split(":").map(Number);
+        return h * 60 + m;
+      };
+    
+      const toHHMM = (minutes) => {
+        const h = Math.floor(minutes / 60);
+        const m = minutes % 60;
+        return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+      };
+    
+      const updateAvailability = (availableSlots, bookedStart, bookedEnd) => {
+        const startMin = toMinutes(bookedStart);
+        const endMin = toMinutes(bookedEnd);
+        const updated = [];
+    
+        for (let slot of availableSlots) {
+          const [slotStart, slotEnd] = slot.split(" - ");
+          const sMin = toMinutes(slotStart);
+          const eMin = toMinutes(slotEnd);
+    
+          if (startMin >= sMin && endMin <= eMin) {
+            if (startMin > sMin) {
+              updated.push(`${slotStart} - ${toHHMM(startMin)}`);
+            }
+            if (endMin < eMin) {
+              updated.push(`${toHHMM(endMin)} - ${slotEnd}`);
+            }
+          } else {
+            updated.push(slot);
+          }
+        }
+    
+        return updated;
+      };    
       
       if (type === "deposit" && (!appointmentId || appointmentId === "undefined")) {
-        const toMinutes = (time) => {
-          const [h, m] = time.split(":").map(Number);
-          return h * 60 + m;
-        };
-
         const toDate = (d, minutes) => {
           const [yyyy, mm, dd] = d.split("-");
           const h = String(Math.floor(minutes / 60)).padStart(2, "0");
@@ -200,11 +175,16 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
             serviceProviderId: providerId,
             startTime: { lt: endTimeDate },
             endTime: { gt: startTimeDate },
+            NOT: {
+              status: {
+                in: ["cancelled", "no_show_client", "no_show_provider"], 
+              },
+            },
           },
-        });
+        });        
 
         if (overlapping) {
-          console.warn("⚠️ Race condition detected — issuing refund");
+          console.warn("Race condition detected — issuing refund");
 
           await stripe.refunds.create({
             payment_intent: intent.id,
@@ -225,27 +205,50 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         }
 
         // Create appointment + log payment
-        const createdAppointment = await prisma.appointment.create({
-          data: {
-            clientId,
-            serviceId,
-            serviceProviderId: providerId,
-            startTime: startTimeDate,
-            endTime: endTimeDate,
-            status: "confirmed",
-          },
-        });
+        await prisma.$transaction(async (tx) => {
+          const createdAppointment = await tx.appointment.create({
+            data: {
+              clientId,
+              serviceId,
+              serviceProviderId: providerId,
+              startTime: startTimeDate,
+              endTime: endTimeDate,
+              status: "confirmed",
+            },
+          });
 
-        await prisma.stripePayment.create({
-          data: {
-            paymentIntentId: intent.id,
-            appointmentId: createdAppointment.id,
-            type,
-            status: "succeeded",
-            amount: intent.amount,
-            currency: intent.currency || "usd",
-          },
-        });
+          // Update availability
+          const availabilityRecord = await tx.availability.findUnique({
+            where: { serviceProviderId: providerId }
+          });
+
+          if (availabilityRecord) {
+            const availabilityData = availabilityRecord.availabilityData || {};
+            const daySlots = availabilityData[date] || [];
+
+            const bookedStart = startTime;
+            const bookedEnd = toHHMM(toMinutes(startTime) + parseInt(duration));
+            const updatedSlots = updateAvailability(daySlots, bookedStart, bookedEnd);
+
+            availabilityData[date] = updatedSlots;
+
+            await tx.availability.update({
+              where: { serviceProviderId: providerId },
+              data: { availabilityData }
+            });
+          }
+
+          await tx.stripePayment.create({
+            data: {
+              paymentIntentId: intent.id,
+              appointmentId: createdAppointment.id,
+              type,
+              status: "succeeded",
+              amount: intent.amount,
+              currency: intent.currency || "usd",
+            },
+          });
+        });        
       }
 
       break;
@@ -273,9 +276,6 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
   }
   res.status(200).json({ received: true });
 });
-
-
-
 
 router.post("/create-onboarding-link", requireAuth, async (req, res) => {
   const userId = req.user.userId;
