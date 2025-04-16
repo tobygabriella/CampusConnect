@@ -1,37 +1,21 @@
 import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "react-toastify";
-import { Trash2Icon, PlusCircleIcon, DollarSign, Clock } from "lucide-react";
 import api from "@/utils/axiosInstance";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
-
-const schema = z.object({
-  profession: z.string().min(1, "Profession is required"),
-  services: z.array(
-    z.object({
-      name: z.string().min(1, "Service name required"),
-      price: z.string().regex(/^\d+(\.\d{1,2})?$/, "Enter a valid price"),
-      duration: z.string().regex(/^\d+$/, "Duration must be a number"),
-    })
-  ).min(1, "At least one service is required"),
-  policy: z.string().optional(),
-  biography: z.string().optional(),
-  experience: z.string().optional(),
-  location: z.string().optional(),
-});
+import { useAuth } from "@/Components/context/AuthContext";
+import ServiceProviderSection from "@/Components/Profile/ServiceProviderSection";
+import ProfessionSelect from "@/components/Onboarding/ProfessionSelect";
+import { serviceProviderSchema } from "@/utils/schema";
 
 const ServiceProviderDetails = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [workImages, setWorkImages] = useState([]);
   const [certificationImages, setCertificationImages] = useState([]);
+  const [existingWorkImages, setExistingWorkImages] = useState([]);
+  const [existingCertifications, setExistingCertifications] = useState([]);
   const navigate = useNavigate();
   const { verifyAuth } = useAuth();
 
@@ -39,12 +23,15 @@ const ServiceProviderDetails = () => {
     register,
     handleSubmit,
     control,
+    watch,
     setValue,
-    formState: { errors },
+    reset,
+    formState: { errors, isDirty },
   } = useForm({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(serviceProviderSchema),
     defaultValues: {
-      services: [{ name: "", price: "", duration: "" }],
+      services: [{ name: "", price: "", duration: "", depositAmount: "" }],
+      cancellationWindow: "24",
     },
   });
 
@@ -53,35 +40,42 @@ const ServiceProviderDetails = () => {
     name: "services",
   });
 
+  // Load existing data if available
   useEffect(() => {
-    const fetchDetails = async () => {
+    const fetchServiceProviderDetails = async () => {
       try {
-        const response = await api.get("/service-provider/details", { withCredentials: true });
-
-        if (response.data) {
-          const { services, workImages, certificationImages, ...rest } = response.data;
-          // Set form values
-          Object.keys(rest).forEach((key) => {
-            setValue(key, rest[key]);
+        const response = await api.get("/service-provider/details");
+        const data = response.data;
+        
+        if (data) {
+          reset({
+            profession: data.profession || "",
+            biography: data.biography || "",
+            experience: data.experience || "",
+            location: data.location || "",
+            policy: data.policy || "",
+            cancellationWindow: data.cancellationWindow?.toString() || "24",
+            services: data.services?.map(service => ({
+              name: service.name,
+              price: service.price.toString(),
+              duration: service.duration.toString(),
+              depositAmount: service.depositAmount?.toString() || "0"
+            })) || [{ name: "", price: "", duration: "", depositAmount: "" }]
           });
-          // Set services
-          setValue('services', services.map(s => ({
-            name: s.name,
-            price: s.price.toString(),
-            duration: s.duration.toString()
-          })));
-          // Set images
-          setWorkImages(workImages || []);
-          setCertificationImages(certificationImages || []);
+
+          setExistingWorkImages(data.workImages || []);
+          setExistingCertifications(data.certificationImages || []);
         }
       } catch (error) {
         if (error.response?.status !== 404) {
-          toast.error("Error loading details");
+          toast.error("Failed to load service provider details");
+          console.error("Error fetching service provider details:", error);
         }
       }
     };
-    fetchDetails();
-  }, [setValue]);
+
+    fetchServiceProviderDetails();
+  }, [reset]);
 
   const handleFileChange = (e, type) => {
     const files = Array.from(e.target.files);
@@ -100,34 +94,49 @@ const ServiceProviderDetails = () => {
       
       // Add text data
       formData.append('profession', data.profession);
-      formData.append('services', JSON.stringify(data.services.map(s => ({
-        name: s.name,
-        price: parseFloat(s.price),
-        duration: parseInt(s.duration)
-      }))));
-      formData.append('policy', data.policy || '');
-      formData.append('biography', data.biography || '');
-      formData.append('experience', data.experience || '');
-      formData.append('location', data.location || '');
+      formData.append('services', JSON.stringify(
+        data.services.map(s => ({
+          name: s.name,
+          price: parseFloat(s.price),
+          duration: parseInt(s.duration),
+          depositAmount: parseFloat(s.depositAmount),
+        }))
+      ));
+      formData.append('policy', data.policy);
+      formData.append('cancellationWindow', data.cancellationWindow);
+      formData.append('biography', data.biography);
+      formData.append('experience', data.experience);
+      formData.append('location', data.location);
+      formData.append('rescheduleFee', data.rescheduleFee || "0");
 
       // Add files
-      workImages.forEach(file => {
-        formData.append('workImages', file);
-      });
-      certificationImages.forEach(file => {
-        formData.append('certificationImages', file);
-      });
+      workImages.forEach(file => formData.append('workImages', file));
+      certificationImages.forEach(file => formData.append('certificationImages', file));
 
-      const response = await api.post("/service-provider/details", formData, {
+      // Add removed images
+      formData.append('removedWorkImages', JSON.stringify(
+        existingWorkImages.filter(img => !watch("workImages")?.includes(img))
+      ));
+      formData.append('removedCertifications', JSON.stringify(
+        existingCertifications.filter(img => !watch("certificationImages")?.includes(img))
+      ));
+
+      // Determine if we're creating or updating
+      const method = existingWorkImages.length > 0 || existingCertifications.length > 0 ? 
+        api.put : api.post;
+
+      const response = await method("/service-provider/details", formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
-      }, { withCredentials: true });
-      toast.success("Details saved successfully!");
+      });
+
+      toast.success("Service provider details saved successfully!");
       await verifyAuth();
-      navigate("/profile"); 
+      navigate("/profile");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Error saving details");
+      console.error("Error saving service provider details:", error);
+      toast.error(error.response?.data?.message || "Failed to save details");
     } finally {
       setIsSubmitting(false);
     }
@@ -136,214 +145,62 @@ const ServiceProviderDetails = () => {
   return (
     <div className="flex justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
       <div className="w-full max-w-4xl p-8">
-        <h1 className="text-3xl font-bold text-center mb-8 text-[#062970]">Complete Your Profile</h1>
+        <h1 className="text-3xl font-bold text-center mb-8 text-[#062970]">
+          {existingWorkImages.length > 0 ? "Update Your Profile" : "Complete Your Profile"}
+        </h1>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
-          {/* Profession Selection */}
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-[#062970]">Profession</Label>
-            <Select onValueChange={value => setValue('profession', value)}>
-              <SelectTrigger className="w-full p-3 bg-white border-2 border-[#062970] rounded-lg focus:border-[#062970]">
-                <SelectValue placeholder="Select your profession" />
-              </SelectTrigger>
-              <SelectContent position="popper" className="bg-white border-2 border-[#062970] z-[100]">
-                <SelectItem value="hairstylist" className="text-[#062970] hover:bg-[#f3e8ff]">Hairstylist</SelectItem>
-                <SelectItem value="barber" className="text-[#062970] hover:bg-[#f3e8ff]">Barber</SelectItem>
-                <SelectItem value="makeup" className="text-[#062970] hover:bg-[#f3e8ff]">Makeup Artist</SelectItem>
-                <SelectItem value="nails" className="text-[#062970] hover:bg-[#f3e8ff]">Nail Technician</SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.profession && (
-              <p className="text-red-500 text-sm">{errors.profession.message}</p>
-            )}
-          </div>
-
-          {/* Services Section */}
-          <div className="space-y-4">
-            <Label className="text-lg font-semibold text-[#062970]">Services Offered</Label>
-            <div className="space-y-4">
-              {fields.map((field, index) => (
-                <div key={field.id} className="p-4 border-2 border-[#062970] rounded-lg bg-white">
-                  <div className="flex gap-4 items-start">
-                    <div className="flex-1">
-                      <Label className="text-[#062970]">Service Name</Label>
-                      <Input
-                        {...register(`services.${index}.name`)}
-                        placeholder="e.g., Haircut, Styling"
-                        className="mt-1 border-2 border-[#062970] text-[#062970] placeholder:text-gray-500"
-                      />
-                    </div>
-                    <div className="w-32">
-                      <Label className="text-[#062970]">Price</Label>
-                      <div className="relative mt-1">
-                        <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
-                        <Input
-                          {...register(`services.${index}.price`)}
-                          placeholder="0.00"
-                          className="pl-9 border-2 border-[#062970] text-[#062970]"
-                        />
-                      </div>
-                    </div>
-                    <div className="w-32">
-                      <Label className="text-[#062970]">Duration</Label>
-                      <div className="relative mt-1">
-                        <Clock className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
-                        <Input
-                          {...register(`services.${index}.duration`)}
-                          placeholder="mins"
-                          type="number"
-                          className="pl-9 border-2 border-[#062970] text-[#062970]"
-                        />
-                      </div>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => remove(index)}
-                      className="mt-7 hover:bg-red-50"
-                    >
-                      <Trash2Icon className="h-5 w-5 text-red-500 hover:text-red-700" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => append({ name: "", price: "", duration: "" })}
-                className="w-full py-3 border-2 border-[#062970] text-white. hover:bg-[#f3e8ff]"
-              >
-                <PlusCircleIcon className="h-5 w-5 mr-2" />
-                Add Another Service
-              </Button>
-            </div>
-          </div>
-
-          {/* Text Fields */}
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-lg font-semibold text-[#062970]">Policy/Additional Details</Label>
-              <Textarea
-                {...register("policy")}
-                className="h-32 bg-white text-[#062970] border-2 border-[#062970]"
-                placeholder="Enter your booking policy and additional information"
+          <ServiceProviderSection
+            ProfessionInput={
+              <ProfessionSelect
+                value={watch("profession")}
+                onChange={(val) => setValue("profession", val, { shouldDirty: true })}
+                error={errors.profession?.message}
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label className="text-lg font-semibold text-[#062970]">Biography</Label>
-              <Textarea
-                {...register("biography")}
-                className="h-32 bg-white text-[#062970] border-2 border-[#062970]"
-                placeholder="Tell clients about yourself"
-              />
-            </div>
+            }
+            register={register}
+            errors={errors}
+            editingField={null}
+            control={control}
+            setEditingField={() => {}}
+            watch={watch}
+            fields={fields}
+            append={append}
+            remove={remove}
+            setValue={setValue}
+            existingWorkImages={existingWorkImages}
+            existingCertifications={existingCertifications}
+            workImages={workImages}
+            certificationImages={certificationImages}
+            handleFileChange={handleFileChange}
+            removeWorkImage={(index) => {
+              if (index < existingWorkImages.length) {
+                // Remove existing image
+                setExistingWorkImages(prev => prev.filter((_, i) => i !== index));
+              } else {
+                // Remove new image
+                setWorkImages(prev => prev.filter((_, i) => i !== (index - existingWorkImages.length)));
+              }
+            }}
+            removeCertification={(index) => {
+              if (index < existingCertifications.length) {
+                setExistingCertifications(prev => prev.filter((_, i) => i !== index));
+              } else {
+                setCertificationImages(prev => prev.filter((_, i) => i !== (index - existingCertifications.length)));
+              }
+            }}
+            mode="input"
+          />
+
+          <div className="flex justify-end">
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || !isDirty}
+              className="bg-[#062970] text-white hover:bg-[#051d5c]"
+            >
+              {isSubmitting ? "Saving..." : "Save Changes"}
+            </Button>
           </div>
-
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-[#062970]">Experience</Label>
-            <Textarea
-              {...register("experience")}
-              className="h-32 bg-white text-[#062970] border-2 border-[#062970]"
-              placeholder="Describe your professional experience"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-lg font-semibold text-[#062970]">Location</Label>
-            <Input
-              {...register("location")}
-              className="bg-white text-[#062970] border-2 border-[#062970]"
-              placeholder="Enter your work location"
-            />
-            <p className="text-sm text-gray-600 italic">
-              Note: Your location will only be visible after a client books
-            </p>
-          </div>
-
-          {/* Image Upload Sections */}
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label className="text-lg font-semibold text-[#062970]">Work Portfolio</Label>
-              <div className="p-6 border-2 border-[#062970] rounded-lg bg-white">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-[#062970] border-dashed rounded-lg cursor-pointer bg-[#f3e8ff] hover:bg-[#e0d7f5]">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <PlusCircleIcon className="w-8 h-8 mb-4 text-[#062970]" />
-                      <p className="mb-2 text-sm text-[#062970]"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                      <p className="text-xs text-[#062970]">PNG, JPG, GIF up to 10MB</p>
-                    </div>
-                    <Input
-                      type="file"
-                      onChange={e => handleFileChange(e, 'workImages')}
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                {workImages.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-[#062970]">
-                      {workImages.length} images selected
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {Array.from({ length: workImages.length }).map((_, i) => (
-                        <div key={i} className="w-12 h-12 bg-[#f3e8ff] rounded-lg flex items-center justify-center">
-                          <span className="text-xs text-[#062970] font-medium">IMG</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-lg font-semibold text-[#062970]">Certifications</Label>
-              <div className="p-6 border-2 border-[#062970] rounded-lg bg-white">
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-[#062970] border-dashed rounded-lg cursor-pointer bg-[#f3e8ff] hover:bg-[#e0d7f5]">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <PlusCircleIcon className="w-8 h-8 mb-4 text-[#062970]" />
-                      <p className="mb-2 text-sm text-[#062970]"><span className="font-semibold">Click to upload</span> or drag and drop</p>
-                      <p className="text-xs text-[#062970]">PNG, JPG, GIF up to 10MB</p>
-                    </div>
-                    <Input
-                      type="file"
-                      onChange={e => handleFileChange(e, 'certificationImages')}
-                      multiple
-                      accept="image/*"
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                {certificationImages.length > 0 && (
-                  <div className="mt-4">
-                    <p className="text-sm font-medium text-[#062970]">
-                      {certificationImages.length} images selected
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {Array.from({ length: certificationImages.length }).map((_, i) => (
-                        <div key={i} className="w-12 h-12 bg-[#f3e8ff] rounded-lg flex items-center justify-center">
-                          <span className="text-xs text-[#062970] font-medium">IMG</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-6 text-lg font-semibold bg-[#062970] hover:bg-[#051f5c] text-white"
-          >
-            {isSubmitting ? "Saving..." : "Complete Profile Setup"}
-          </Button>
         </form>
       </div>
     </div>

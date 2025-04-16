@@ -11,6 +11,7 @@ import defaultProfile from "@/assets/default-profile.jpg";
 import CollegeSelect from "./CollegeSelect";
 import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
 import AroLogo from "@/assets/aro.png"; 
+import useUsernameAvailability from "@/hooks/useUsernameAvailability";
 
 const OnboardingPage = () => {
   const [username, setUsername] = useState("");
@@ -18,35 +19,12 @@ const OnboardingPage = () => {
   const [profilePicture, setProfilePicture] = useState(null);
   const [imagePreview, setImagePreview] = useState(defaultProfile);
   const [error, setError] = useState("");
-  const [isAvailable, setIsAvailable] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [college, setCollege] = useState("");
   const [collegesServed, setCollegesServed] = useState([]);
   const navigate = useNavigate();
   const { verifyAuth } = useAuth();
-
-  // Check username availability
-  useEffect(() => {
-    if (!username) {
-      setIsAvailable(null);
-      setError("");
-      return;
-    }
-
-    const checkUsername = async () => {
-      try {
-        await api.get(`http://localhost:5001/onboarding/check-username/${username}`);
-        setIsAvailable(true);
-        setError("");
-      } catch (error) {
-        setIsAvailable(false);
-        setError(error.response?.data?.message || "Username is already taken.");
-      }
-    };
-
-    const debounce = setTimeout(checkUsername, 500);
-    return () => clearTimeout(debounce);
-  }, [username]);
+  const { isAvailable, error: usernameError } = useUsernameAvailability(username);
 
   // Handle file selection
   const handleFileChange = (e) => {
@@ -87,9 +65,9 @@ const OnboardingPage = () => {
       return;
     }
     if (!isAvailable) {
-      setError("Please choose a different username.");
+      toast.error("Please choose a different username.");
       return;
-    }
+    }    
     if (role === "student" && !college) {
       setError("Please select your college.");
       return;
@@ -184,7 +162,7 @@ const OnboardingPage = () => {
               onChange={(e) => setUsername(e.target.value)}
             />
             {isAvailable === true && <p className="text-green-500 text-sm">✅ Username is available</p>}
-            {isAvailable === false && <p className="text-red-500 text-sm">❌ {error}</p>}
+            {isAvailable === false && <p className="text-red-500 text-sm">❌ {usernameError}</p>}
           </div>
 
           {/* Role Selection */}
