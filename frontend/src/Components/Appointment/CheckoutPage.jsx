@@ -95,7 +95,7 @@ const CheckoutPage = () => {
 
       {/* Timeline */}
       <div className="flex justify-center items-center gap-8 mb-10 w-full max-w-2xl">
-        {["Personal Details", "Payment", "Complete"].map((step, i) => (
+        {["Personal Details", "Payment"].map((step, i) => (
           <div
             key={step}
             className={`flex flex-col items-center text-sm font-semibold ${i === 1 ? "text-[#062970]" : "text-gray-400"}`}
