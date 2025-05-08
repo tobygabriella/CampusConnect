@@ -307,7 +307,7 @@ router.get("/verify-token", async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
-      select: { id: true, username: true, role: true, email: true, collegeId: true, collegesServed: true },
+      select: { id: true, username: true, role: true, email: true, collegeId: true, collegesServed: true , profilePicture: true,},
     });
 
     if (!user) {

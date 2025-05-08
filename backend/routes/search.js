@@ -45,7 +45,7 @@ router.get("/", requireAuth, async (req, res) => {
         const serviceProviders = await prisma.serviceProvider.findMany({
           where: {
             OR: [
-              { profession: { contains: query, mode: "insensitive" } },
+              { profession: { name: { contains: query, mode: "insensitive", },},},
               { biography: { contains: query, mode: "insensitive" } },
               { user: { name: { contains: query, mode: "insensitive" } } },
               { user: { username: { contains: query, mode: "insensitive" } } },
@@ -73,7 +73,7 @@ router.get("/", requireAuth, async (req, res) => {
           where: {
             OR: [
               { name: { contains: query, mode: "insensitive" } },
-              { serviceProvider: { profession: { contains: query, mode: "insensitive" } } },
+              { serviceProvider: { profession: { name: { contains: query, mode: "insensitive", },},},},
               { serviceProvider: { user: { name: { contains: query, mode: "insensitive" } } } },
               { serviceProvider: { user: { username: { contains: query, mode: "insensitive" } } } },
             ],
