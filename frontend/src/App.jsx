@@ -20,6 +20,8 @@ import CommunityPage from "./Components/Forum/CommunityPage.jsx";
 import PostDetailPage from "./Components/Forum/PostDetailPage.jsx";
 import CreatePostModal from "./Components/Forum/CreatePostModal.jsx";
 import CommentThreadPage from "./Components/Forum/CommentThreadPage.jsx";
+import CreateWorkPost from "./Components/WorkPost/CreateWorkPost.jsx";
+import HomeFeedPage from "./Components/WorkPost/HomeFeedPage.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
@@ -55,6 +57,8 @@ function App() {
             <Route path="/community/posts/:postId" element={<PostDetailPage />} />
             <Route path="/create-post" element={<CreatePostModal />} />
             <Route path="/comments/:commentId/thread" element={<CommentThreadPage />} />
+            <Route path="/create" element={<CreateWorkPost />} />
+            <Route path="/home" element={<HomeFeedPage />} />
             <Route path="/checkout" element={
                 <Elements stripe={stripePromise}>
                   <CheckoutPage />
