@@ -1,9 +1,7 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
-import { uploadToS3, deleteFromS3 } from "../utils/s3Uploader.js";
 import dotenv from "dotenv";
-import crypto from "crypto";
 import { requireAuth } from "../middleware/authMiddleware.js";
 
 dotenv.config();
@@ -15,7 +13,6 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
 router.post("/details", requireAuth, upload.fields([
-  { name: "profilePicture", maxCount: 1 },
   { name: "workImages" },
   { name: "certificationImages" }
 ]), async (req, res) => {
@@ -39,8 +36,7 @@ router.post("/details", requireAuth, upload.fields([
       });
     }
 
-    const [profilePictureUrl, workImageUrls, certificationImageUrls] = await Promise.all([
-      req.files["profilePicture"] ? uploadToS3(req.files["profilePicture"][0], 'profile-pictures') : null,
+    const [workImageUrls, certificationImageUrls] = await Promise.all([
       req.files["workImages"] ? uploadMultipleToS3(req.files["workImages"], 'work-images') : [],
       req.files["certificationImages"] ? uploadMultipleToS3(req.files["certificationImages"], 'certifications') : []
     ]);
@@ -59,12 +55,7 @@ router.post("/details", requireAuth, upload.fields([
       });
 
       // Update service provider and create new services
-      await prisma.$transaction([
-        profilePictureUrl ? prisma.user.update({
-          where: { id: userId },
-          data: { profilePicture: profilePictureUrl }
-        }) : Promise.resolve(),
-        
+      const operations = [
         prisma.serviceProvider.update({
           where: { userId },
           data: {
@@ -79,7 +70,7 @@ router.post("/details", requireAuth, upload.fields([
             certifications: certificationImageUrls.length ? certificationImageUrls : existingServiceProvider.certifications,
           },
         }),
-        ...parsedServices.map(service => 
+        ...parsedServices.map(service =>
           prisma.service.create({
             data: {
               name: service.name,
@@ -90,17 +81,12 @@ router.post("/details", requireAuth, upload.fields([
             }
           })
         )
-      ]);
+      ];
 
+      await prisma.$transaction(operations);
       return res.status(200).json({ message: "Service provider details updated successfully!" });
     } else {
       await prisma.$transaction([
-        // Update user's profile picture if provided
-        profilePictureUrl ? prisma.user.update({
-          where: { id: userId },
-          data: { profilePicture: profilePictureUrl }
-        }) : Promise.resolve(),
-        
         // Create service provider
         prisma.serviceProvider.create({
           data: {
