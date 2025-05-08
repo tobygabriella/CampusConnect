@@ -14,6 +14,7 @@ import apppointmentRoutes from "./routes/appointments.js"
 import paymentsRoutes from "./routes/payments.js";
 import connectRoutes from "./routes/connect.js";
 import forumRoutes from "./routes/forum.js";
+import workPostRoutes from "./routes/workPost.js"
 
 dotenv.config();
 
@@ -54,6 +55,7 @@ app.use("/appointments", apppointmentRoutes)
 app.use("/payments", paymentsRoutes);
 app.use("/connect", connectRoutes);
 app.use("/forum", forumRoutes);
+app.use("/work-posts", workPostRoutes)
 
 app.use((req, res, next) => {
   next();

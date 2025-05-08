@@ -37,11 +37,35 @@ model User {
   appointmentsAsClient Appointment[] @relation("ClientAppointments")
   stripeCustomerId String?
 
+  workPosts        WorkPost[] @relation("UserWorkPosts")
   forumPosts       ForumPost[]
   comments         Comment[]
   upvotes          Upvote[]
   downvotes        Downvote[]
   mentions         Mention[]
+}
+
+model WorkPost {
+  id             String   @id @default(uuid())
+  caption        String   @db.Text
+  images         String[]
+  tags           String[] @default([])
+
+  authorId       String
+  author         User     @relation("UserWorkPosts", fields: [authorId], references: [id]) 
+
+  serviceId      String?
+  service        Service? @relation("ServiceWorkPosts", fields: [serviceId], references: [id])
+
+  appointmentId  String?
+  appointment    Appointment? @relation("AppointmentWorkPosts", fields: [appointmentId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  comments       Comment[]    @relation("WorkPostComments") 
+  upvotes        Upvote[]     @relation("WorkPostUpvotes")  
+  downvotes      Downvote[]   @relation("WorkPostDownvotes")
 }
 
 model Follow {
@@ -122,7 +146,7 @@ model Service {
   bufferBefore  Int @default(0)
   bufferAfter   Int @default(0)
   appointments Appointment[] @relation("ServiceAppointments")
-
+  workPosts WorkPost[] @relation("ServiceWorkPosts")
 }
 
 model Appointment {
@@ -147,7 +171,7 @@ model Appointment {
   serviceProvider ServiceProvider @relation("ProviderAppointments", fields: [serviceProviderId], references: [id])
 
   stripePayments StripePayment[]
-  
+  workPosts WorkPost[] @relation("AppointmentWorkPosts")
   @@index([serviceProviderId, startTime, endTime])
 }
 
@@ -187,8 +211,12 @@ model Comment {
   content     String      @db.Text
   authorId    String
   author      User        @relation(fields: [authorId], references: [id])
-  postId      String
-  post        ForumPost   @relation(fields: [postId], references: [id])
+  forumPostId String?  
+  forumPost   ForumPost? @relation(fields: [forumPostId], references: [id])
+
+  workPostId  String?
+  workPost    WorkPost?  @relation("WorkPostComments", fields: [workPostId], references: [id])
+
   parentId    String?     // For nested comments
   parent      Comment?    @relation("CommentReplies", fields: [parentId], references: [id])
   replies     Comment[]   @relation("CommentReplies")
@@ -198,7 +226,8 @@ model Comment {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
-  @@index([postId])
+  @@index([forumPostId])
+  @@index([workPostId])
   @@index([parentId])
 }
 
@@ -206,26 +235,34 @@ model Upvote {
   id          String      @id @default(uuid())
   userId      String
   user        User        @relation(fields: [userId], references: [id])
-  postId      String?
-  post        ForumPost?  @relation(fields: [postId], references: [id])
+  forumPostId String?
+  forumPost   ForumPost? @relation(fields: [forumPostId], references: [id])
+
+  workPostId  String?
+  workPost    WorkPost?  @relation("WorkPostUpvotes", fields: [workPostId], references: [id])
+
   commentId   String?
   comment     Comment?    @relation(fields: [commentId], references: [id])
   createdAt   DateTime    @default(now())
 
-  @@unique([userId, postId, commentId]) // Prevent duplicate votes
+  @@unique([userId, forumPostId, workPostId, commentId]) // Prevent duplicate votes
 }
 
 model Downvote {
   id          String      @id @default(uuid())
   userId      String
   user        User        @relation(fields: [userId], references: [id])
-  postId      String?
-  post        ForumPost?  @relation(fields: [postId], references: [id])
+  forumPostId String?
+  forumPost   ForumPost? @relation(fields: [forumPostId], references: [id])
+
+  workPostId  String?
+  workPost    WorkPost?  @relation("WorkPostDownvotes", fields: [workPostId], references: [id])
+
   commentId   String?
   comment     Comment?    @relation(fields: [commentId], references: [id])
   createdAt   DateTime    @default(now())
 
-  @@unique([userId, postId, commentId]) // Prevent duplicate votes
+  @@unique([userId, forumPostId, workPostId, commentId]) // Prevent duplicate votes
 }
 
 model Mention {
