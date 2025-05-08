@@ -231,7 +231,7 @@ export const EditProfileForm = () => {
   return (
     <div className="min-h-screen flex w-screen bg-gradient-to-b from-[#f3e8ff] overflow-x-hidden to-white">
       <SidebarNav />
-      <div className="max-w-4xl mx-auto p-4 md:p-8 ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16" >
+      <div className="max-w-4xl mx-auto p-4 md:p-8 ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 pt-16" >
       <TopNavbar />
         <h1 className="text-3xl font-bold text-[#062970] mb-8">Edit Profile</h1>
         

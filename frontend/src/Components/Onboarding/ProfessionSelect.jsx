@@ -35,7 +35,7 @@ const ProfessionSelect = ({ value, onChange, error }) => {
     <div className="space-y-2">
       <Label className="text-lg font-semibold text-[#062970]">Profession</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full p-3 bg-white border-2 border-[#062970] rounded-lg">
+        <SelectTrigger className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">
           <SelectValue placeholder="Select your profession" />
         </SelectTrigger>
         <SelectContent className="bg-white border-2 border-[#062970] z-[100]">
@@ -54,7 +54,7 @@ const ProfessionSelect = ({ value, onChange, error }) => {
           onChange={(e) => setNewProfession(e.target.value)}
           className="border-[#062970]"
         />
-        <Button type="button" onClick={handleAddProfession}>Add</Button>
+        <Button type="button" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={handleAddProfession}>Add</Button>
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}

@@ -66,7 +66,7 @@ export const ImageUploadSection = ({
             type="file"
             onChange={(e) => onFileChange(e, name)}
             multiple
-            accept="image/*"
+            accept="image/jpeg, image/png, image/jpg, image/webp"
             className="hidden"
           />
         </label>

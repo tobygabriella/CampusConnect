@@ -8,7 +8,8 @@ const CommentCard = ({
   comment, 
   onReply,
   onUpvote,
-  onDownvote 
+  onDownvote,
+  showReply = true 
 }) => {
   return (
     <div className="bg-white rounded-lg p-4 mb-3">
@@ -54,15 +55,17 @@ const CommentCard = ({
               <ThumbsDown className="h-3 w-3" />
               <span className="text-xs ml-1">{comment._count?.downvotes || 0}</span>
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-              onClick={() => onReply(comment)}
-            >
-              <Reply className="h-3 w-3" />
-              <span className="text-xs ml-1">Reply</span>
-            </Button>
+            {showReply && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                onClick={() => onReply(comment)}
+              >
+                <Reply className="h-3 w-3" />
+                <span className="text-xs ml-1">Reply</span>
+              </Button>
+            )}
           </div>
         </div>
       </div>

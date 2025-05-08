@@ -147,4 +147,3 @@ const SearchBarWithDropdown = () => {
 };
 
 export default SearchBarWithDropdown;
-

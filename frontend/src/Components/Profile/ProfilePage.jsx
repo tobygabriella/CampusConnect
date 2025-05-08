@@ -11,6 +11,7 @@ import SearchTab from "@/Components/Navigation/SearchTab";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import AvailabilityCalendar from "@/Components/Profile/AvailabilityCalendar";
+import WorkPostGrid from "../WorkPost/WorkPostGrid";
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -223,17 +224,7 @@ const ProfilePage = () => {
           {activeTab === "myWork" && isServiceProvider && (
             <div className="max-w-4xl mx-auto">
               <h3 className="font-semibold text-lg text-[#062970]">My Work</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                {profile.workImages && profile.workImages.length > 0 ? (
-                  profile.workImages.map((image, index) => (
-                    <div key={index} className="w-full h-24 md:h-32 bg-gray-200 rounded-lg">
-                      <img src={image} alt={`Work ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 col-span-3 text-center">No work images available</p>
-                )}
-              </div>
+              <WorkPostGrid isOwnProfile={isOwnProfile} />
             </div>
           )}
           {activeTab === "services" && isServiceProvider && (
