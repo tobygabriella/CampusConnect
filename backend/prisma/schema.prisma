@@ -43,6 +43,8 @@ model User {
   upvotes          Upvote[]
   downvotes        Downvote[]
   mentions         Mention[]
+  notificationsReceived Notification[] @relation("Notification_user")
+  notificationsSent     Notification[] @relation("NotificationSender")
 }
 
 model WorkPost {
@@ -66,6 +68,7 @@ model WorkPost {
   comments       Comment[]    @relation("WorkPostComments") 
   upvotes        Upvote[]     @relation("WorkPostUpvotes")  
   downvotes      Downvote[]   @relation("WorkPostDownvotes")
+  notifications Notification[]
 }
 
 model Follow {
@@ -165,6 +168,9 @@ model Appointment {
   notes             String?  // optional field for leaving details after session
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  reminder24hrSent        Boolean  @default(false)
+  reminder1hrSent         Boolean  @default(false)
+  confirmationPromptSent  Boolean  @default(false)
   
   client          User            @relation("ClientAppointments", fields: [clientId], references: [id])
   service         Service         @relation("ServiceAppointments", fields: [serviceId], references: [id])
@@ -173,6 +179,7 @@ model Appointment {
   stripePayments StripePayment[]
   workPosts WorkPost[] @relation("AppointmentWorkPosts")
   @@index([serviceProviderId, startTime, endTime])
+  notifications Notification[]
 }
 
 model StripePayment {
@@ -184,7 +191,7 @@ model StripePayment {
   amount          Int      // in cents
   currency        String   @default("usd")
   createdAt       DateTime @default(now())
-
+  notifications Notification[]
   appointment     Appointment? @relation(fields: [appointmentId], references: [id])
 }
 
@@ -202,7 +209,7 @@ model ForumPost {
   comments    Comment[]
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-
+  notifications Notification[]
   @@index([collegeId]) // For filtering by college
 }
 
@@ -225,7 +232,7 @@ model Comment {
   mentions    Mention[]   // For @mentions
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-
+  notifications Notification[]
   @@index([forumPostId])
   @@index([workPostId])
   @@index([parentId])
@@ -272,4 +279,94 @@ model Mention {
   commentId   String
   comment     Comment     @relation(fields: [commentId], references: [id])
   createdAt   DateTime    @default(now())
+}
+
+model Notification {
+  id          String   @id @default(uuid())
+  
+  // Recipient
+  userId      String
+  user   User   @relation("Notification_user", fields: [userId], references: [id])
+  
+  // Sender (who triggered the notification)
+  senderId    String?
+  sender User?  @relation("NotificationSender", fields: [senderId], references: [id])
+  
+  // Notification content
+  type        NotificationType
+  title       String   // Short summary
+  message     String   // Full message
+  metadata    Json?    // Flexible additional data
+  
+  // Related entities (polymorphic relationships)
+  forumPostId String?
+  forumPost ForumPost? @relation(fields: [forumPostId], references: [id])
+  
+  workPostId  String?
+  workPost    WorkPost? @relation(fields: [workPostId], references: [id])
+  
+  commentId   String?
+  comment     Comment? @relation(fields: [commentId], references: [id])
+  
+  appointmentId String?
+  appointment  Appointment? @relation(fields: [appointmentId], references: [id])
+  
+  paymentId   String?
+  payment     StripePayment? @relation(fields: [paymentId], references: [id])
+  
+  // Status and metadata
+  isRead      Boolean  @default(false)
+  isArchived  Boolean  @default(false)
+  priority    Priority @default(MEDIUM)
+  expiresAt   DateTime? // For time-sensitive notifications
+  
+  // System fields
+  createdAt   DateTime @default(now())
+  readAt      DateTime?
+  
+  // Indexes
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
+  @@index([userId, priority])
+}
+
+enum NotificationType {
+  // Social interactions
+  POST_LIKE
+  POST_DOWNVOTE
+  POST_COMMENT
+  COMMENT_REPLY
+  POST_MENTION
+  COMMENT_MENTION
+  NEW_FOLLOWER
+  COMMENT_UPVOTE
+  COMMENT_DOWNVOTE
+  
+  // Appointments
+  APPOINTMENT_BOOKED
+  APPOINTMENT_RESCHEDULED
+  APPOINTMENT_CANCELLED
+  APPOINTMENT_CONFIRMED
+  APPOINTMENT_REMINDER_24HR
+  APPOINTMENT_REMINDER_1HR
+  APPOINTMENT_NO_SHOW
+  APPOINTMENT_COMPLETED
+  APPOINTMENT_FAILED
+  
+  // Payments
+  PAYMENT_RECEIVED
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+  
+  // System
+  SYSTEM_ANNOUNCEMENT
+  ACCOUNT_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
 }
