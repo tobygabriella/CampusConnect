@@ -3,13 +3,15 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 import { PrismaClient } from "@prisma/client";
 import dotenv from 'dotenv';
 import { chargeRemainingBalance } from "../services/paymentServices.js";
+import { NotificationType, Priority } from "../enums/notifications.js";
+import { createNotification } from "../utils/notifications.js";
+import { sendAppointmentEmail } from "../utils/emailService.js";
 
 dotenv.config();
 const router = express.Router();
 const prisma = new PrismaClient();
 import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 
 // Helpers
 const toMinutes = (time) => {
@@ -33,44 +35,6 @@ const getDateTime = (dateStr, minutes) => {
   
   // Convert to UTC
   return new Date(localDate.toISOString());
-};
-
-const isTimeSlotAvailable = (availableSlots, start, end) => {
-  const startMin = toMinutes(start);
-  const endMin = toMinutes(end);
-  return availableSlots.some(slot => {
-    const [s, e] = slot.split(" - ");
-    const sMin = toMinutes(s);
-    const eMin = toMinutes(e);
-    return startMin >= sMin && endMin <= eMin;
-  });
-};
-
-const updateAvailability = (availableSlots, bookedStart, bookedEnd) => {
-  const startMin = toMinutes(bookedStart);
-  const endMin = toMinutes(bookedEnd);
-  const updated = [];
-
-  for (let slot of availableSlots) {
-    const [slotStart, slotEnd] = slot.split(" - ");
-    const sMin = toMinutes(slotStart);
-    const eMin = toMinutes(slotEnd);
-
-    if (startMin >= sMin && endMin <= eMin) {
-      // Before part
-      if (startMin > sMin) {
-        updated.push(`${slotStart} - ${toHHMM(startMin)}`);
-      }
-      // After part
-      if (endMin < eMin) {
-        updated.push(`${toHHMM(endMin)} - ${slotEnd}`);
-      }
-    } else {
-      updated.push(slot); // Unaffected slot
-    }
-  }
-
-  return updated;
 };
 
 router.get("/", requireAuth, async (req, res) => {
@@ -188,6 +152,37 @@ router.get("/", requireAuth, async (req, res) => {
             where: { id },
             data: { status: "completed" },
           });
+
+          const serviceName = appointment.service.name;
+          const formattedDate = new Date(appointment.startTime).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+          const formattedTime = new Date(appointment.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+          // Notify client
+          await createNotification({
+            app: req.app,
+            recipientId: appointment.clientId,
+            senderId: appointment.serviceProvider.userId,
+            type: NotificationType.APPOINTMENT_COMPLETED,
+            title: "Appointment Completed",
+            message: `You and ${appointment.serviceProvider.user.name} confirmed that your "${serviceName}" appointment on ${formattedDate} at ${formattedTime} was completed.`,
+            metadata: { appointmentId: id },
+            postIds: {},
+            priority: Priority.HIGH
+          });
+
+          // Notify provider
+          await createNotification({
+            app: req.app,
+            recipientId: appointment.serviceProvider.userId,
+            senderId: appointment.clientId,
+            type: NotificationType.APPOINTMENT_COMPLETED,
+            title: "Appointment Completed",
+            message: `You and your client confirmed that the "${serviceName}" appointment on ${formattedDate} at ${formattedTime} was completed. You've been paid in full.`,
+            metadata: { appointmentId: id },
+            postIds: {},
+            priority: Priority.HIGH
+          });
+
         } catch (error) {
           console.error("Charge remaining error:", error);
       
@@ -263,6 +258,41 @@ router.get("/", requireAuth, async (req, res) => {
         where: { id },
         data: { status },
       });
+
+      const serviceName = appointment.service.name;
+      const formattedDate = new Date(appointment.startTime).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+      const formattedTime = new Date(appointment.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+      const isClientNoShow = noShow === "client";
+      const reporter = await prisma.user.findUnique({ where: { id: userId } });
+      const otherPartyId = isClientNoShow ? appointment.clientId : appointment.serviceProvider.userId;
+
+      // Notify the reported party
+      await createNotification({
+        app: req.app,
+        recipientId: otherPartyId,
+        senderId: userId,
+        type: NotificationType.APPOINTMENT_NO_SHOW,
+        title: "No-Show Reported",
+        message: `You were reported as a no-show for your appointment "${serviceName}" on ${formattedDate} at ${formattedTime} by ${reporter.name}.`,
+        metadata: { appointmentId: id },
+        postIds: {},
+        priority: Priority.HIGH
+      });
+
+      // Confirm report to reporter
+      await createNotification({
+        app: req.app,
+        recipientId: userId,
+        senderId: otherPartyId,
+        type: NotificationType.APPOINTMENT_NO_SHOW,
+        title: "No-Show Logged",
+        message: `You reported ${isClientNoShow ? "your client" : "your provider"} as a no-show for "${serviceName}" on ${formattedDate} at ${formattedTime}.`,
+        metadata: { appointmentId: id },
+        postIds: {},
+        priority: Priority.HIGH
+      });
+
   
       res.status(200).json({ message: `Marked as ${status}` });
     } catch (error) {
@@ -280,6 +310,7 @@ router.patch("/:id/cancel", requireAuth, async (req, res) => {
     const appointment = await prisma.appointment.findUnique({
       where: { id },
       include: {
+        client: true, 
         serviceProvider: {
           include: {
             user: true,
@@ -334,6 +365,55 @@ router.patch("/:id/cancel", requireAuth, async (req, res) => {
       }
     });
 
+    const serviceName = appointment.service.name;
+    const formattedDate = appointment.startTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    const formattedTime = appointment.startTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const refundMsg = isEligibleForRefund ? " A full refund has been issued." : "";
+
+    const otherPartyId = userId === appointment.clientId ? appointment.serviceProvider.userId : appointment.clientId;
+
+    // Notify user who performed the cancellation
+    await createNotification({
+      app: req.app,
+      recipientId: userId,
+      senderId: otherPartyId,
+      type: NotificationType.APPOINTMENT_CANCELLED,
+      title: "Cancellation Confirmed",
+      message: `You cancelled your appointment for "${serviceName}" on ${formattedDate} at ${formattedTime}.${refundMsg}`,
+      metadata: { appointmentId: id },
+      postIds: {},
+      priority: Priority.HIGH
+    });
+
+    // Notify the other party
+    await createNotification({
+      app: req.app,
+      recipientId: otherPartyId,
+      senderId: userId,
+      type: NotificationType.APPOINTMENT_CANCELLED,
+      title: "Appointment Cancelled",
+      message: `Your appointment for "${serviceName}" on ${formattedDate} at ${formattedTime} has been cancelled by the other party.${refundMsg}`,
+      metadata: { appointmentId: id },
+      postIds: {},
+      priority: Priority.HIGH
+    });
+
+    // Format email
+    const emailInfo = {
+      name: userId === appointment.clientId ? appointment.serviceProvider.user.name : appointment.client.name,
+      service: serviceName,
+      provider: userId === appointment.clientId ? appointment.serviceProvider.user.name : appointment.client.name,
+      date: formattedDate,
+      time: formattedTime,
+      duration: appointment.service.duration / 60,
+      location: appointment.serviceProvider.location,
+      type: "cancelled",
+    };
+
+    // Email both users
+    await sendAppointmentEmail({ ...emailInfo, to: appointment.client.email });
+    await sendAppointmentEmail({ ...emailInfo, to: appointment.serviceProvider.user.email });
+
     res.status(200).json({ message: isEligibleForRefund ? "Appointment cancelled and refunded" : "Appointment cancelled. No refund." });
   } catch (err) {
     console.error("Cancel appointment error:", err);
@@ -351,8 +431,9 @@ router.patch("/:id/reschedule", requireAuth, async (req, res) => {
     const appointment = await prisma.appointment.findUnique({
       where: { id },
       include: {
+        client: true, 
         serviceProvider: {
-          include: { availability: true }
+          include: { availability: true, user: true  }
         },
         service: true,
         stripePayments: { where: { type: "deposit" } },
@@ -445,6 +526,59 @@ router.patch("/:id/reschedule", requireAuth, async (req, res) => {
         
       }
     });
+
+    const formattedDate = newStartDateTime.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+    const formattedTime = newStartDateTime.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+    const serviceName = appointment.service.name;
+    const providerName = appointment.serviceProvider.user.name;
+    const providerAddress = appointment.serviceProvider.location;
+
+    // Notify provider
+    await createNotification({
+      app: req.app,
+      recipientId: appointment.serviceProvider.userId,
+      senderId: userId,
+      type: NotificationType.APPOINTMENT_RESCHEDULED,
+      title: "Appointment Rescheduled",
+      message: `Your client has rescheduled their appointment for "${serviceName}" to ${formattedDate} at ${formattedTime}.`,
+      metadata: { appointmentId: id },
+      postIds: {},
+      priority: Priority.HIGH
+    });
+
+    // Notify client
+    await createNotification({
+      app: req.app,
+      recipientId: userId,
+      senderId: appointment.serviceProvider.userId,
+      type: NotificationType.APPOINTMENT_RESCHEDULED,
+      title: "Reschedule Confirmed",
+      message: `Your appointment for "${serviceName}" with ${providerName} at ${providerAddress} has been successfully rescheduled to ${formattedDate} at ${formattedTime}.`,
+      metadata: { appointmentId: id },
+      postIds: {},
+      priority: Priority.HIGH
+    });
+
+    const emailInfo = {
+      name: appointment.client.name,
+      service: serviceName,
+      provider: providerName,
+      date: formattedDate,
+      time: formattedTime,
+      duration: appointment.service.duration / 60,
+      location: providerAddress,
+      type: "rescheduled",
+    };
+    
+    // Email both parties
+    await sendAppointmentEmail({ ...emailInfo, to: appointment.client.email });
+    await sendAppointmentEmail({
+      ...emailInfo,
+      name: providerName,
+      provider: appointment.client.name,
+      to: appointment.serviceProvider.user.email,
+    });
+    
 
     res.status(200).json({ message: "Appointment rescheduled successfully" });
   } catch (err) {

@@ -2,6 +2,8 @@ import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { body, validationResult } from "express-validator";
+import { NotificationType, Priority } from "../enums/notifications.js";
+import { createNotification } from "../utils/notifications.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -36,6 +38,23 @@ async function getRepliesRecursive(commentId) {
   }
 
   return replies;
+}
+
+async function getCommentDepth(commentId) {
+  let depth = 0;
+  let currentId = commentId;
+
+  while (currentId) {
+    const comment = await prisma.comment.findUnique({
+      where: { id: currentId },
+      select: { parentId: true },
+    });
+    if (!comment || !comment.parentId) break;
+    currentId = comment.parentId;
+    depth++;
+  }
+
+  return depth;
 }
 
 
@@ -278,7 +297,7 @@ router.post(
         data: {
           content,
           authorId,
-          postId,
+          forumPostId: postId,
           parentId: parentId || null,
         },
         include: {
@@ -290,7 +309,7 @@ router.post(
               role: true,
             },
           },
-          post: {
+          forumPost: {
             select: {
               id: true,
               title: true,
@@ -309,6 +328,66 @@ router.post(
           },
         },
       });
+
+      if (!parentId) {
+        // Case 1: Top-level comment → notify post author
+        const post = await prisma.forumPost.findUnique({
+          where: { id: postId },
+          select: { id: true, authorId: true }
+        });
+      
+        if (post && post.authorId !== authorId) {
+          const sender = await prisma.user.findUnique({
+            where: { id: authorId },
+            select: { username: true, profilePicture: true }
+          });
+      
+          await createNotification({
+            app: req.app,
+            recipientId: post.authorId,
+            senderId: authorId,
+            type: NotificationType.POST_COMMENT,
+            title: "New Comment",
+            message: `@${sender.username} commented on your forum post.`,
+            metadata: {
+              forumPostId: post.id,
+              commentId: comment.id
+            },
+            postIds: { forumPostId: post.id },
+            priority: Priority.LOW
+          });
+        }
+      } else {
+        // ✅ Case 2: Reply → notify parent comment author
+        const parent = await prisma.comment.findUnique({
+          where: { id: parentId },
+          select: { authorId: true, forumPostId: true }
+        });
+      
+        if (parent && parent.authorId !== authorId) {
+          const sender = await prisma.user.findUnique({
+            where: { id: authorId },
+            select: { username: true, profilePicture: true }
+          });
+          const depth = await getCommentDepth(parentId);
+
+          await createNotification({
+            app: req.app,
+            recipientId: parent.authorId,
+            senderId: authorId,
+            type: NotificationType.COMMENT_REPLY,
+            title: "New Reply",
+            message: `@${sender.username} replied to your comment.`,
+            metadata: {
+              forumPostId: parent.forumPostId,
+              commentId: comment.id,
+              depth: depth + 1
+            },
+            postIds: { forumPostId: parent.postId },
+            priority: Priority.LOW
+          });
+        }
+      }      
 
       // Create mentions
       if (mentions.length > 0) {
@@ -335,7 +414,7 @@ router.get("/posts/:postId/comments", async (req, res) => {
 
     const topLevelComments = await prisma.comment.findMany({
       where: {
-        postId,
+        forumPostId: postId,  
         parentId: null,
       },
       include: {
@@ -369,32 +448,45 @@ router.get("/posts/:postId/comments", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch comments" });
   }
 });
+
 // Vote on post or comment
 router.post("/vote", requireAuth, async (req, res) => {
   try {
     const { type, postId, commentId } = req.body;
     const userId = req.user.userId;
 
-    // Validate input
     if ((!postId && !commentId) || (postId && commentId)) {
       return res.status(400).json({ message: "Must specify either postId or commentId" });
     }
+    let voteKey;
+    let voteTarget;
+    let notificationMeta = {};
+    
+    if (postId) {
+      voteKey = "forumPostId";
+      voteTarget = postId;
+      notificationMeta.forumPostId = postId;
+    } else if (commentId) {
+      voteKey = "commentId";
+      voteTarget = commentId;
+      notificationMeta.commentId = commentId;
+    }
 
-    // Remove opposite vote first
-    const oppositeType = type === 'upvote' ? 'downvote' : 'upvote';
+    // Remove opposite vote
+    const oppositeType = type === "upvote" ? "downvote" : "upvote";
     await prisma[oppositeType].deleteMany({
       where: {
         userId,
-        [postId ? 'postId' : 'commentId']: postId || commentId
-      }
+        [voteKey]: voteTarget,
+      },
     });
 
-    // Check for existing vote
+    // Check if already voted
     const existingVote = await prisma[type].findFirst({
       where: {
         userId,
-        [postId ? 'postId' : 'commentId']: postId || commentId
-      }
+        [voteKey]: voteTarget,
+      },
     });
 
     if (existingVote) {
@@ -402,13 +494,67 @@ router.post("/vote", requireAuth, async (req, res) => {
       return res.json({ action: "removed" });
     }
 
-    // Create new vote
+    // Create vote
     await prisma[type].create({
       data: {
         userId,
-        [postId ? 'postId' : 'commentId']: postId || commentId
-      }
+        [voteKey]: voteTarget,
+      },
     });
+
+    // ✅ Send notification if not voting on your own content
+    const sender = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true, profilePicture: true },
+    });
+
+    if (postId) {
+      const post = await prisma.forumPost.findUnique({
+        where: { id: postId },
+        select: { authorId: true },
+      });
+
+      if (post && post.authorId !== userId) {
+        await createNotification({
+          app: req.app,
+          recipientId: post.authorId,
+          senderId: userId,
+          type: type === "upvote" ? NotificationType.POST_LIKE : NotificationType.POST_DOWNVOTE,
+          title: type === "upvote" ? "Forum Post Upvoted" : "Forum Post Downvoted",
+          message: `@${sender.username} ${type}d your forum post.`,
+          metadata: notificationMeta,
+          postIds: { forumPostId: postId },
+          priority: Priority.LOW,
+        });
+      }
+    }
+
+    if (commentId) {
+      const comment = await prisma.comment.findUnique({
+        where: { id: commentId },
+        select: {
+          authorId: true,
+          forumPostId: true,
+        },
+      });
+
+      if (comment && comment.authorId !== userId) {
+        await createNotification({
+          app: req.app,
+          recipientId: comment.authorId,
+          senderId: userId,
+          type: type === "upvote" ? NotificationType.COMMENT_UPVOTE : NotificationType.COMMENT_DOWNVOTE,
+          title: type === "upvote" ? "Comment Upvoted" : "Comment Downvoted",
+          message: `@${sender.username} ${type}d your comment.`,
+          metadata: {
+            forumPostId: comment.forumPostId,
+            commentId: commentId,
+          },
+          postIds: { forumPostId: comment.forumPostId},
+          priority: Priority.LOW,
+        });
+      }
+    }
 
     res.json({ action: "added" });
   } catch (error) {
@@ -461,7 +607,7 @@ router.get("/comments/:commentId/thread", async (req, res) => {
             role: true,
           },
         },
-        post: {
+        forumPost: {
           include: {
             author: true,
             _count: {

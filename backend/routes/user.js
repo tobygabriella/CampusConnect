@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import { uploadToS3, uploadMultipleToS3, deleteFromS3, deleteMultipleFromS3 } from "../utils/s3Uploader.js";
 import dotenv from "dotenv";
 import multer from "multer";
+import { NotificationType, Priority } from "../enums/notifications.js";
+import { createNotification } from "../utils/notifications.js";
 
 dotenv.config();
 const router = express.Router();
@@ -323,6 +325,29 @@ router.post("/follow/:userId", requireAuth, async (req, res) => {
 
     await prisma.follow.create({
       data: { followerId, followingId: userId },
+    });
+
+    // Fetch follower details
+    const follower = await prisma.user.findUnique({
+      where: { id: followerId },
+      select: { username: true, profilePicture: true },
+    });
+
+    // Create in-app notification
+    await createNotification({
+      app: req.app,
+      recipientId: userId,
+      senderId: followerId,
+      type: NotificationType.NEW_FOLLOWER,
+      title: "New Follower",
+      message: `@${follower.username} started following you.`,
+      metadata: {
+        followerId,
+        followerUsername: follower.username,
+        profilePicture: follower.profilePicture,
+        link: `/profile/${follower.username}`,
+      },
+      priority: Priority.LOW,
     });
 
     res.json({ message: "Followed successfully" });

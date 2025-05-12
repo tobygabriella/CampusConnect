@@ -4,6 +4,8 @@ import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import dotenv from "dotenv";
 import { uploadToS3, uploadMultipleToS3, deleteMultipleFromS3 } from "../utils/s3Uploader.js";
+import { NotificationType, Priority } from "../enums/notifications.js";
+import { createNotification } from "../utils/notifications.js";
 
 dotenv.config();
 const router = express.Router();
@@ -237,6 +239,39 @@ router.post("/:id/upvote", requireAuth, async (req, res) => {
         await prisma.upvote.create({
           data: { userId, workPostId: postId },
         });
+
+        // Fetch post and author
+        const post = await prisma.workPost.findUnique({
+          where: { id: postId },
+          select: {
+            authorId: true,
+            id: true,
+            caption: true,
+            author: { select: { username: true, profilePicture: true } }
+          }
+        });
+
+        if (post && post.authorId !== userId) {
+          const liker = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true, profilePicture: true },
+          });
+
+          await createNotification({
+            app: req.app,
+            recipientId: post.authorId,
+            senderId: userId,
+            type: NotificationType.POST_LIKE,
+            title: "New Like",
+            message: `@${liker.username} liked your work post.`,
+            metadata: {
+              workPostId: post.id
+            },            
+            postIds: { workPostId: post.id },
+            priority: Priority.LOW,
+          });
+        }
+
         return res.json({ liked: true });
       }
     } catch (err) {
@@ -268,6 +303,36 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
           downvotes: true,
         }
       });
+
+      const post = await prisma.workPost.findUnique({
+        where: { id: postId },
+        select: {
+          authorId: true,
+          id: true,
+          caption: true,
+        }
+      });
+      
+      if (post && post.authorId !== userId) {
+        const commenter = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { username: true, profilePicture: true },
+        });
+      
+        await createNotification({
+          app: req.app,
+          recipientId: post.authorId,
+          senderId: userId,
+          type: NotificationType.POST_COMMENT,
+          title: "New Comment",
+          message: `@${commenter.username} commented: "${content}"`,
+          metadata: {
+            workPostId: post.id
+          },          
+          postIds: { workPostId: post.id },
+          priority: Priority.LOW,
+        });
+      }      
   
       res.status(201).json(comment);
     } catch (error) {
@@ -302,6 +367,36 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
         return res.json({ liked: false });
       } else {
         await prisma.upvote.create({ data: { userId, commentId } });
+        const comment = await prisma.comment.findUnique({
+          where: { id: commentId },
+          include: {
+            author: true,
+            workPost: true
+          }
+        });
+        
+        if (comment && comment.authorId !== userId) {
+          const sender = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true, profilePicture: true }
+          });
+        
+          await createNotification({
+            app: req.app,
+            recipientId: comment.authorId,
+            senderId: userId,
+            type: NotificationType.COMMENT_UPVOTE,
+            title: "Comment Upvoted",
+            message: `@${sender.username} upvoted your comment.`,
+            metadata: {
+              workPostId: comment.workPostId,
+              commentId: comment.id
+            },
+            postIds: { workPostId: comment.workPostId, commentId: comment.id },
+            priority: Priority.LOW
+          });
+        }
+        
         return res.json({ liked: true });
       }
     } catch (err) {
@@ -330,6 +425,36 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
         return res.json({ downvoted: false });
       } else {
         await prisma.downvote.create({ data: { userId, commentId } });
+        const comment = await prisma.comment.findUnique({
+          where: { id: commentId },
+          include: {
+            author: true,
+            workPost: true
+          }
+        });
+        
+        if (comment && comment.authorId !== userId) {
+          const sender = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { username: true, profilePicture: true }
+          });
+        
+          await createNotification({
+            app: req.app,
+            recipientId: comment.authorId,
+            senderId: userId,
+            type: NotificationType.COMMENT_DOWNVOTE,
+            title: "Comment Upvoted",
+            message: `@${sender.username} upvoted your comment.`,
+            metadata: {
+              workPostId: comment.workPostId,
+              commentId: comment.id
+            },
+            postIds: { workPostId: comment.workPostId, commentId: comment.id },
+            priority: Priority.LOW
+          });
+        }
+        
         return res.json({ downvoted: true });
       }
     } catch (err) {

@@ -3,6 +3,9 @@ import Stripe from "stripe";
 import { requireAuth } from "../middleware/authMiddleware.js";
 import { PrismaClient } from "@prisma/client";
 import dotenv from 'dotenv';
+import { NotificationType, Priority } from "../enums/notifications.js";
+import { createNotification } from "../utils/notifications.js";
+import { sendAppointmentEmail } from "../utils/emailService.js";
 
 dotenv.config();
 const router = express.Router();
@@ -201,6 +204,18 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
             },
           });
 
+          await createNotification({
+            app: req.app,
+            recipientId: clientId,
+            senderId: null,
+            type: NotificationType.APPOINTMENT_FAILED,
+            title: "Booking Failed",
+            message: "We couldn’t book your appointment because the time was no longer available. A full refund has been issued.",
+            metadata: {},
+            postIds: {},
+            priority: Priority.HIGH
+          });          
+
           return res.status(200).json({ message: "Payment refunded due to time conflict." });
         }
 
@@ -248,6 +263,117 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
               currency: intent.currency || "usd",
             },
           });
+
+          const serviceData = await prisma.service.findUnique({
+            where: { id: serviceId },
+            include: {
+              serviceProvider: {
+                include: {
+                  user: true,
+                },
+              },
+            },
+            select: {
+              name: true,
+              price: true,
+              depositAmount: true,
+              serviceProvider: {
+                include: {
+                  user: true,
+                },
+              },
+            },
+          });          
+          
+          const formattedDate = new Date(startTimeDate).toLocaleDateString('en-US', {
+            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          });
+          
+          const formattedTime = new Date(startTimeDate).toLocaleTimeString('en-US', {
+            hour: '2-digit', minute: '2-digit',
+          });
+          
+          const providerName = serviceData.serviceProvider.user.name;
+          const providerAddress = serviceData.serviceProvider.location;
+          const serviceName = serviceData.name;
+          const providerUserId = serviceData.serviceProvider.user.id;
+
+          const client = await prisma.user.findUnique({
+            where: { id: clientId },
+            select: { name: true, email: true},
+          });
+          
+          // Notify the provider
+          await createNotification({
+            app: req.app,
+            recipientId: providerUserId,
+            senderId: clientId,
+            type: NotificationType.APPOINTMENT_BOOKED,
+            title: "New Appointment",
+            message: `You have a new appointment for "${serviceName}" on ${formattedDate} at ${formattedTime} with ${client.name}.`,
+            metadata: {
+              appointmentId: createdAppointment.id,
+            },
+            postIds: {},
+            priority: Priority.HIGH
+          });
+          
+          // Notify the client
+          await createNotification({
+            app: req.app,
+            recipientId: clientId,
+            senderId: providerUserId,
+            type: NotificationType.APPOINTMENT_BOOKED,
+            title: "Booking Confirmed",
+            message: `Your appointment for "${serviceName}" with ${providerName} at ${providerAddress} is confirmed for ${formattedDate} at ${formattedTime}.`,
+            metadata: {
+              appointmentId: createdAppointment.id,
+            },
+            postIds: {},
+            priority: Priority.HIGH
+          });      
+          // Format email fields
+          const formattedDateStr = startTimeDate.toLocaleDateString("en-US", {
+            weekday: "long", month: "long", day: "numeric", year: "numeric"
+          });
+          const formattedTimeStr = startTimeDate.toLocaleTimeString("en-US", {
+            hour: "2-digit", minute: "2-digit"
+          });
+          const appointmentDuration = (endTimeDate - startTimeDate) / (1000 * 60 * 60); // in hours
+          const depositPaid = serviceData.depositAmount || 0;
+          const totalPrice = serviceData.price;
+          const remainingBalance = totalPrice - depositPaid;
+
+          // Send email to client
+          await sendAppointmentEmail({
+            to: client.email,
+            name: client.name,
+            service: serviceName,
+            provider: providerName,
+            date: formattedDateStr,
+            time: formattedTimeStr,
+            duration: appointmentDuration,
+            location: providerAddress,
+            type: "confirmed",
+            deposit: depositPaid,
+            remaining: remainingBalance,
+          });
+
+          // Send email to provider
+          await sendAppointmentEmail({
+            to: serviceData.serviceProvider.user.email,
+            name: providerName,
+            service: serviceName,
+            provider: client.name,
+            date: formattedDateStr,
+            time: formattedTimeStr,
+            duration: appointmentDuration,
+            location: providerAddress,
+            type: "confirmed",
+            deposit: depositPaid,
+            remaining: remainingBalance,
+          });
+
         });        
       }
 
