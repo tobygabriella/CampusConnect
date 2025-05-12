@@ -6,15 +6,31 @@ import { useAuth } from "@/Components/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import defaultProfile from "@/assets/default-profile.jpg";
 import { Heart, MessageSquare } from "lucide-react";
+import { useRef } from "react";
 
-const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disablePostNavigation = false}) => {
+const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disablePostNavigation = false, highlightedCommentId }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [post, setPost] = useState(null);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
-  const currentPostId = posts[currentIndex]?.id;
+  const currentPostId = posts.length > 0 ? posts[currentIndex]?.id : postId;
   const [commentInput, setCommentInput] = useState("");
   const { user } = useAuth(); 
   const [commentSubmitting, setCommentSubmitting] = useState(false);
+  const commentRefs = useRef({});
+
+  useEffect(() => {
+    if (highlightedCommentId && commentRefs.current[highlightedCommentId]) {
+      const el = commentRefs.current[highlightedCommentId];
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+  
+      // Temporarily add highlight class
+      el.classList.add("ring-2", "ring-[#6b46c1]", "rounded-md", "bg-[#f3e8ff]");
+      setTimeout(() => {
+        el.classList.remove("ring-2", "ring-[#6b46c1]", "bg-[#f3e8ff]");
+      }, 2000);      
+    }
+  }, [post, highlightedCommentId]);
+  
 
   const handleCommentUpvote = async (commentId) => {
     try {
@@ -116,6 +132,8 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
   const images = post.images || [];
   const currentImage = images[currentImgIndex];
 
+  const enableNav = !disablePostNavigation && posts.length > 1;
+
   const nextPost = () => setCurrentIndex((i) => (i + 1) % posts.length);
   const prevPost = () => setCurrentIndex((i) => (i - 1 + posts.length) % posts.length);
 
@@ -125,7 +143,7 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       {/* Left Post Navigation (outside modal) */}
-      {!disablePostNavigation && currentIndex > 0 && (
+      {enableNav && currentIndex > 0 && (
         <Button
           onClick={prevPost}
           className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 rounded-full p-2 shadow-lg text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
@@ -185,50 +203,65 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
             ))}
           </div>
   
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-hidden flex flex-col">
             {/* Post-level Like & Comment Count */}
-            <div className="flex items-center gap-4 mb-2">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={async () => {
-                    try {
-                        const res = await api.post(`/work-posts/${post.id}/upvote`);
-                        const liked = res.data.liked;
+            <div className="flex items-center gap-4 mb-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={async () => {
+                try {
+                  const res = await api.post(`/work-posts/${post.id}/upvote`);
+                  const liked = res.data.liked;
 
-                        setPost((prev) => ({
-                        ...prev,
-                        isUpvotedByCurrentUser: liked,
-                        _count: {
-                            ...prev._count,
-                            upvotes: liked
-                            ? (prev._count?.upvotes || 0) + 1
-                            : Math.max((prev._count?.upvotes || 1) - 1, 0),
-                        },
-                        }));
-                    } catch (err) {
-                        console.error("Failed to toggle post like", err);
-                    }
-                    }}
-                    className={`hover:bg-[#f3e8ff] !bg-transparent ${
-                    post.isUpvotedByCurrentUser
-                        ? "text-red-500 hover:text-red-500"
-                        : "text-[#062970] hover:text-red-500"
-                    }`}
+                  setPost((prev) => ({
+                  ...prev,
+                  isUpvotedByCurrentUser: liked,
+                  _count: {
+                  ...prev._count,
+                  upvotes: liked
+                  ? (prev._count?.upvotes || 0) + 1
+                  : Math.max((prev._count?.upvotes || 1) - 1, 0),
+                  },
+                  }));
+                  } catch (err) {
+                    console.error("Failed to toggle post like", err);
+                  }
+                  }}
+                  className={`hover:bg-[#f3e8ff] !bg-transparent ${
+                  post.isUpvotedByCurrentUser
+                  ? "text-red-500 hover:text-red-500"
+                  : "text-[#062970] hover:text-red-500"
+                  }`}
                 >
-                    <Heart
-                    className="w-5 h-5"
-                    fill={post.isUpvotedByCurrentUser ? "currentColor" : "none"}
-                    stroke="currentColor"
-                    strokeWidth={post.isUpvotedByCurrentUser ? "0" : "1.5"}
-                    />
-                    <span className="text-sm ml-1">{post._count?.upvotes || 0}</span>
-                </Button>
+                <Heart
+                  className="w-5 h-5"
+                  fill={post.isUpvotedByCurrentUser ? "currentColor" : "none"}
+                  stroke="currentColor"
+                  strokeWidth={post.isUpvotedByCurrentUser ? "0" : "1.5"}
+                />
+                <span className="text-sm ml-1">{post._count?.upvotes || 0}</span>
+              </Button>
 
-                <div className="text-sm text-[#062970] flex items-center gap-1">
-                    <MessageSquare className="w-4 h-4" />
-                    <span>{post._count?.comments || 0}</span>
-                </div>
+              <div className="text-sm text-[#062970] flex items-center gap-1">
+                <MessageSquare className="w-4 h-4" />
+                <span>{post._count?.comments || 0}</span>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto pr-1 space-y-3" style={{ maxHeight: '500px' }}>
+              {post.comments.length > 0 ? (
+                post.comments.map(comment => (
+                  <div
+                    key={comment.id}
+                    ref={el => commentRefs.current[comment.id] = el}
+                    className={comment.id === highlightedCommentId ? "rounded-md transition-all" : ""}
+                  >
+                    <CommentCard key={comment.id} comment={comment} onUpvote={handleCommentUpvote} onDownvote={handleCommentDownvote} showReply={false} />
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-400">No comments yet</p>
+              )}
             </div>
             {/* Add Comment */}
             <form
@@ -251,7 +284,7 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
                   setCommentSubmitting(false);
                 }
               }}
-              className="border-t border-gray-300 pt-3 mt-2 flex items-center"
+              className="border-t border-gray-300 pt-3 mt-2 flex items-center shrink-0"
             >
               <img
                 src={user?.profilePicture || defaultProfile}
@@ -273,19 +306,12 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
                 Post
               </Button>
             </form>
-            {post.comments.length > 0 ? (
-              post.comments.map(comment => (
-                <CommentCard key={comment.id} comment={comment} onUpvote={handleCommentUpvote} onDownvote={handleCommentDownvote} showReply={false} />
-              ))
-            ) : (
-              <p className="text-gray-400">No comments yet</p>
-            )}
           </div>
         </div>
       </div>
   
       {/* Right Post Navigation (outside modal) */}
-      {!disablePostNavigation && currentIndex < posts.length - 1 && (
+      {enableNav && currentIndex < posts.length - 1 && (
         <Button
           onClick={nextPost}
           className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 text-[#062970] text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] rounded-full p-2 shadow-lg"

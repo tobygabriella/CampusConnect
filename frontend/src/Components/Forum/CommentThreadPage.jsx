@@ -8,6 +8,8 @@ import TopNavbar from "@/Components/Navigation/TopNavBar";
 import PostCard from "@/Components/forum/PostCard";
 import NestedCommentThread from "@/Components/forum/NestedCommentThread";
 import api from "@/utils/axiosInstance";
+import { useRef } from "react";
+import { useLocation } from "react-router-dom";
 
 const CommentThreadPage = () => {
   const { commentId } = useParams();
@@ -19,6 +21,10 @@ const CommentThreadPage = () => {
   const [replyInputs, setReplyInputs] = useState({});
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [commentLoading, setCommentLoading] = useState(false);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const highlightedCommentId = searchParams.get("highlight");
+  const commentRefs = useRef({});
 
   const handleReplyChange = (commentId, value) => {
     setReplyInputs((prev) => ({
@@ -219,6 +225,8 @@ const CommentThreadPage = () => {
               handleCommentSubmit={handleCommentSubmit}
               setActiveReplyId={setActiveReplyId}
               handleCommentVote={handleCommentVote}
+              highlightedCommentId={highlightedCommentId}
+              commentRefs={commentRefs}  
             />
           </div>
         </div>

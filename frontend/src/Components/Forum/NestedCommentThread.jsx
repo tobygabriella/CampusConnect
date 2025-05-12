@@ -20,6 +20,8 @@ const NestedCommentThread = ({
   handleCommentSubmit,
   setActiveReplyId,
   handleCommentVote,
+  highlightedCommentId,
+  commentRefs,   
 }) => {
   const navigate = useNavigate();
   const [showAllReplies, setShowAllReplies] = useState(false);
@@ -32,12 +34,20 @@ const NestedCommentThread = ({
 
   return (
     <div className="space-y-2">
-      <CommentCard
-        comment={comment}
-        onReply={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}
-        onUpvote={(id) => handleCommentVote("upvote", id)}
-        onDownvote={(id) => handleCommentVote("downvote", id)}
-      />
+      <div
+        ref={(el) => {
+          if (el) commentRefs.current[comment.id] = el;
+        }}
+        className={comment.id === highlightedCommentId ? "rounded-md bg-[#f3e8ff] transition-all" : ""}
+      >
+        <CommentCard
+          comment={comment}
+          onReply={() => setActiveReplyId(activeReplyId === comment.id ? null : comment.id)}
+          onUpvote={(id) => handleCommentVote("upvote", id)}
+          onDownvote={(id) => handleCommentVote("downvote", id)}
+        />
+      </div>
+
 
       {activeReplyId === comment.id && (
         <ReplyInputArea
@@ -77,6 +87,8 @@ const NestedCommentThread = ({
                   handleCommentSubmit={handleCommentSubmit}
                   setActiveReplyId={setActiveReplyId}
                   handleCommentVote={handleCommentVote}
+                  highlightedCommentId={highlightedCommentId}
+                  commentRefs={commentRefs}                     
                 />
               ))}
 

@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef} from "react";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import { Button } from "@/Components/ui/button";
 import PostCard from "@/Components/forum/PostCard";
@@ -26,7 +26,22 @@ const PostDetailPage = () => {
   const userPostableColleges = useUserColleges();
   const [replyInputs, setReplyInputs] = useState({});
   const [activeReplyId, setActiveReplyId] = useState(null);
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const highlightedCommentId = searchParams.get("highlight");
 
+  const commentRefs = useRef({});
+
+  useEffect(() => {
+    if (highlightedCommentId && commentRefs.current[highlightedCommentId]) {
+      const el = commentRefs.current[highlightedCommentId];
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+  
+      el.classList.add("bg-[#f3e8ff]");
+      setTimeout(() => el.classList.remove("bg-[#f3e8ff]"), 2000);
+    }
+  }, [comments, highlightedCommentId]);
+  
 
   const fetchPost = async () => {
     try {
@@ -319,6 +334,8 @@ const PostDetailPage = () => {
                   handleCommentSubmit={handleCommentSubmit}
                   setActiveReplyId={setActiveReplyId}
                   handleCommentVote={handleCommentVote}
+                  highlightedCommentId={highlightedCommentId} 
+                  commentRefs={commentRefs}
                 />
               ))
             )}

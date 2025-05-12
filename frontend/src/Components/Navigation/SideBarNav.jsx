@@ -1,13 +1,39 @@
 import { useNavigate } from "react-router-dom";
 import { Home, Bell, User, Calendar, Users, Search, LogOut, Plus } from "lucide-react";
-import { Button } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/ui/button.jsx";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/Components/context/AuthContext";
 import defaultProfile from "@/assets/default-profile.jpg";
+import { useEffect, useState } from "react";
+import { useSocket } from "@/hooks/useSocket"; 
 import AroLogo from "@/assets/aro.png"; 
+import api from "@/utils/axiosInstance";
 
 const SidebarNav = ({ onSearchToggle }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch unread notifications initially (optional)
+  useEffect(() => {
+    const getUnread = async () => {
+      try {
+        const res = await api.get("/notifications?unread=true");
+        setUnreadCount(res.data.length);
+      } catch (err) {
+        console.error("Failed to fetch unread notifications:", err);
+      }
+    };
+  
+    if (user?.id) {
+      getUnread();
+    }
+  }, [user?.id]);
+
+  // Join room & listen for incoming
+  useSocket(user?.id, (notif) => {
+    setUnreadCount((prev) => prev + 1);
+  });
+
 
   const handleLogout = async () => {
     try {
@@ -49,9 +75,21 @@ const SidebarNav = ({ onSearchToggle }) => {
             onClick={() => navigate("/home")} 
           />
           <SidebarButton 
-            icon={<Bell size={20} className="text-[#062970]" />} 
+            icon={
+              <div className="relative">
+                <Bell size={20} className="text-[#062970]" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1 rounded-full">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+            }
             label="Notifications" 
-            onClick={() => navigate("/notifications")} 
+            onClick={() => {
+              setUnreadCount(0); // reset badge
+              navigate("/notifications");
+            }} 
           />
           <SidebarButton 
             icon={<User size={20} className="text-[#062970]" />} 
