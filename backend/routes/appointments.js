@@ -6,6 +6,12 @@ import { chargeRemainingBalance } from "../services/paymentServices.js";
 import { NotificationType, Priority } from "../enums/notifications.js";
 import { createNotification } from "../utils/notifications.js";
 import { sendAppointmentEmail } from "../utils/emailService.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+import {toMinutes, toDateUTC, restoreSlotToAvailability, removeSlotFromAvailability} from "../utils/updateAvailability.js";
+
+
+dayjs.extend(utc);
 
 dotenv.config();
 const router = express.Router();
@@ -13,28 +19,18 @@ const prisma = new PrismaClient();
 import Stripe from "stripe";
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Helpers
-const toMinutes = (time) => {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + m;
-};
-
-const toHHMM = (minutes) => {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-};
-
 const getDateTime = (dateStr, minutes) => {
+  if (!dateStr || isNaN(minutes)) {
+    console.error("❌ Invalid input to getDateTime:", { dateStr, minutes });
+    return new Date("invalid");
+  }
+
   const [yyyy, mm, dd] = dateStr.split("-");
-  const h = Math.floor(minutes / 60).toString().padStart(2, "0");
-  const m = (minutes % 60).toString().padStart(2, "0");
-  
-  // Create in local timezone first
-  const localDate = new Date(`${yyyy}-${mm}-${dd}T${h}:${m}:00`);
-  
-  // Convert to UTC
-  return new Date(localDate.toISOString());
+  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const m = String(minutes % 60).padStart(2, "0");
+
+  const utcString = `${yyyy}-${mm}-${dd}T${h}:${m}:00Z`;
+  return new Date(utcString);
 };
 
 router.get("/", requireAuth, async (req, res) => {
@@ -332,17 +328,10 @@ router.patch("/:id/cancel", requireAuth, async (req, res) => {
     const isProviderCancelling = appointment.serviceProvider.userId === userId;
     const isEligibleForRefund = isProviderCancelling || (hoursUntil >= cancellationWindow);
 
-    const dateKey = appointment.startTime.toISOString().split("T")[0];
-    const start = appointment.startTime.toISOString().split("T")[1].slice(0, 5);
-    const end = appointment.endTime.toISOString().split("T")[1].slice(0, 5);
-    const slotToRestore = `${start} - ${end}`;
-
     await prisma.$transaction(async (tx) => {
-      // Update availability
-      const availability = appointment.serviceProvider.availability?.availabilityData || {};
-      const slots = availability[dateKey] || [];
-      slots.push(slotToRestore);
-      availability[dateKey] = slots.sort();
+    // Update availability (with cross-midnight support)
+    const availability = appointment.serviceProvider.availability?.availabilityData || {};
+    restoreSlotToAvailability(availability, appointment.startTime, appointment.endTime);
 
       await tx.availability.update({
         where: { serviceProviderId: appointment.serviceProvider.id },
@@ -447,22 +436,14 @@ router.patch("/:id/reschedule", requireAuth, async (req, res) => {
     const rescheduleFee = appointment.serviceProvider.rescheduleFee || 0;
     const cancellationWindow = appointment.serviceProvider.cancellationWindow || 48;
 
-    const oldDateKey = appointment.startTime.toISOString().split("T")[0];
-    const oldStart = appointment.startTime.toISOString().split("T")[1].slice(0, 5);
-    const oldEnd = appointment.endTime.toISOString().split("T")[1].slice(0, 5);
-    const oldSlot = `${oldStart} - ${oldEnd}`;
-
     const startMin = toMinutes(newStartTime);
     const endMin = startMin + duration;
-    // Create date objects in local timezone first
-    const localStartDateTime = getDateTime(newDate, startMin);
-    const localEndDateTime = getDateTime(newDate, endMin);
     
-    // Convert to UTC
-    const newStartDateTime = new Date(localStartDateTime.toISOString());
-    const newEndDateTime = new Date(localEndDateTime.toISOString());
+    // Create date objects in local timezone first
+    const newStartDateTime = toDateUTC(newDate, startMin);
+    const newEndDateTime = toDateUTC(newDate, endMin);
+    
     const newDateKey = newDate;
-    const newSlot = `${toHHMM(startMin)} - ${toHHMM(endMin)}`;
 
     const hoursUntil = (new Date(appointment.startTime) - new Date()) / (1000 * 60 * 60);
     const isFreeReschedule = hoursUntil >= cancellationWindow;
@@ -470,14 +451,10 @@ router.patch("/:id/reschedule", requireAuth, async (req, res) => {
     await prisma.$transaction(async (tx) => {
       // Restore old availability
       const availability = appointment.serviceProvider.availability?.availabilityData || {};
-      const oldSlots = availability[oldDateKey] || [];
-      oldSlots.push(oldSlot);
-      availability[oldDateKey] = oldSlots.sort();
-
-      // Remove new time from availability
-      const newSlots = availability[newDateKey] || [];
-      const updatedNewSlots = newSlots.filter(slot => slot !== newSlot);
-      availability[newDateKey] = updatedNewSlots;
+      restoreSlotToAvailability(availability, appointment.startTime, appointment.endTime);
+      
+      // Remove rescheduled time from availability across both days
+      removeSlotFromAvailability(availability, newDateKey, newStartTime, duration);
 
       await tx.availability.update({
         where: { serviceProviderId: appointment.serviceProvider.id },

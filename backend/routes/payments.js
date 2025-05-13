@@ -6,6 +6,11 @@ import dotenv from 'dotenv';
 import { NotificationType, Priority } from "../enums/notifications.js";
 import { createNotification } from "../utils/notifications.js";
 import { sendAppointmentEmail } from "../utils/emailService.js";
+import {toMinutes, removeSlotFromAvailability} from "../utils/updateAvailability.js";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc.js";
+
+dayjs.extend(utc);
 
 dotenv.config();
 const router = express.Router();
@@ -121,56 +126,21 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
         date,
         startTime,
         duration,
-      } = intent.metadata || {};
-
-      const toMinutes = (time) => {
-        const [h, m] = time.split(":").map(Number);
-        return h * 60 + m;
-      };
-    
-      const toHHMM = (minutes) => {
-        const h = Math.floor(minutes / 60);
-        const m = minutes % 60;
-        return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-      };
-    
-      const updateAvailability = (availableSlots, bookedStart, bookedEnd) => {
-        const startMin = toMinutes(bookedStart);
-        const endMin = toMinutes(bookedEnd);
-        const updated = [];
-    
-        for (let slot of availableSlots) {
-          const [slotStart, slotEnd] = slot.split(" - ");
-          const sMin = toMinutes(slotStart);
-          const eMin = toMinutes(slotEnd);
-    
-          if (startMin >= sMin && endMin <= eMin) {
-            if (startMin > sMin) {
-              updated.push(`${slotStart} - ${toHHMM(startMin)}`);
-            }
-            if (endMin < eMin) {
-              updated.push(`${toHHMM(endMin)} - ${slotEnd}`);
-            }
-          } else {
-            updated.push(slot);
-          }
-        }
-    
-        return updated;
-      };    
+      } = intent.metadata || {};       
       
       if (type === "deposit" && (!appointmentId || appointmentId === "undefined")) {
         const toDate = (d, minutes) => {
-          const [yyyy, mm, dd] = d.split("-");
-          const h = String(Math.floor(minutes / 60)).padStart(2, "0");
-          const m = String(minutes % 60).padStart(2, "0");
-          return new Date(`${yyyy}-${mm}-${dd}T${h}:${m}:00Z`);
+          return dayjs.utc(`${d}T00:00:00Z`).add(minutes, 'minute').toDate();
         };
+              
 
         const startMin = toMinutes(startTime);
         const endMin = startMin + parseInt(duration);
         const startTimeDate = toDate(date, startMin);
         const endTimeDate = toDate(date, endMin);
+
+        console.log("Start UTC:", startTimeDate.toISOString());
+console.log("End UTC:", endTimeDate.toISOString());
 
         //Check for overlapping appointment
         const overlapping = await prisma.appointment.findFirst({
@@ -236,22 +206,17 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
           const availabilityRecord = await tx.availability.findUnique({
             where: { serviceProviderId: providerId }
           });
+          console.log(availabilityRecord)
 
           if (availabilityRecord) {
-            const availabilityData = availabilityRecord.availabilityData || {};
-            const daySlots = availabilityData[date] || [];
-
-            const bookedStart = startTime;
-            const bookedEnd = toHHMM(toMinutes(startTime) + parseInt(duration));
-            const updatedSlots = updateAvailability(daySlots, bookedStart, bookedEnd);
-
-            availabilityData[date] = updatedSlots;
-
+            const availabilityData = availabilityRecord.availabilityData || {};      
+            removeSlotFromAvailability(availabilityData, date, startTime, duration);
+          
             await tx.availability.update({
               where: { serviceProviderId: providerId },
               data: { availabilityData }
             });
-          }
+          }          
 
           await tx.stripePayment.create({
             data: {
@@ -266,24 +231,25 @@ router.post("/webhook", express.raw({ type: "application/json" }), async (req, r
 
           const serviceData = await prisma.service.findUnique({
             where: { id: serviceId },
-            include: {
-              serviceProvider: {
-                include: {
-                  user: true,
-                },
-              },
-            },
             select: {
               name: true,
               price: true,
               depositAmount: true,
               serviceProvider: {
-                include: {
-                  user: true,
+                select: {
+                  location: true,
+                  user: {
+                    select: {
+                      id: true,
+                      name: true,
+                      email: true,
+                    },
+                  },
                 },
               },
             },
-          });          
+          });
+                   
           
           const formattedDate = new Date(startTimeDate).toLocaleDateString('en-US', {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
