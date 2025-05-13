@@ -3,9 +3,15 @@ import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "@/utils/axiosInstance";
 import { Button, DatePicker, Select } from "antd";
+import { useAuth } from "@/Components/context/AuthContext";
 import dayjs from "dayjs";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(isSameOrBefore);
+import utc from "dayjs/plugin/utc";
+
+dayjs.extend(utc);
+dayjs.extend(isSameOrBefore);
+
 
 const BookingPage = () => {
   const { username } = useParams();
@@ -23,7 +29,9 @@ const BookingPage = () => {
   const [selectedTimeSlot, setSelectedTimeSlot] = useState(null);
   const [duration, setDuration] = useState(0);
   const [providerIsReadyToBook, setProviderIsReadyToBook] = useState(true);
+  const { user } = useAuth();
   const [rescheduleFee, setRescheduleFee] = useState(0);
+  const [bookingWithSelf, setBookingWithSelf] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -31,6 +39,8 @@ const BookingPage = () => {
         const response = await api.get(`/users/profile/${username}`);
         setServices(response.data.services || []);
         setRescheduleFee(response.data.serviceProvider?.rescheduleFee || 0);
+        const isSelf = response.data.username === user?.username;
+        setBookingWithSelf(isSelf);
 
         if (!response.data.stripeAccountId) {
           toast.error("This provider has not completed payment setup and cannot receive bookings yet.");
@@ -76,45 +86,100 @@ const BookingPage = () => {
   const disabledDate = (current) => {
     if (current && current < dayjs().startOf("day")) return true;
     const key = current.format("YYYY-MM-DD");
-    return !availability[key] || availability[key].length === 0;
+    const nextDayKey = dayjs(key).add(1, 'day').format("YYYY-MM-DD");
+    
+    // Enable date if either current day or next day has availability
+    return !(
+      availability[key]?.length > 0 || 
+      availability[nextDayKey]?.some(slot => slot.startsWith("00:00"))
+    );
   };
 
   const generateAvailableSlots = () => {
     if (!selectedDate || duration === 0) return [];
   
-    const key = selectedDate.format("YYYY-MM-DD");
-    const rawSlots = availability[key] || [];
+    const selectedDayStart = selectedDate.startOf("day");
+    const selectedDayEnd = selectedDate.endOf("day");
   
-    const validSlots = [];
+    const allSlots = [];
   
-    for (let block of rawSlots) {
-      const [startStr, endStr] = block.split(" - ");
+    // Loop through both current day and next day availability keys
+    for (const key of [selectedDate.format("YYYY-MM-DD"), dayjs(selectedDate).add(1, "day").format("YYYY-MM-DD")]) {
+      const daySlots = availability[key] || [];
+      for (const slot of daySlots) {
+        const [startStr, endStr] = slot.split(" - ");
+        const startUTC = dayjs.utc(`${key}T${startStr}`);
+        const endUTC = dayjs.utc(`${key}T${endStr}`);
   
-      // Parse as UTC from DB
-      const startUTC = dayjs.utc(`${key}T${startStr}`);
-      const endUTC = dayjs.utc(`${key}T${endStr}`);
+        // Convert to local
+        const startLocal = startUTC.local();
+        const endLocal = endUTC.local();
   
-      // Handle cross-midnight by extending end time
-      const adjustedEndUTC = endUTC.isBefore(startUTC)
-        ? endUTC.add(1, "day")
-        : endUTC;
-  
-      // Convert to local timezone
-      let start = startUTC.local();
-      const end = adjustedEndUTC.local();
-  
-      while (start.add(duration, "minute").isSameOrBefore(end)) {
-        const slotStart = start.format("HH:mm");
-        const slotEnd = start.add(duration, "minute").format("HH:mm");
-        validSlots.push(`${slotStart} - ${slotEnd}`);
-        start = start.add(15, "minute");
+        // Only include if it intersects the selected date
+        if (
+          startLocal.isSame(selectedDayStart, 'day') ||
+          endLocal.isSame(selectedDayStart, 'day') ||
+          (startLocal.isBefore(selectedDayEnd) && endLocal.isAfter(selectedDayStart))
+        ) {
+          allSlots.push({ startLocal, endLocal });
+        }
       }
     }
   
-    return validSlots;
+    // Sort by start time
+    allSlots.sort((a, b) => a.startLocal.unix() - b.startLocal.unix());
+  
+    // Merge overlapping/adjacent slots in local time
+    const mergedSlots = [];
+    let current = null;
+  
+    for (const slot of allSlots) {
+      if (!current) {
+        current = { ...slot };
+      } else if (slot.startLocal.isSameOrBefore(current.endLocal)) {
+        // Extend end time if overlapping or adjacent
+        if (slot.endLocal.isAfter(current.endLocal)) {
+          current.endLocal = slot.endLocal;
+        }
+      } else {
+        mergedSlots.push(current);
+        current = { ...slot };
+      }
+    }
+    if (current) mergedSlots.push(current);
+  
+    // Create valid time slots in 15-min increments
+    const finalSlots = [];
+  
+    for (const { startLocal, endLocal } of mergedSlots) {
+      let cursor = startLocal.clone();
+    
+      while (cursor.add(duration, "minute").isSameOrBefore(endLocal)) {
+        const slotStart = cursor.format("HH:mm");
+        const slotEnd = cursor.add(duration, "minute").format("HH:mm");
+    
+        // ✅ Only add if it's today and not in the past
+        const now = dayjs();
+        const isToday = cursor.isSame(now, "day");
+        const isFuture = !isToday || cursor.isAfter(now.add(5, "minute"));
+    
+        if (cursor.isSame(selectedDayStart, "day") && isFuture) {
+          finalSlots.push(`${slotStart} - ${slotEnd}`);
+        }
+    
+        cursor = cursor.add(15, "minute");
+      }
+    }
+    
+  
+    return [...new Set(finalSlots)].sort((a, b) => {
+      const [aStart] = a.split(" - ");
+      const [bStart] = b.split(" - ");
+      return aStart.localeCompare(bStart);
+    });
   };
   
-
+  
   const handleBookNow = () => {
     if (!selectedService || !selectedDate || !selectedTimeSlot) {
       toast.error("Please select a service, date, and time.");
@@ -122,18 +187,24 @@ const BookingPage = () => {
     }
   
     const [slotStartLocal] = selectedTimeSlot.split(" - ");
-    const date = selectedDate.format("YYYY-MM-DD");
+    const localDateTime = dayjs(`${selectedDate.format("YYYY-MM-DD")}T${slotStartLocal}`);
+    const utcDateTime = localDateTime.utc();
   
-    // Convert local time to UTC
-    const localTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    const startUtc = dayjs.tz(`${date}T${slotStartLocal}`, "YYYY-MM-DDTHH:mm", localTz)
-      .utc()
-      .format("HH:mm");    
+    const utcDate = utcDateTime.format("YYYY-MM-DD");
+    const utcTime = utcDateTime.format("HH:mm");
+  
+    console.log("📍 Booking:");
+    console.log("Local Date:", selectedDate.format("YYYY-MM-DD"));
+    console.log("Local Time:", slotStartLocal);
+    console.log("UTC Date:", utcDate);
+    console.log("UTC Time:", utcTime);
   
     navigate(
-      `/checkout?provider=${username}&service=${selectedService}&date=${date}&start=${startUtc}&duration=${duration}`
+      `/checkout?provider=${username}&service=${selectedService}&date=${utcDate}&start=${utcTime}&duration=${duration}`
     );
-  };  
+  };
+  
+  
   const handleRescheduleNow = async () => {
     if (!selectedService || !selectedDate || !selectedTimeSlot) {
       toast.error("Please select a new service, date, and time.");
@@ -141,21 +212,26 @@ const BookingPage = () => {
     }
   
     const [slotStartLocal] = selectedTimeSlot.split(" - ");
-    const date = selectedDate.format("YYYY-MM-DD");
+    const localDateStr = selectedDate.format("YYYY-MM-DD");
   
-    if (date === originalDate && slotStartLocal === originalStartTime) {
-      toast.error("Please choose a new date or time to reschedule.");
-      return;
-    }
-  
-    // Create a dayjs object in local timezone
-    const localDateTime = dayjs(`${date}T${slotStartLocal}`);
-    
-    // Convert to UTC and format for backend
+    // Create local datetime → convert to UTC
+    const localDateTime = dayjs(`${localDateStr}T${slotStartLocal}`);
     const utcDateTime = localDateTime.utc();
     const utcDate = utcDateTime.format("YYYY-MM-DD");
     const utcTime = utcDateTime.format("HH:mm");
   
+    console.log("📍 Rescheduling:");
+    console.log("Local Date:", localDateStr);
+    console.log("Local Time:", slotStartLocal);
+    console.log("UTC Date:", utcDate);
+    console.log("UTC Time:", utcTime);
+  
+    // Compare to original UTC values to avoid resending same slot
+    if (utcDate === originalDate && utcTime === originalStartTime) {
+      toast.error("Please choose a new date or time to reschedule.");
+      return;
+    }
+
     try {
       const service = services.find((s) => s.id === selectedService);
       const rescheduleFee = service?.rescheduleFee || 0;
@@ -276,10 +352,12 @@ const BookingPage = () => {
         type="primary"
         className="w-80 bg-[#062970] text-white py-3 rounded-full shadow-md hover:bg-[#051f5c] transition-all duration-300"
         onClick={rescheduleMode ? handleRescheduleNow : handleBookNow}
-        disabled={isAvailabilityEmpty}
+        disabled={isAvailabilityEmpty|| bookingWithSelf || !providerIsReadyToBook}
       >
         {isAvailabilityEmpty
           ? "No Availability Set"
+           : bookingWithSelf
+          ? "You cannot book yourself"
           : !providerIsReadyToBook
           ? "Unavailable"
           : rescheduleMode
