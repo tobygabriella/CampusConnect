@@ -36,7 +36,20 @@ const formats = {
     return `${localStart.format("h:mm a")} - ${localEnd.format("h:mm a")}`;
   },
 };
-
+const splitCrossDaySlot = (dateKey, startUtc, endUtc) => {
+  const startDate = dayjs.utc(`${dateKey}T${startUtc}`);
+  const endDate = dayjs.utc(`${dateKey}T${endUtc}`);
+  
+  // If end time is before start time in UTC, it crosses midnight
+  if (endDate.isBefore(startDate)) {
+    const nextDate = dayjs(dateKey).add(1, 'day').format('YYYY-MM-DD');
+    return {
+      [dateKey]: [`${startUtc} - 24:00`],
+      [nextDate]: [`00:00 - ${endUtc}`]
+    };
+  }
+  return { [dateKey]: [`${startUtc} - ${endUtc}`] };
+};
 const userTimezone = dayjs.tz.guess();
 
 const AvailabilityCalendar = () => {
@@ -100,45 +113,45 @@ const AvailabilityCalendar = () => {
     }
   
     const dateKey = dayjs(selectedDate).format("YYYY-MM-DD");
-  
-    // Convert local times to UTC strings for backend storage
+    
+    // Convert local times to UTC strings
     const startUtc = dayjs(newTimeSlot.start).utc().format("HH:mm");
     const endUtc = dayjs(newTimeSlot.end).utc().format("HH:mm");
-    const newSlot = `${startUtc} - ${endUtc}`;
   
     try {
-      // Get all existing slots for this date (except the one being edited if applicable)
-      const existingSlots = events
-        .filter(e => 
-          dayjs(e.start).isSame(selectedDate, 'day') && 
-          e.type === "availability" &&
-          (!editingEvent || e !== editingEvent)
-        )
-        .map(e => {
-          const start = dayjs(e.start).utc().format("HH:mm");
-          const end = dayjs(e.end).utc().format("HH:mm");
-          return `${start} - ${end}`;
-        });
-  
-      // Combine existing slots with the new one
-      const updatedSlots = [...existingSlots, newSlot];
-  
-      // Get all availability data from the backend first
+      // Get current availability
       const availabilityRes = await api.get("/availability/get-availability");
       const currentAvailability = availabilityRes.data.availabilityData || {};
   
-      // Create the updated availability object
-      const updatedAvailability = {
-        ...currentAvailability,
-        [dateKey]: updatedSlots
-      };
+      // Handle potential cross-day slots
+      const newSlots = splitCrossDaySlot(dateKey, startUtc, endUtc);
   
-      // Send the complete updated availability to the backend
+      // Remove the edited slot if we're updating
+      const updatedAvailability = { ...currentAvailability };
+      if (editingEvent) {
+        const editDateKey = dayjs(editingEvent.start).format("YYYY-MM-DD");
+        const editSlot = `${dayjs(editingEvent.start).utc().format("HH:mm")} - ${dayjs(editingEvent.end).utc().format("HH:mm")}`;
+        
+        if (updatedAvailability[editDateKey]) {
+          updatedAvailability[editDateKey] = updatedAvailability[editDateKey]
+            .filter(slot => slot !== editSlot);
+        }
+      }
+  
+      // Merge new slots
+      Object.entries(newSlots).forEach(([date, slots]) => {
+        if (!updatedAvailability[date]) {
+          updatedAvailability[date] = [];
+        }
+        updatedAvailability[date] = [...updatedAvailability[date], ...slots];
+      });
+  
+      // Send to backend
       await api.post("/availability/set-availability", {
         availability: updatedAvailability
       });
   
-      // Refresh the events
+      // Refresh events
       const loadEvents = async () => {
         const [availabilityRes, appointmentsRes] = await Promise.all([
           api.get("/availability/get-availability"),
@@ -162,18 +175,17 @@ const AvailabilityCalendar = () => {
             };
           })
         );
-
+  
         const appts = appointments
-        .filter(appt => appt.status !== "cancelled") // Exclude cancelled
-        .map(appt => ({
-          title: appt.service.name,
-          start: dayjs.utc(appt.startTime).local().toDate(),
-          end: dayjs.utc(appt.endTime).local().toDate(),
-          allDay: false,
-          type: "appointment",
-          client: appt.client.name
-        }));
-      
+          .filter(appt => appt.status !== "cancelled")
+          .map(appt => ({
+            title: appt.service.name,
+            start: dayjs.utc(appt.startTime).local().toDate(),
+            end: dayjs.utc(appt.endTime).local().toDate(),
+            allDay: false,
+            type: "appointment",
+            client: appt.client.name
+          }));
   
         setEvents([...slots, ...appts]);
       };
@@ -189,21 +201,48 @@ const AvailabilityCalendar = () => {
 
   const handleDeleteTimeSlot = async () => {
     if (!editingEvent) return;
-
+  
     const dateKey = dayjs(editingEvent.start).format("YYYY-MM-DD");
     const slotToRemove = `${dayjs(editingEvent.start).utc().format("HH:mm")} - ${dayjs(editingEvent.end).utc().format("HH:mm")}`;
-
+  
     try {
-      const remainingSlots = events.filter(e =>
-        dayjs(e.start).isSame(editingEvent.start, 'day') &&
-        e.type === "availability" &&
-        `${dayjs(e.start).utc().format("HH:mm")} - ${dayjs(e.end).utc().format("HH:mm")}` !== slotToRemove
-      ).map(e => `${dayjs(e.start).utc().format("HH:mm")} - ${dayjs(e.end).utc().format("HH:mm")}`);
-
+      const availabilityRes = await api.get("/availability/get-availability");
+      const currentAvailability = availabilityRes.data.availabilityData || {};
+  
+      // Check if this was a split slot (end time is 24:00)
+      const isFirstPart = slotToRemove.endsWith("24:00");
+      const isSecondPart = slotToRemove.startsWith("00:00");
+  
+      const updatedAvailability = { ...currentAvailability };
+  
+      // Remove from current date
+      if (updatedAvailability[dateKey]) {
+        updatedAvailability[dateKey] = updatedAvailability[dateKey]
+          .filter(slot => slot !== slotToRemove);
+      }
+  
+      // If deleting first part, also delete second part
+      if (isFirstPart) {
+        const nextDate = dayjs(dateKey).add(1, 'day').format('YYYY-MM-DD');
+        if (updatedAvailability[nextDate]) {
+          updatedAvailability[nextDate] = updatedAvailability[nextDate]
+            .filter(slot => !slot.startsWith("00:00"));
+        }
+      }
+  
+      // If deleting second part, also delete first part
+      if (isSecondPart) {
+        const prevDate = dayjs(dateKey).subtract(1, 'day').format('YYYY-MM-DD');
+        if (updatedAvailability[prevDate]) {
+          updatedAvailability[prevDate] = updatedAvailability[prevDate]
+            .filter(slot => !slot.endsWith("24:00"));
+        }
+      }
+  
       await api.post("/availability/set-availability", {
-        availability: { [dateKey]: remainingSlots }
+        availability: updatedAvailability
       });
-
+  
       setEvents(prev => prev.filter(e => e !== editingEvent));
       setIsModalVisible(false);
       message.success("Time slot deleted.");
