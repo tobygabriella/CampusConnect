@@ -20,14 +20,14 @@ export async function createNotification({
     priority = Priority.LOW,
   }) {
     try {
-      if (!recipientId || !senderId || !type || !title || !message) {
+      if (!recipientId || !type || !title || !message) {
         throw new Error("Missing required notification fields");
       }
   
       const notification = await prisma.notification.create({
         data: {
           userId: recipientId,
-          senderId,
+          senderId: senderId || undefined,
           type,
           title,
           message,
