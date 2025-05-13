@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
+import { useAuth } from "@/Components/context/AuthContext";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input"; 
@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { CameraIcon } from "lucide-react"; 
 import defaultProfile from "@/assets/default-profile.jpg"; 
 import CollegeSelect from "./CollegeSelect";
-import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
+import api from "@/utils/axiosInstance.js";
 import AroLogo from "@/assets/aro.png"; 
 import useUsernameAvailability from "@/hooks/useUsernameAvailability";
 

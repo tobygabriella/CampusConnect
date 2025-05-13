@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import AroLogo from "@/assets/aro.png";
 import GoogleLogo from "@/assets/google.png";
-import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
-
+import { useAuth } from "@/Components/context/AuthContext";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({

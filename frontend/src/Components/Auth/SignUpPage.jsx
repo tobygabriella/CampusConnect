@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
+import api from "@/utils/axiosInstance.js";
 import AroLogo from "@/assets/aro.png"; 
 import GoogleLogo from "@/assets/google.png";
 

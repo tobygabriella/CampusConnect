@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
+import { useAuth } from "@/Components/context/AuthContext";
 import GettingStarted from "../LandingPage/GettingStarted.jsx";
 
 const RedirectIfAuthenticated = () => {
