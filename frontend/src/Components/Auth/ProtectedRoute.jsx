@@ -1,68 +1,82 @@
-
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "/Users/tobygabriella/Desktop/Aro/frontend/src/Components/context/AuthContext.jsx";
+import { useAuth } from "@/Components/context/AuthContext";
 import { useEffect, useState } from "react";
 import api from "@/utils/axiosInstance";
+import Loading from "@/Components/Loading/LoadingState";
 
 const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const [hasProviderDetails, setHasProviderDetails] = useState(false);
-  const [checkingDetails, setCheckingDetails] = useState(false);
+  const [hasProviderDetails, setHasProviderDetails] = useState(null);
 
   useEffect(() => {
-    const checkServiceProviderDetails = async () => {
+    const checkDetails = async () => {
       if (user?.role === "service_provider") {
-        setCheckingDetails(true);
         try {
-          const response = await api.get("/service-provider/details", { withCredentials: true });
-          setHasProviderDetails(!!response.data);
-        } catch (error) {
+          const { data } = await api.get("/service-provider/details", {
+            withCredentials: true,
+          });
+
+          const complete = !!data?.professionId || (data?.services?.length ?? 0) > 0;
+
+          setHasProviderDetails(complete);
+        } catch (e) {
+          console.error("✖️ Failed to fetch provider details:", e);
           setHasProviderDetails(false);
-        } finally {
-          setCheckingDetails(false);
         }
+      } else {
+        setHasProviderDetails(true);
       }
     };
 
     if (isAuthenticated && user) {
-      checkServiceProviderDetails();
+      checkDetails();
     }
   }, [isAuthenticated, user]);
 
-  // Show loading state while checking authentication or provider details
-  if (isLoading || checkingDetails) {
-    return <div>Loading...</div>;
+  if (isLoading) {
+    return <Loading />; 
   }
 
-  // Only check auth if the route requires it
+  if (user?.role === "service_provider" && hasProviderDetails === null) {
+    return <Loading />;
+  }
+
+if (
+  user?.role === "service_provider" &&
+  location.pathname === "/service-provider-info" &&
+  hasProviderDetails === true
+) {
+  return <Navigate to="/profile" replace />;
+}
+
+if (
+  user?.role === "service_provider" &&
+  hasProviderDetails === false &&
+  location.pathname !== "/service-provider-info"
+) {
+  return <Navigate to="/service-provider-info" replace />;
+}
+
   if (requiresAuth) {
-    // If route requires authentication and user is not authenticated, redirect to login
-    if (!isAuthenticated && !isLoading) {
-      return <Navigate to="/" replace />;
+    if (!isAuthenticated) {
+      return <Navigate to="/" replace state={{ from: location }} />;
     }
 
-    // Special handling for service providers
-    if (user?.role === "service_provider") {
-      // If we're not on the service-provider-info page and provider hasn't submitted details
-      if (!hasProviderDetails && location.pathname !== "/service-provider-info") {
-        return <Navigate to="/service-provider-info" replace />;
-      }
-
-      // If we're on the service-provider-info page and provider has submitted details
-      if (hasProviderDetails && location.pathname === "/service-provider-info") {
-        return <Navigate to="/profile" replace />;
-      }
+    // Log right before the provider‑info redirect
+    if (
+      user?.role === "service_provider" &&
+      hasProviderDetails === false &&
+      location.pathname !== "/service-provider-info"
+    ) {
+      return <Navigate to="/service-provider-info" replace />;
     }
 
-    // If roles are specified and user's role is not included, redirect to appropriate dashboard
-    if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
-      if (user?.role === "student") {
-        return <Navigate to="/profile" replace />;
-      } else if (user?.role === "service_provider") {
-        return <Navigate to="/service-provider-info" replace />;
-      }
-      return <Navigate to="/login" replace />;
+    if (
+      allowedRoles.length > 0 &&
+      !allowedRoles.includes(user?.role)
+    ) {
+      return <Navigate to="/not-authorized" replace />;
     }
   }
 

@@ -9,9 +9,11 @@ import { useAuth } from "@/Components/context/AuthContext";
 import ServiceProviderSection from "@/Components/Profile/ServiceProviderSection";
 import ProfessionSelect from "@/components/Onboarding/ProfessionSelect";
 import { serviceProviderSchema } from "@/utils/schema";
+import Loading from "@/Components/Loading/LoadingState";
 
 const ServiceProviderDetails = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [workImages, setWorkImages] = useState([]);
   const [certificationImages, setCertificationImages] = useState([]);
   const [existingWorkImages, setExistingWorkImages] = useState([]);
@@ -44,6 +46,7 @@ const ServiceProviderDetails = () => {
   useEffect(() => {
     const fetchServiceProviderDetails = async () => {
       try {
+        setIsLoading(true);
         const response = await api.get("/service-provider/details");
         const data = response.data;
         
@@ -71,6 +74,8 @@ const ServiceProviderDetails = () => {
           toast.error("Failed to load service provider details");
           console.error("Error fetching service provider details:", error);
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -142,6 +147,10 @@ const ServiceProviderDetails = () => {
     }
   };
 
+  if (isLoading) {
+    return <Loading />;
+  }
+
   return (
     <div className="flex justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
       <div className="w-full max-w-4xl p-8">
@@ -198,7 +207,7 @@ const ServiceProviderDetails = () => {
               disabled={isSubmitting || !isDirty}
               className="bg-[#062970] text-white hover:bg-[#051d5c]"
             >
-              {isSubmitting ? "Saving..." : "Save Changes"}
+              {isSubmitting ?<Loading inline={true} /> : "Save Changes"}
             </Button>
           </div>
         </form>

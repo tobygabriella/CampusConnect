@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import PropTypes from 'prop-types';
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
 import { Check, X } from "lucide-react";
-import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
+import api from "@/utils/axiosInstance.js";
+import Loading from "@/Components/Loading/LoadingState";
 
 const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange }) => {
   const [search, setSearch] = useState('');
@@ -31,7 +32,7 @@ const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange 
         } catch (error) {
           console.error('Error fetching selected colleges:', error);
         }
-      }
+      } 
     };
 
     fetchSelectedColleges();
@@ -98,8 +99,10 @@ const CollegeSelect = ({ multiple = false, value = multiple ? [] : '', onChange 
         <CommandList>
           <CommandEmpty className="py-2 text-sm text-gray-500">
             {loading ? (
-              'Searching...'
-            ) : search.length < 2 ? (
+                <div className="flex justify-center">
+                  <Loading inline />
+                </div>
+              ): search.length < 2 ? (
               'Type at least 2 characters to search'
             ) : (
               'No colleges found'

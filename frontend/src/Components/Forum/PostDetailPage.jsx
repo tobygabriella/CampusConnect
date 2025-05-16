@@ -12,6 +12,7 @@ import { toast } from "react-toastify";
 import { useUserColleges } from "@/hooks/useUserColleges";
 import defaultProfile from "@/assets/default-profile.jpg";
 import NestedCommentThread from "@/Components/forum/NestedCommentThread";
+import Loading from "@/Components/Loading/LoadingState";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -226,14 +227,8 @@ const PostDetailPage = () => {
     }));
   };
   
-
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-[#062970]" />
-        <span className="ml-2">Loading post...</span>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (!post) {

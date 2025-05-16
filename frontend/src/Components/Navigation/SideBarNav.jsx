@@ -38,7 +38,7 @@ const SidebarNav = ({ onSearchToggle }) => {
   const handleLogout = async () => {
     try {
       await logout();
-      navigate("/login");
+      window.location.href = '/?logout=true';
     } catch (error) {
       console.error("Logout failed:", error);
     }

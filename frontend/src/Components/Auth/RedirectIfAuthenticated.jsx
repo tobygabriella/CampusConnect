@@ -1,13 +1,14 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import GettingStarted from "../LandingPage/GettingStarted.jsx";
+import Loading from "@/Components/Loading/LoadingState";
 
 const RedirectIfAuthenticated = () => {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   // If the user is authenticated and tries to access the getting-started page, redirect to profile

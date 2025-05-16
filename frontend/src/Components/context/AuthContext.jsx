@@ -1,18 +1,18 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import api from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/axiosInstance.js";
-import { logoutUser } from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/authUtils.js";
+import api from  "@/utils/axiosInstance.js";
+import { clearAuthCookiesAndRedirect } from "@/utils/authUtils.js";
 const AuthContext = createContext(null);
+import Loading from '../Loading/LoadingState';
 
-export const AuthProvider = ({ children }) => {
+export const AuthProvider = ({ children }) =>  {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false); 
   const [isLoading, setIsLoading] = useState(true);
 
   const verifyAuth = async () => {
     try {
-      // Check if auth token exists in cookies
       const response = await api.get("/auth/verify-token", { withCredentials: true });
-  
+      
       if (response.data.user) {
         setUser(response.data.user);
         setIsAuthenticated(true);
@@ -21,47 +21,50 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Token verification failed:", error.response?.status);
-  
+      
       if (error.response?.status === 401) {
-        // Try refreshing the token
         try {
           const refreshResponse = await api.post("/auth/refresh-token", {}, { withCredentials: true });
-  
+          
           if (refreshResponse.status === 200) {
-            return verifyAuth(); // Retry authentication after refresh
+            return verifyAuth();
           }
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError.response?.status);
-          logoutUser(); // Logout and redirect if refresh fails
+          clearAuthCookiesAndRedirect();
         }
       } else {
-        logoutUser();
+        clearAuthCookiesAndRedirect();
       }
     } finally {
       setIsLoading(false);
     }
   };
-  
 
   useEffect(() => {
+    // Check for logout param
+    if (window.location.search.includes('logout=true')) {
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+      return; // Skip verification
+    }
     verifyAuth();
   }, []);
 
   const login = async (formData, navigate) => {
     try {
       const response = await api.post("/auth/login", formData, { withCredentials: true });
-
+  
       setUser(response.data.user);
       setIsAuthenticated(true);
-
-      // Check if service provider has completed setup
+  
+      // Only redirect for specific onboarding cases
       if (response.data.user.role === "service_provider" && !response.data.user.serviceProvider?.profession) {
         navigate("/service-provider-info");
       } else if (!response.data.user.username) {
         navigate("/onboarding");
-      } else {
-        navigate("/profile");
       }
+      // Otherwise, stay on current page or let ProtectedRoute handle it
     } catch (error) {
       console.error("Login failed:", error.response?.data?.message);
       throw error;
@@ -76,6 +79,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setIsAuthenticated(false);
+      clearAuthCookiesAndRedirect();
     }
   };
   
@@ -83,6 +87,10 @@ export const AuthProvider = ({ children }) => {
   const updateUser = (newUserData) => {
     setUser(prev => ({ ...prev, ...newUserData }));
   };
+
+  if (isLoading) {
+    return <Loading />;
+  }
 
   return (
     <AuthContext.Provider

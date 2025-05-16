@@ -7,6 +7,7 @@ import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import WorkPostModal from "@/Components/WorkPost/WorkPostModal";
 import { Tabs } from "antd";
+import Loading from "@/Components/Loading/LoadingState";
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -59,7 +60,6 @@ const NotificationsPage = () => {
 
     // Handle comment-related notifications
     if (notif.metadata?.commentId) {
-        console.log('Comment notification metadata:', notif.metadata);
         const isDeeplyNested = notif.metadata?.depth >= 6;
 
         if (notif.type === "COMMENT_REPLY") {
@@ -73,7 +73,6 @@ const NotificationsPage = () => {
 
         // Handle other comment types
         if (notif.metadata.forumPostId) {
-            console.log('Navigating to post with highlight (non-reply)');
             navigate(`/community/posts/${notif.metadata.forumPostId}?highlight=${notif.metadata.commentId}`);
             return;
         }
@@ -98,7 +97,7 @@ const NotificationsPage = () => {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      await api.patch("/notifications/mark-all-read");
+      await api.patch("/notifications/read-all");
       setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -161,22 +160,7 @@ const NotificationsPage = () => {
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="flex w-screen overflow-x-hidden">
-        <SidebarNav />
-        <div className="ml-64 min-h-screen w-full bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col pt-16">
-          <TopNavbar />
-          <div className="p-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-2xl font-bold text-[#062970] mb-6">Notifications</h2>
-              <p className="text-gray-500">Loading notifications...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <Loading />;
 
   if (error) {
     return (

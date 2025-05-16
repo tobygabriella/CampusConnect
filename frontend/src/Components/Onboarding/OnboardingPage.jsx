@@ -12,6 +12,7 @@ import CollegeSelect from "./CollegeSelect";
 import api from "@/utils/axiosInstance.js";
 import AroLogo from "@/assets/aro.png"; 
 import useUsernameAvailability from "@/hooks/useUsernameAvailability";
+import Loading from "@/Components/Loading/LoadingState";
 
 const OnboardingPage = () => {
   const [username, setUsername] = useState("");
@@ -146,7 +147,7 @@ const OnboardingPage = () => {
             </div>
             <input id="fileUpload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             <Button onClick={handleUpload} className="mt-2 text-sm" size="sm" variant="outline" disabled={isUploading}>
-              {isUploading ? "Uploading..." : "Upload Profile Photo"}
+              {isUploading ? <Loading inline /> : "Upload Profile Photo"}
             </Button>
           </div>
 

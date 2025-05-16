@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import ImageUploadSection from "../Profile/ImageUploadSection";
+import Loading from "@/Components/Loading/LoadingState";
 
 const CreateWorkPost = () => {
   const { user } = useAuth();
@@ -19,13 +20,15 @@ const CreateWorkPost = () => {
   const [files, setFiles] = useState([]);
   const [services, setServices] = useState([]);
   const [appointments, setAppointments] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [searchVisible, setSearchVisible] = useState(false);
+  const [loading, setLoading] = useState(true); 
+  const [submitting, setSubmitting] = useState(false); 
 
 // Load services or appointments based on role
 useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         if (user?.role === "service_provider") {
           // Load both services and appointments for providers
           const [servicesRes, appointmentsRes] = await Promise.all([
@@ -46,6 +49,9 @@ useEffect(() => {
         }
       } catch (err) {
         console.error("Error fetching related data:", err);
+      }
+      finally {
+        setLoading(false);
       }
     };
   
@@ -81,7 +87,7 @@ useEffect(() => {
     files.forEach((file) => formData.append("images", file));
 
     try {
-      setLoading(true);
+      setSubmitting(true);
       await axios.post("/work-posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
@@ -90,10 +96,12 @@ useEffect(() => {
     } catch (err) {
       console.error("Create post error:", err);
       toast.error("Failed to create post");
-    } finally {
-      setLoading(false);
+    }finally {
+      setSubmitting(false);
     }
   };
+
+  if (loading) return <Loading />;
 
   return (
     <div className="flex w-screen overflow-x-hidden">
@@ -218,7 +226,7 @@ useEffect(() => {
                 className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                 disabled={loading || files.length === 0}
               >
-                {loading ? "Posting..." : "Create Post"}
+                 {submitting ? <Loading inline={true} /> : "Create Post"}
               </Button>
             </div>
           </form>

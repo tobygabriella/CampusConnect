@@ -12,6 +12,7 @@ import api from "@/utils/axiosInstance";
 import { handleVote } from "@/utils/handleVote";
 import { useUserColleges } from "@/hooks/useUserColleges";
 import TagFilter from './TagFilter';
+import Loading from "@/Components/Loading/LoadingState";
 
 const CommunityPage = () => {
   const [posts, setPosts] = useState([]);
@@ -176,6 +177,9 @@ const handleCollegeSelect = (collegeId) => {
     });
   };
 
+  if (loading) {
+    return <Loading />;
+  }
 
   return (
     <div className="flex w-screen overflow-x-hidden">

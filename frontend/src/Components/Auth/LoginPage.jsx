@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import AroLogo from "@/assets/aro.png";
 import GoogleLogo from "@/assets/google.png";
 import { useAuth } from "@/Components/context/AuthContext";
+import Loading from "@/Components/Loading/LoadingState";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -13,6 +14,7 @@ const LoginPage = () => {
   const { login} = useAuth();
   const [errorMessage, setErrorMessage] = useState(""); // Store error messages
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -21,7 +23,7 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMessage(""); // Reset previous errors
-
+    setLoading(true);
     try {
       await login(formData, navigate);
       toast.success("Login successful! Redirecting...");
@@ -38,6 +40,8 @@ const LoginPage = () => {
       } else {
         setErrorMessage("Something went wrong. Please try again.");
       }
+    }finally {
+      setLoading(false); // Set loading to false when done
     }
   };
 
@@ -86,7 +90,7 @@ const LoginPage = () => {
           type="submit"
           className="flex items-center justify-center w-80 bg-[#062970] text-white py-3 rounded-full shadow-md hover:bg-[#051f5c] transition-all duration-300"
         >
-          Log In
+          {loading ? <Loading inline={true} /> : "Log In"}
         </button>
       </form>
     </div>

@@ -5,13 +5,12 @@ import api from "@/utils/axiosInstance";
 import { Button, DatePicker, Select } from "antd";
 import { useAuth } from "@/Components/context/AuthContext";
 import dayjs from "dayjs";
+import Loading from "@/Components/Loading/LoadingState";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(isSameOrBefore);
 import utc from "dayjs/plugin/utc";
-
 dayjs.extend(utc);
 dayjs.extend(isSameOrBefore);
-
 
 const BookingPage = () => {
   const { username } = useParams();
@@ -32,10 +31,12 @@ const BookingPage = () => {
   const { user } = useAuth();
   const [rescheduleFee, setRescheduleFee] = useState(0);
   const [bookingWithSelf, setBookingWithSelf] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        setLoading(true);
         const response = await api.get(`/users/profile/${username}`);
         setServices(response.data.services || []);
         setRescheduleFee(response.data.serviceProvider?.rescheduleFee || 0);
@@ -69,6 +70,8 @@ const BookingPage = () => {
       } catch (error) {
         console.error("Error fetching booking info:", error);
         toast.error("Error loading booking details.");
+      }finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -192,13 +195,6 @@ const BookingPage = () => {
   
     const utcDate = utcDateTime.format("YYYY-MM-DD");
     const utcTime = utcDateTime.format("HH:mm");
-  
-    console.log("📍 Booking:");
-    console.log("Local Date:", selectedDate.format("YYYY-MM-DD"));
-    console.log("Local Time:", slotStartLocal);
-    console.log("UTC Date:", utcDate);
-    console.log("UTC Time:", utcTime);
-  
     navigate(
       `/checkout?provider=${username}&service=${selectedService}&date=${utcDate}&start=${utcTime}&duration=${duration}`
     );
@@ -219,12 +215,6 @@ const BookingPage = () => {
     const utcDateTime = localDateTime.utc();
     const utcDate = utcDateTime.format("YYYY-MM-DD");
     const utcTime = utcDateTime.format("HH:mm");
-  
-    console.log("📍 Rescheduling:");
-    console.log("Local Date:", localDateStr);
-    console.log("Local Time:", slotStartLocal);
-    console.log("UTC Date:", utcDate);
-    console.log("UTC Time:", utcTime);
   
     // Compare to original UTC values to avoid resending same slot
     if (utcDate === originalDate && utcTime === originalStartTime) {
@@ -273,6 +263,7 @@ const BookingPage = () => {
     }
   };
   
+  if (loading) return <Loading />;
   
   return (
     <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white p-6">

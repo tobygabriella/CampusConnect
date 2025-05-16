@@ -2,18 +2,24 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import api from "@/utils/axiosInstance";
+import Loading from "@/Components/Loading/LoadingState";
 
 const TagFilter = ({ selectedTag, onSelectTag }) => {
   const [tags, setTags] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetchTags = async () => {
       try {
+        setLoading(true);
         const response = await api.get("/forum/tags");
         setTags(response.data);
       } catch (error) {
         console.error("Error fetching tags:", error);
+      }
+      finally {
+        setLoading(false);
       }
     };
 
@@ -21,6 +27,14 @@ const TagFilter = ({ selectedTag, onSelectTag }) => {
   }, []);
 
   const currentTagLabel = selectedTag || "All Tags";
+
+  if (loading) {
+    return (
+      <div className="px-4 py-2">
+        <Loading inline={true} />
+      </div>
+    );
+  }
 
   return (
     <div className="relative inline-block text-left">

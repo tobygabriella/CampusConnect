@@ -12,6 +12,7 @@ import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import AvailabilityCalendar from "@/Components/Profile/AvailabilityCalendar";
 import WorkPostGrid from "../WorkPost/WorkPostGrid";
+import Loading from "@/Components/Loading/LoadingState";
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -83,7 +84,7 @@ const ProfilePage = () => {
     }
   };
 
-  if (loading) return <div className="text-white text-center mt-10">Loading profile...</div>;
+  if (loading) return <Loading />;
 
   if (!profile) return <div className="text-red-500 text-center mt-10">Profile not found</div>;
 
@@ -109,9 +110,9 @@ const ProfilePage = () => {
                   {!isOwnProfile && (
                     <>
                       <Button
-                        className={`${
+                        className={`bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]${
                           profile.isFollowing ? "bg-red-500" : "bg-[#062970]"
-                        } text-white hover:opacity-75`}
+                        } hover:opacity-75`}
                         onClick={handleFollowToggle}
                       >
                         {profile.isFollowing
@@ -123,7 +124,7 @@ const ProfilePage = () => {
 
                       {isServiceProvider && (
                         <Button
-                          className="bg-green-500 text-white hover:bg-green-600 ml-2"
+                          className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                           onClick={() => navigate(`/book/${profile.username}`)}
                         >
                           Book Now

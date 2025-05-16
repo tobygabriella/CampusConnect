@@ -7,8 +7,9 @@ import defaultProfile from "@/assets/default-profile.jpg";
 import { Heart, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import WorkPostModal from "./WorkPostModal";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/Components/context/AuthContext";
+import Loading from "@/Components/Loading/LoadingState";
 
 const HomeFeedPage = () => {
   const [posts, setPosts] = useState([]);
@@ -17,6 +18,7 @@ const HomeFeedPage = () => {
   const [selectedPostId, setSelectedPostId] = useState(null);
   const [imageIndexes, setImageIndexes] = useState({});
   const { user } = useAuth(); 
+  const [loading, setLoading] = useState(true);
 
   const nextImage = (postId, totalImages) => {
     setImageIndexes((prev) => ({
@@ -67,29 +69,29 @@ const HomeFeedPage = () => {
     }
   };
 
-  const handleCommentAdded = (postId, newComment) => {
-    setPosts(prevPosts =>
-      prevPosts.map(post =>
-        post.id === postId
-          ? {
-              ...post,
-              comments: [...(post.comments || []), newComment],
-              _count: {
-                ...post._count,
-                comments: (post._count?.comments || 0) + 1,
-              },
-            }
-          : post
-      )
-    );
-  };
+  // const handleCommentAdded = (postId, newComment) => {
+  //   setPosts(prevPosts =>
+  //     prevPosts.map(post =>
+  //       post.id === postId
+  //         ? {
+  //             ...post,
+  //             comments: [...(post.comments || []), newComment],
+  //             _count: {
+  //               ...post._count,
+  //               comments: (post._count?.comments || 0) + 1,
+  //             },
+  //           }
+  //         : post
+  //     )
+  //   );
+  // };
 
   useEffect(() => {
     const fetchFeed = async () => {
       try {
+        setLoading(true);
         const { data } = await api.get("/work-posts/feed");
         setPosts(data);
-  
         const likedIds = new Set();
         data.forEach(post => {
           if (post.upvotes?.some(v => v.userId === user.id)) {
@@ -100,6 +102,9 @@ const HomeFeedPage = () => {
       } catch (err) {
         console.error("Failed to fetch home feed posts:", err);
       }
+      finally {
+        setLoading(false);
+      }
     };
     
     if (user?.id) {
@@ -107,6 +112,8 @@ const HomeFeedPage = () => {
     }
   }, [user?.id]);  
 
+  if (loading) return <Loading />;
+  
   return (
     <>
       <div className="flex w-screen min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white overflow-x-hidden">
@@ -239,15 +246,29 @@ const HomeFeedPage = () => {
       </div>
   
       {selectedPostId && (
-        <WorkPostModal
+       <WorkPostModal
           postId={selectedPostId}
           posts={posts}
+          post={posts.find(p => p.id === selectedPostId)} 
           initialIndex={posts.findIndex((p) => p.id === selectedPostId)}
           onClose={() => setSelectedPostId(null)}
           disablePostNavigation={true}
-          // onLikeToggle={toggleLike}
-          // onCommentAdded={handleCommentAdded}
-        />
+          onPostUpdate={(updatedPost) => {
+            setPosts((prevPosts) =>
+              prevPosts.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+            );
+          
+            setLikedPostIds((prev) => {
+              const newSet = new Set(prev);
+              if (updatedPost.isUpvotedByCurrentUser) {
+                newSet.add(updatedPost.id);
+              } else {
+                newSet.delete(updatedPost.id);
+              }
+              return newSet;
+            });
+          }}          
+        />     
       )}
     </>
   );  

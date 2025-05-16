@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { ChevronDown } from "lucide-react";
 import api from "@/utils/axiosInstance";
 import { Button } from "@/components/ui/button";
+import Loading from "@/Components/Loading/LoadingState";
 
 const CollegeFilter = ({ 
   userCollegeId,  
@@ -58,7 +59,11 @@ const CollegeFilter = ({
   };
 
   if (loading) {
-    return <div className="px-4 py-2 text-sm text-gray-500">Loading colleges...</div>;
+    return (
+      <div className="px-4 py-2">
+        <Loading inline={true} />
+      </div>
+    );
   }
 
   return (

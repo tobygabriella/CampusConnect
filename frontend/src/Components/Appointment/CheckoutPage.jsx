@@ -5,6 +5,7 @@ import api from "@/utils/axiosInstance";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import { Button } from "antd";
+import Loading from "@/Components/Loading/LoadingState";
 
 const CheckoutPage = () => {
   const [searchParams] = useSearchParams();
@@ -13,19 +14,46 @@ const CheckoutPage = () => {
   const date = searchParams.get("date");
   const startTime = searchParams.get("start");
   const duration = searchParams.get("duration");
+  const appointmentId = searchParams.get("appointmentId");
+  const retryMode = searchParams.get("mode") === "retry";
+  const [loading, setLoading] = useState(true);
   const [cardError, setCardError] = useState("");
-
-
   const navigate = useNavigate();
   const stripe = useStripe();
   const elements = useElements();
-
   const [serviceDetails, setServiceDetails] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const parsedDuration = parseInt(duration, 10);
   const formattedDate = date ? dayjs(date).format("ddd, MMM D YYYY") : "";
 
-
+  useEffect(() => {
+    const fetchRetryInfo = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/appointments/${appointmentId}`);
+        const appt = res.data;
+        const remaining = appt.service.price - appt.service.depositAmount;
+  
+        setServiceDetails({
+          name: appt.service.name,
+          depositAmount: remaining,
+          price: appt.service.price,
+          provider: appt.serviceProvider.user.username,
+          date: appt.startTime,
+          time: dayjs(appt.startTime).format("HH:mm"),
+          duration: appt.service.duration,
+        });
+      } catch (err) {
+        toast.error("Error loading appointment details for retry.");
+        navigate("/appointments");
+      }
+    };
+  
+    if (retryMode && appointmentId) {
+      fetchRetryInfo();
+    }
+  }, [retryMode, appointmentId, navigate]);
+  
   useEffect(() => {
     if (!providerUsername || !serviceId || !date || !startTime || !duration) {
       toast.error("Invalid or missing booking information.");
@@ -36,6 +64,7 @@ const CheckoutPage = () => {
   useEffect(() => {
     const fetchService = async () => {
       try {
+        setLoading(true);
         const res = await api.get(`/users/profile/${providerUsername}`);
         const service = res.data.services.find((s) => s.id === serviceId);
         setServiceDetails(service);
@@ -61,33 +90,47 @@ const CheckoutPage = () => {
         return setIsProcessing(false);
       }      
   
-      const response = await api.post(
-        "/payments/create-deposit",
-        {
-          providerUsername,
-          serviceId,
-          paymentMethodId: paymentMethod.paymentMethod.id,
-          date,
-          startTime,
-          duration,
-        },
-        { withCredentials: true }
-      );
+      let response;
+
+      if (retryMode && appointmentId) {
+        response = await api.post(
+          `/payments/retry-remaining`,
+          {
+            appointmentId,
+            paymentMethodId: paymentMethod.paymentMethod.id,
+          },
+          { withCredentials: true }
+        );
   
-      toast.success("Payment successful!");
-      navigate(`/profile/${providerUsername}`);
+        toast.success("Payment successful!");
+        navigate("/appointments"); 
+      } else {
+        response = await api.post(
+          "/payments/create-deposit",
+          {
+            providerUsername,
+            serviceId,
+            paymentMethodId: paymentMethod.paymentMethod.id,
+            date,
+            startTime,
+            duration,
+          },
+          { withCredentials: true }
+        );
+  
+        toast.success("Payment successful!");
+        navigate(`/profile/${providerUsername}`);
+      }
     } catch (err) {
       const errorMsg = err.response?.data?.message || "Something went wrong with your card.";
-      setCardError(errorMsg); // update error display
-      toast.error(errorMsg);  // optional
-    }
-     finally {
+      setCardError(errorMsg);
+      toast.error(errorMsg);
+    } finally {
       setIsProcessing(false);
     }
   };
-  
 
-  const formatDate = (date) => dayjs(date).format("ddd, MMM D YYYY");
+  if (loading) return <Loading />;
 
   return (
     <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white p-6">
@@ -174,7 +217,7 @@ const CheckoutPage = () => {
             className="w-full bg-[#062970] text-white h-12 rounded-lg hover:bg-[#051f5c] transition-all duration-300 flex items-center justify-center"
             size="large"
           >
-            {isProcessing ? "Processing..." : `Pay $${serviceDetails?.depositAmount || "0.00"}`}
+              {isProcessing ? <Loading inline={true} /> : `Pay $${serviceDetails?.depositAmount || "0.00"}`}
           </Button>
         </div>
 

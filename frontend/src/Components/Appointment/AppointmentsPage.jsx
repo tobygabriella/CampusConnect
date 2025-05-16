@@ -7,7 +7,7 @@ import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
+import Loading from "@/Components/Loading/LoadingState";
 
 const AppointmentsPage = () => {
   const navigate = useNavigate();
@@ -18,13 +18,14 @@ const AppointmentsPage = () => {
   const [loading, setLoading] = useState(true); 
   const [noteModal, setNoteModal] = useState({ open: false, apptId: null, note: "" });
   const [cancelModal, setCancelModal] = useState({ open: false, appt: null });
+  const [retryPaymentModal, setRetryPaymentModal] = useState({ open: false, apptId: null });
 
-const openCancelModal = (appt) => setCancelModal({ open: true, appt });
-const openRescheduleModal = (appt) => {
-  navigate(`/book/${appt.serviceProvider.user.username}?appointmentId=${appt.id}&mode=reschedule`);
-};
+  const openCancelModal = (appt) => setCancelModal({ open: true, appt });
+  const openRescheduleModal = (appt) => {
+    navigate(`/book/${appt.serviceProvider.user.username}?appointmentId=${appt.id}&mode=reschedule`);
+  };
 
-const closeCancelModal = () => setCancelModal({ open: false, appt: null });
+  const closeCancelModal = () => setCancelModal({ open: false, appt: null });
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -112,17 +113,28 @@ const closeCancelModal = () => setCancelModal({ open: false, appt: null });
     });
   };
   
-  if (loading) return <div className="text-center mt-10">Loading appointments...</div>;
+  if (loading) return <Loading />;
 
   const handleConfirm = async (id) => {
     try {
       await api.post(`/appointments/${id}/confirm`);
       toast.success("Appointment confirmed");
       window.location.reload();
-    } catch {
-      toast.error("Error confirming appointment");
+    } catch (err) {
+      const code = err.response?.data?.code;
+      const message = err.response?.data?.message || "Error confirming appointment";
+  
+      if (
+        code === "missing_payment_method" ||
+        code === "stripe_payment_failed" ||        // e.g. card declined, insufficient funds
+        code === "stripe_customer_retrieval_failed"
+      ) {
+        setRetryPaymentModal({ open: true, apptId: id });
+      }
+  
+      toast.error(`${message}. Please contact your provider to resolve payment directly.`);
     }
-  };
+  };  
 
   const handleReportNoShow = async (id, who) => {
     try {
@@ -306,9 +318,15 @@ const closeCancelModal = () => setCancelModal({ open: false, appt: null });
                   <Button variant="ghost" 
                     onClick={() => handleConfirm(appt.id)}
                     className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                    disabled={user.id === appt.client.id && !appt.providerConfirmed}
                   >
                     ✅ Confirm Appointment
                   </Button>
+                  {user.id === appt.client.id && !appt.providerConfirmed && (
+                    <p className="text-sm text-yellow-600 mt-2">
+                      Waiting for the provider to confirm before you can confirm.
+                    </p>
+                  )}
                   <Button variant="ghost" 
                     onClick={() =>
                       handleReportNoShow(
@@ -448,6 +466,26 @@ const closeCancelModal = () => setCancelModal({ open: false, appt: null });
                                   className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                                 >
                                   Yes, Cancel
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        {retryPaymentModal.open && (
+                          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
+                            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+                              <h2 className="text-xl font-bold mb-4 text-[#062970]">Add a Payment Method</h2>
+                              <p className="text-gray-600 mb-4">
+                                Your confirmation could not go through because we couldn’t charge your card. Please update your payment methodor contact your provider if you would prefer to handle this directly.
+                              </p>
+                              <div className="flex justify-end gap-4">
+                                <Button onClick={() => setRetryPaymentModal({ open: false, apptId: null })}>Close</Button>
+                                <Button
+                                  onClick={() =>
+                                    navigate(`/checkout?appointmentId=${retryPaymentModal.apptId}&mode=retry`)
+                                  }
+                                >
+                                  Update Payment
                                 </Button>
                               </div>
                             </div>

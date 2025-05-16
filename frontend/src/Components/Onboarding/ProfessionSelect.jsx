@@ -6,10 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import api from "@/utils/axiosInstance";
 import { toast } from "react-toastify";
+import Loading from "@/Components/Loading/LoadingState";
 
 const ProfessionSelect = ({ value, onChange, error }) => {
   const [professions, setProfessions] = useState([]);
   const [newProfession, setNewProfession] = useState("");
+  const [isAdding, setIsAdding] = useState(false);
 
   useEffect(() => {
     api.get("/service-provider/professions").then(res => {
@@ -20,6 +22,7 @@ const ProfessionSelect = ({ value, onChange, error }) => {
   const handleAddProfession = async () => {
     if (!newProfession.trim()) return;
     try {
+      setIsAdding(true);
       const res = await api.post("/service-provider/professions", { name: newProfession.trim() });
       const added = res.data;
       setProfessions(prev => [...prev, added].sort((a, b) => a.name.localeCompare(b.name)));
@@ -28,6 +31,8 @@ const ProfessionSelect = ({ value, onChange, error }) => {
       toast.success("Profession added!");
     } catch {
       toast.error("Could not add profession");
+    }finally {
+      setIsAdding(false);
     }
   };
 
@@ -54,7 +59,9 @@ const ProfessionSelect = ({ value, onChange, error }) => {
           onChange={(e) => setNewProfession(e.target.value)}
           className="border-[#062970]"
         />
-        <Button type="button" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={handleAddProfession}>Add</Button>
+        <Button type="button" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={handleAddProfession}>
+          {isAdding ? <Loading inline /> : "Add"}
+        </Button>
       </div>
 
       {error && <p className="text-red-500 text-sm">{error}</p>}

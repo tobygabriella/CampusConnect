@@ -3,6 +3,7 @@ import { X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import api from "@/utils/axiosInstance";
 import { toast } from "react-toastify";
+import Loading from "@/Components/Loading/LoadingState";
 
 const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, userCollegeId }) => {
   const [title, setTitle] = useState("");
@@ -135,7 +136,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, us
                 disabled={loading || tags.length === 0}
                 className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                 >
-                {loading ? "Posting..." : "Create Post"}
+                {loading ? <Loading inline={true} /> : "Create Post"}
             </Button>
           </div>
         </form>

@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import api from "@/utils/axiosInstance.js";
 import AroLogo from "@/assets/aro.png"; 
 import GoogleLogo from "@/assets/google.png";
+import Loading from "@/Components/Loading/LoadingState";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -14,10 +15,8 @@ const SignupPage = () => {
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
-
+  const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value });};
+  const [loading, setLoading] = useState(false);
   const handleSignup = async (e) => {
     e.preventDefault();
     let validationErrors = {};
@@ -29,7 +28,7 @@ const SignupPage = () => {
       setErrors(validationErrors);
       return;
     }
-
+    setLoading(true); 
     try {
       const response = await api.post("http://localhost:5001/auth/signup", formData, { withCredentials: true });
       toast.success("Signup successful! Redirecting...");
@@ -41,6 +40,8 @@ const SignupPage = () => {
     } catch (error) {
       console.error("❌ Signup failed:", error.response?.data?.message);
       setErrors({ form: error.response?.data?.message || "Signup failed." });
+    }finally {
+      setLoading(false); // Set loading to false when done
     }
   };
 
@@ -95,7 +96,7 @@ const SignupPage = () => {
         type="submit"
         className="flex items-center justify-center w-80 bg-[#062970] text-white py-3 rounded-full shadow-md hover:bg-[#051f5c] transition-all duration-300"
         >
-          Sign Up
+          {loading ? <Loading inline={true} /> : "Sign Up"}
         </button>
       </form>
     </div>

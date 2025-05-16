@@ -10,6 +10,7 @@ import NestedCommentThread from "@/Components/forum/NestedCommentThread";
 import api from "@/utils/axiosInstance";
 import { useRef } from "react";
 import { useLocation } from "react-router-dom";
+import Loading from "@/Components/Loading/LoadingState";
 
 const CommentThreadPage = () => {
   const { commentId } = useParams();
@@ -180,12 +181,7 @@ const CommentThreadPage = () => {
   }, [commentId]);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="w-6 h-6 animate-spin text-[#062970]" />
-        <span className="ml-2">Loading thread...</span>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (!comment || !post) {

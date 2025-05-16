@@ -7,17 +7,32 @@ import { Button } from "@/components/ui/button";
 import defaultProfile from "@/assets/default-profile.jpg";
 import { Heart, MessageSquare } from "lucide-react";
 import { useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import Loading from "@/Components/Loading/LoadingState";
 
-const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disablePostNavigation = false, highlightedCommentId }) => {
+const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0, onClose, onPostUpdate, disablePostNavigation = false, highlightedCommentId }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [post, setPost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [post, setPost] = useState(initialPost || null);
   const [currentImgIndex, setCurrentImgIndex] = useState(0);
   const currentPostId = posts.length > 0 ? posts[currentIndex]?.id : postId;
   const [commentInput, setCommentInput] = useState("");
   const { user } = useAuth(); 
   const [commentSubmitting, setCommentSubmitting] = useState(false);
   const commentRefs = useRef({});
+  const navigate = useNavigate();
 
+  const updatePostState = (newPost) => {
+    setPost(newPost);
+    if (onPostUpdate) onPostUpdate(newPost); 
+  };
+  
+  useEffect(() => {
+    if (initialPost) {
+      setPost(initialPost);
+    }
+  }, [initialPost]);
+  
   useEffect(() => {
     if (highlightedCommentId && commentRefs.current[highlightedCommentId]) {
       const el = commentRefs.current[highlightedCommentId];
@@ -37,37 +52,32 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
       const res = await api.post(`/work-posts/comments/${commentId}/upvote`);
       const liked = res.data.liked;
   
-      setPost((prev) => ({
-        ...prev,
-        comments: prev.comments.map((c) => {
+      updatePostState({
+        ...post,
+        comments: post.comments.map((c) => {
           if (c.id !== commentId) return c;
-  
+      
           const wasUpvoted = c.isUpvotedByCurrentUser;
           const wasDownvoted = c.isDownvotedByCurrentUser;
-  
-          // Calculate new counts
+      
           let newUpvotes = c._count?.upvotes || 0;
           let newDownvotes = c._count?.downvotes || 0;
-  
+      
           if (liked) {
             newUpvotes += 1;
             if (wasDownvoted) newDownvotes -= 1;
           } else {
             newUpvotes -= 1;
           }
-  
+      
           return {
             ...c,
             isUpvotedByCurrentUser: liked,
             isDownvotedByCurrentUser: false,
-            _count: {
-              ...c._count,
-              upvotes: newUpvotes,
-              downvotes: newDownvotes,
-            },
+            _count: { ...c._count, upvotes: newUpvotes, downvotes: newDownvotes },
           };
         }),
-      }));
+      });      
     } catch (err) {
       console.error("Failed to toggle comment like", err);
     }
@@ -78,7 +88,7 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
       const res = await api.post(`/work-posts/comments/${commentId}/downvote`);
       const downvoted = res.data.downvoted;
   
-      setPost((prev) => ({
+      updatePostState((prev) => ({
         ...prev,
         comments: prev.comments.map((c) => {
           if (c.id !== commentId) return c;
@@ -117,28 +127,34 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
   useEffect(() => {
     const fetchPost = async () => {
       try {
+        setLoading(true);
         const { data } = await api.get(`/work-posts/${currentPostId}`);
         setPost(data);
         setCurrentImgIndex(0);
+        if (onPostUpdate) onPostUpdate(data);
       } catch (err) {
         console.error("Failed to load post", err);
       }
-    };
+      finally {
+        setLoading(false);
+      }
+    };    
     if (currentPostId) fetchPost();
   }, [currentPostId]);
 
-  if (!post) return null;
+  if (loading) return <Loading />;
 
-  const images = post.images || [];
-  const currentImage = images[currentImgIndex];
+  const images = Array.isArray(post?.images) ? post.images : [];
+  const currentImage = images?.[currentImgIndex];
 
+  if (!post || images.length === 0) return null;
   const enableNav = !disablePostNavigation && posts.length > 1;
 
   const nextPost = () => setCurrentIndex((i) => (i + 1) % posts.length);
   const prevPost = () => setCurrentIndex((i) => (i - 1 + posts.length) % posts.length);
 
-  const nextImage = () => setCurrentImgIndex((i) => (i + 1) % images.length);
-  const prevImage = () => setCurrentImgIndex((i) => (i - 1 + images.length) % images.length);
+  const nextImage = () => setCurrentImgIndex((i) => (i + 1) % images?.length);
+  const prevImage = () => setCurrentImgIndex((i) => (i - 1 + images?.length) % images?.length);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -167,7 +183,7 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
           )}
           
           {/* Inner Image Navigation - Right */}
-          {currentImgIndex < images.length - 1 && (
+          {images.length > 0 && currentImgIndex < images.length - 1 && (
             <Button 
               onClick={nextImage} 
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] shadow"
@@ -176,9 +192,9 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
             </Button>
           )}
           
-          {images.length > 1 && (
+          {images?.length > 1 && (
             <div className="absolute bottom-4 text-white text-xs bg-black/60 rounded-full px-2 py-1">
-              {currentImgIndex + 1} / {images.length}
+              {currentImgIndex + 1} / {images?.length}
             </div>
           )}
           <img src={currentImage} alt="Work Post" className="w-full aspect-square object-contain" />
@@ -202,6 +218,30 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
               <span key={tag} className="text-xs bg-[#f3e8ff] text-[#6b46c1] px-2 py-1 rounded-full">{tag}</span>
             ))}
           </div>
+          {(post.service || post.appointment?.service) && (
+            <div className="bg-gray-50 border rounded-md p-3 mt-2 mb-4">
+              <div className="text-sm text-[#062970] font-semibold">
+                {(post.service || post.appointment.service)?.name}
+              </div>
+              <div className="text-sm text-gray-600 mb-2">
+                ${((post.service || post.appointment.service)?.price || 0).toFixed(2)}
+              </div>
+              {post.author?.username && (
+                <Button
+                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  onClick={() =>
+                    navigate(
+                      `/book/${post.author.username}?service=${
+                        post.service?.id || post.appointment?.service?.id
+                      }`
+                    )
+                  }
+                >
+                  Book Now
+                </Button>
+              )}
+            </div>
+          )}
   
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Post-level Like & Comment Count */}
@@ -214,16 +254,16 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
                   const res = await api.post(`/work-posts/${post.id}/upvote`);
                   const liked = res.data.liked;
 
-                  setPost((prev) => ({
-                  ...prev,
-                  isUpvotedByCurrentUser: liked,
-                  _count: {
-                  ...prev._count,
-                  upvotes: liked
-                  ? (prev._count?.upvotes || 0) + 1
-                  : Math.max((prev._count?.upvotes || 1) - 1, 0),
-                  },
-                  }));
+                  updatePostState({
+                    ...post,
+                    isUpvotedByCurrentUser: liked,
+                    _count: {
+                      ...post._count,
+                      upvotes: liked
+                        ? (post._count?.upvotes || 0) + 1
+                        : Math.max((post._count?.upvotes || 1) - 1, 0),
+                    },
+                  });                  
                   } catch (err) {
                     console.error("Failed to toggle post like", err);
                   }
@@ -249,7 +289,7 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
               </div>
             </div>
             <div className="flex-1 overflow-y-auto pr-1 space-y-3" style={{ maxHeight: '500px' }}>
-              {post.comments.length > 0 ? (
+            {Array.isArray(post.comments) && post.comments.length > 0 ? (
                 post.comments.map(comment => (
                   <div
                     key={comment.id}
@@ -273,10 +313,14 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
                   const res = await api.post(`/work-posts/${post.id}/comments`, {
                     content: commentInput,
                   });           
-                  setPost((prev) => ({
-                    ...prev,
-                    comments: [...prev.comments, res.data],
-                  }));
+                  updatePostState({
+                    ...post,
+                    comments: [...post.comments, res.data],
+                    _count: {
+                      ...post._count,
+                      comments: (post._count?.comments || 0) + 1,
+                    },
+                  });                  
                   setCommentInput("");
                 } catch (err) {
                   console.error("Error adding comment:", err);
@@ -303,7 +347,7 @@ const WorkPostModal = ({ postId, posts = [], initialIndex = 0, onClose, disableP
                 disabled={commentSubmitting || !commentInput.trim()}
                 className="ml-2 text-sm bg-transparent text-[#6b46c1] hover:underline text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
               >
-                Post
+                {commentSubmitting ? <Loading fullScreen={false} className="inline" /> : "Post"}
               </Button>
             </form>
           </div>

@@ -2,21 +2,25 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "@/utils/axiosInstance";
 import WorkPostModal from "./WorkPostModal";
+import Loading from "@/Components/Loading/LoadingState";
 
 const WorkPostGrid = ({ isOwnProfile }) => {
   const { username } = useParams();
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
   const [selectedPostId, setSelectedPostId] = useState(null);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
+        setLoading(true);
         const endpoint = isOwnProfile ? "/work-posts/me" : `/work-posts/user/${username}`;
         const { data } = await api.get(endpoint);
         setPosts(data);
       } catch (error) {
         console.error("Failed to load work posts:", error);
+      } finally {
+        setLoading(false);
       }
     };
     fetchPosts();
@@ -25,6 +29,8 @@ const WorkPostGrid = ({ isOwnProfile }) => {
   if (posts.length === 0) {
     return <p className="text-gray-500 text-center">No work posts available</p>;
   }
+
+  if (loading) return <Loading />;
 
   return (
     <>
