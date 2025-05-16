@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { logoutUser } from "/Users/tobygabriella/Desktop/Aro/frontend/src/utils/authUtils.js";
+import { clearAuthCookiesAndRedirect } from "@/utils/authUtils.js";
 
 
 const api = axios.create({
@@ -71,7 +71,7 @@ api.interceptors.response.use(
       
       // Prevent infinite loop by logging out without reloading
       processQueue(refreshError, null);
-      logoutUser({ reload: false }); // Custom logout function without reload
+      clearAuthCookiesAndRedirect({ reload: false }); // Custom logout function without reload
 
       return Promise.reject(refreshError);
     } finally {

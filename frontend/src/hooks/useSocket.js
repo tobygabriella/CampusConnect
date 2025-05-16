@@ -22,7 +22,6 @@ export function useSocket(userId, onNotification) {
 
     // Notification listener
     socket.on("notification:new", (data) => {
-      console.log("📬 New notification:", data);
       if (onNotification) onNotification(data);
     });
 
