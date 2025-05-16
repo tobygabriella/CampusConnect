@@ -445,5 +445,81 @@ router.get("/check-onboarding-status", requireAuth, async (req, res) => {
   }
 });
 
+// Retry Remaining Balance
+router.post("/retry-remaining", requireAuth, async (req, res) => {
+  const { appointmentId, paymentMethodId } = req.body;
+  const userId = req.user.userId;
+
+  try {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      include: {
+        client: true,
+        service: {
+          include: { serviceProvider: true },
+        },
+      },
+    });
+
+    if (!appointment) {
+      return res.status(404).json({ message: "Appointment not found" });
+    }
+
+    if (appointment.clientId !== userId) {
+      return res.status(403).json({ message: "You are not authorized to retry payment for this appointment." });
+    }
+
+    const { client, service } = appointment;
+    const remainingAmount = service.price - service.depositAmount;
+
+    if (!client.stripeCustomerId) {
+      return res.status(400).json({ message: "You do not have a Stripe customer account." });
+    }
+
+    // Attach and set new default payment method
+    await stripe.paymentMethods.attach(paymentMethodId, { customer: client.stripeCustomerId });
+    await stripe.customers.update(client.stripeCustomerId, {
+      invoice_settings: { default_payment_method: paymentMethodId },
+    });
+
+    // Create payment intent for remaining balance
+    const intent = await stripe.paymentIntents.create({
+      amount: Math.round(remainingAmount * 100),
+      currency: "usd",
+      customer: client.stripeCustomerId,
+      confirm: true,
+      off_session: false,
+      payment_method: paymentMethodId,
+      metadata: {
+        appointmentId,
+        type: "remaining",
+      },
+      transfer_data: {
+        destination: service.serviceProvider.stripeAccountId,
+      },
+    });
+
+    await prisma.stripePayment.create({
+      data: {
+        paymentIntentId: intent.id,
+        appointmentId,
+        type: "remaining",
+        status: "succeeded",
+        amount: intent.amount,
+        currency: intent.currency || "usd",
+      },
+    });
+
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: { status: "paid" },
+    });
+
+    res.status(200).json({ message: "Remaining payment successful" });
+  } catch (err) {
+    console.error("Retry remaining payment failed:", err);
+    res.status(500).json({ message: err.message || "Payment retry failed" });
+  }
+});
 
 export default router;

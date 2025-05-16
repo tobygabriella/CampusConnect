@@ -127,15 +127,12 @@ router.get("/details", requireAuth, async (req, res) => {
     const serviceProvider = await prisma.serviceProvider.findUnique({
       where: { userId },
       include: {
-        services: true // Include the related services
+        services: true
       }
     });
-
-    if (!serviceProvider) {
-      return res.status(404).json({ message: "Service provider details not found" });
-    }
-
-    res.status(200).json(serviceProvider);
+    // Return empty object instead of 404 when not found
+    res.status(200).json(serviceProvider || {});
+    
   } catch (error) {
     console.error("Error fetching service provider details:", error);
     res.status(500).json({ message: "Internal server error" });

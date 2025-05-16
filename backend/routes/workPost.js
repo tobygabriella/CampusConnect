@@ -3,7 +3,7 @@ import { requireAuth } from "../middleware/authMiddleware.js";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
 import dotenv from "dotenv";
-import { uploadToS3, uploadMultipleToS3, deleteMultipleFromS3 } from "../utils/s3Uploader.js";
+import { uploadMultipleToS3, deleteMultipleFromS3 } from "../utils/s3Uploader.js";
 import { NotificationType, Priority } from "../enums/notifications.js";
 import { createNotification } from "../utils/notifications.js";
 
@@ -145,8 +145,7 @@ router.get("/user/:username", async (req, res) => {
   });
   
 
-// Get a single post by ID (detailed view)
-router.get("/:id", requireAuth, async (req, res) => {
+  router.get("/:id", requireAuth, async (req, res) => {
     const postId = req.params.id;
     const userId = req.user.userId;
   
@@ -162,16 +161,23 @@ router.get("/:id", requireAuth, async (req, res) => {
               author: { select: { id: true, username: true, profilePicture: true } },
               upvotes: { select: { userId: true } },
               downvotes: { select: { userId: true } },
-            }
+            },
           },
-          upvotes: true,
-          downvotes: true,
-        }
+          upvotes: { select: { userId: true } },
+          downvotes: { select: { userId: true } },
+          _count: {
+            select: {
+              upvotes: true,
+              downvotes: true,
+              comments: true,
+            },
+          },
+        },
       });
   
       if (!post) return res.status(404).json({ message: "Post not found" });
   
-      // Add flags to comments
+      // Add vote flags to each comment
       const commentsWithUserVotes = post.comments.map((comment) => ({
         ...comment,
         isUpvotedByCurrentUser: comment.upvotes.some((u) => u.userId === userId),
@@ -182,9 +188,15 @@ router.get("/:id", requireAuth, async (req, res) => {
         },
       }));
   
+      // Add vote flag to post itself
+      const isUpvotedByCurrentUser = post.upvotes.some((u) => u.userId === userId);
+      const isDownvotedByCurrentUser = post.downvotes.some((d) => d.userId === userId);
+  
       res.json({
         ...post,
         comments: commentsWithUserVotes,
+        isUpvotedByCurrentUser,
+        isDownvotedByCurrentUser,
       });
     } catch (error) {
       console.error("Fetch WorkPost Detail Error:", error);

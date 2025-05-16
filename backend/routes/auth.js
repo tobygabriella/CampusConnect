@@ -234,11 +234,17 @@ router.post("/logout", requireAuth, async (req, res) => {
       data: { refreshToken: null }, // Clear refresh token from DB
     });
   }
+  const cookieOpts = {
+    httpOnly: true,
+    secure: true,
+    sameSite: "lax",
+    path: "/",              
+    expires: new Date(0),   
+  };
 
-  res.cookie("authToken", "", { httpOnly: true, secure: true, sameSite: "lax", maxAge: 0 });
-  res.cookie("refreshToken", "", { httpOnly: true, secure: true, sameSite: "lax", maxAge: 0 });
-
-  res.json({ message: "Logged out successfully" });
+  res.cookie("authToken", "", cookieOpts);
+  res.cookie("refreshToken", "", cookieOpts);
+  res.sendStatus(204);
 });
 
 //email verification

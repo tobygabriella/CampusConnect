@@ -118,14 +118,26 @@ router.get("/", requireAuth, async (req, res) => {
     try {
       const appointment = await prisma.appointment.findUnique({
         where: { id },
-        include: { client: true, serviceProvider: true },
+        include: {
+          client: true,
+          serviceProvider: {
+            include: { user: true },
+          },
+          service: true,
+        },
       });
+      
   
       if (!appointment) return res.status(404).json({ message: "Appointment not found" });
   
       let updateData = {};
   
       if (appointment.clientId === userId) {
+        if (!appointment.providerConfirmed) {
+          return res.status(400).json({
+            message: "You cannot confirm until the provider confirms first.",
+          });
+        }
         updateData.clientConfirmed = true;
         updateData.clientConfirmedAt = new Date();
       } else if (appointment.serviceProvider.userId === userId) {
@@ -200,7 +212,10 @@ router.get("/", requireAuth, async (req, res) => {
       res.status(200).json({ message: "Confirmation saved" });
     } catch (error) {
       console.error("Confirmation error:", error);
-      res.status(500).json({ message: "Failed to confirm appointment" });
+      return res.status(500).json({
+        message: error.message || "Failed to confirm appointment",
+        code: error.code || "unknown_error"
+      });
     }
   });  
 
