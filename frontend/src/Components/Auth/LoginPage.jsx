@@ -5,6 +5,7 @@ import AroLogo from "@/assets/aro.png";
 import GoogleLogo from "@/assets/google.png";
 import { useAuth } from "@/Components/context/AuthContext";
 import Loading from "@/Components/Loading/LoadingState";
+import { useLocation } from "react-router-dom";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -15,6 +16,9 @@ const LoginPage = () => {
   const [errorMessage, setErrorMessage] = useState(""); // Store error messages
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const verified = queryParams.get("verified") === "true";
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,6 +38,8 @@ const LoginPage = () => {
         setErrorMessage("Incorrect email, username, or password.");
       } else if (error.response?.status === 401) {
         setErrorMessage("Invalid password. Please try again.");
+      } else if (error.response?.status === 403 && error.response?.data?.resend) {
+        setErrorMessage("Please verify your email. We've sent you a new link.");
       } else if (error.response?.status === 403) {
         setErrorMessage("Complete onboarding first.");
         navigate("/onboarding"); // Redirect to onboarding if needed
@@ -60,7 +66,12 @@ const LoginPage = () => {
       
       {/* Separator */}
       <p className="text-gray-500 my-4">or log in with email and password</p>
-      
+
+      {verified && (
+        <div className="bg-green-100 border border-green-500 text-green-700 p-3 rounded w-80 mb-4 text-sm text-center">
+           Your email has been verified! You can now log in.
+        </div>
+      )}
       {/* Login Form */}
       <form onSubmit={handleLogin} className="flex flex-col gap-4 w-80">
         <label className="text-sm font-semibold text-[#062970]">Email or Username <span className="text-red-500">*</span></label>

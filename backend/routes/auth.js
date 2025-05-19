@@ -144,7 +144,11 @@ router.post("/signup", async (req, res) => {
     setAuthCookies(res, accessToken, refreshToken);
 
     // Redirect to onboarding
-    res.json({ message: "Signup successful. Please complete your profile.", onboarding: true });
+    res.json({
+      message: "Signup successful. Please verify your email before continuing.",
+      emailSent: true,
+      verificationExpiresIn: "24 hours",
+    });
   } catch (error) {
     console.error("Signup Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -173,8 +177,18 @@ router.post("/login", async (req, res) => {
 
     // Check if user is verified
     if (!user.isVerified) {
-      return res.status(403).json({ message: "Please verify your email before logging in." });
+      const newToken = crypto.randomBytes(32).toString("hex");
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { verificationToken: newToken },
+      });
+      await sendVerificationEmail(user.email, newToken);
+      return res.status(403).json({
+        message: "Please verify your email first. We've sent a new link.",
+        resend: true,
+      });
     }
+    
 
     // Check password
     const isMatch = await bcrypt.compare(password, user.password);
@@ -265,7 +279,7 @@ router.get("/verify-email/:token", async (req, res) => {
       data: { isVerified: true, verificationToken: null }, // Clear token
     });
 
-    res.json({ message: "Email verified successfully. You can now log in." });
+    res.redirect("http://localhost:5173/login?verified=true");
   } catch (error) {
     console.error("Email Verification Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -333,6 +347,23 @@ router.get("/verify-token", async (req, res) => {
   }
 });
 
+router.post("/resend-verification", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return res.status(404).json({ message: "User not found" });
+  if (user.isVerified) return res.status(400).json({ message: "User is already verified" });
+
+  const newToken = crypto.randomBytes(32).toString("hex");
+  await prisma.user.update({
+    where: { email },
+    data: { verificationToken: newToken },
+  });
+
+  await sendVerificationEmail(email, newToken);
+  res.json({ message: "Verification email resent" });
+});
 
 
 export default router;

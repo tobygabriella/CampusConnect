@@ -14,7 +14,8 @@ const SignupPage = () => {
   });
   const [errors, setErrors] = useState({});
   const navigate = useNavigate();
-
+  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [email, setEmail] = useState("");
   const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value });};
   const [loading, setLoading] = useState(false);
   const handleSignup = async (e) => {
@@ -30,12 +31,12 @@ const SignupPage = () => {
     }
     setLoading(true); 
     try {
-      const response = await api.post("http://localhost:5001/auth/signup", formData, { withCredentials: true });
-      toast.success("Signup successful! Redirecting...");
-      if (response.data.onboarding) {
-        navigate("/onboarding");
-      } else {
-        navigate("/dashboard");
+      const response = await api.post("/auth/signup", formData, { withCredentials: true });
+      if (response.data.emailSent) {
+        toast.success("Signup successful. Please verify your email.");
+        setShowVerificationMessage(true);
+        setEmail(formData.email); // store for resend
+        return; // stop redirect
       }
     } catch (error) {
       console.error("❌ Signup failed:", error.response?.data?.message);
@@ -99,6 +100,26 @@ const SignupPage = () => {
           {loading ? <Loading inline={true} /> : "Sign Up"}
         </button>
       </form>
+      {showVerificationMessage && (
+        <div className="mt-4 bg-green-100 border border-green-400 p-3 rounded text-green-800 text-sm text-center w-80">
+          ✅ Signup successful. Please check your email to verify your account. The link expires in 24 hours.
+          <div className="mt-2">
+            <button
+              className="underline text-blue-600 hover:text-blue-800"
+              onClick={async () => {
+                try {
+                  await api.post("http://localhost:5001/auth/resend-verification", { email });
+                  toast.success("Verification email resent!");
+                } catch {
+                  toast.error("Failed to resend verification email.");
+                }
+              }}
+            >
+              Resend verification email
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

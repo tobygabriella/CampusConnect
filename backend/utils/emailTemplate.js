@@ -69,3 +69,30 @@ export const generateAppointmentEmail = ({ name, service, provider, date, time, 
     };
   };
   
+  export const generateVerificationEmail = (verificationToken) => {
+
+    return {
+      subject: "Confirm your email to get started on Aro",
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 24px; border: 1px solid #ddd; border-radius: 10px;">
+          <h2 style="text-align:center; color: #6b46c1;">Welcome to Aro! ✨</h2>
+          <p>Hi there,</p>
+          <p>Thanks for signing up! To get started, please confirm your email by clicking the button below:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="http://localhost:5001/auth/verify-email/${verificationToken}" 
+               style="background-color: #e68ac1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+               Verify My Email
+            </a>
+          </div>
+  
+          <p>This link will expire in 24 hours. If it expires, you can request a new one by trying to log in again.</p>
+          <hr style="margin: 20px 0;">
+          <p style="font-size: 12px; color: #666;">
+            If you didn’t create an account, you can safely ignore this email.
+          </p>
+        </div>
+      `,
+    };
+  };
+  

@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-import { generateAppointmentEmail } from "./emailTemplate.js";
+import { generateAppointmentEmail, generateVerificationEmail } from "./emailTemplate.js";
 dotenv.config();
 
 // Create Nodemailer transporter
@@ -15,14 +15,12 @@ const transporter = nodemailer.createTransport({
 // Function to send verification emails
 export const sendVerificationEmail = async (email, verificationToken) => {
   try {
-    const verificationLink = `http://localhost:5001/auth/verify-email/${verificationToken}`;
+    const { subject, html } = generateVerificationEmail(verificationToken);
     await transporter.sendMail({
       from: `"Aro" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: "Verify Your Email",
-      text: `Click the link to verify your email: ${verificationLink}`,
-      html: `<p>Click the link below to verify your email:</p>
-             <a href="${verificationLink}">${verificationLink}</a>`,
+      subject,
+      html,
     });
   } catch (error) {
     console.error("Email sending error:", error);

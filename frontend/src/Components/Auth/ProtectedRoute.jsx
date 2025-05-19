@@ -72,11 +72,13 @@ if (
       return <Navigate to="/service-provider-info" replace />;
     }
 
-    if (
-      allowedRoles.length > 0 &&
-      !allowedRoles.includes(user?.role)
-    ) {
-      return <Navigate to="/not-authorized" replace />;
+    if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
+      if (user?.role === "student") {
+        return <Navigate to="/profile" replace />;
+      } else if (user?.role === "service_provider") {
+        return <Navigate to="/service-provider-info" replace />;
+      }
+      return <Navigate to="/login" replace />;
     }
   }
 
