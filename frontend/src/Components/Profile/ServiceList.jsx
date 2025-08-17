@@ -43,8 +43,8 @@ export const ServiceList = ({
 
           return (
             <div key={field.id} className="p-4 border-2 border-[#062970] rounded-lg bg-white">
-              <div className="flex gap-4 items-start">
-                <div className="flex-1">
+              <div className="flex flex-col md:flex-row gap-4 items-start">
+                <div className="w-full md:flex-1">
                   <Label className="text-[#062970]">Service Name</Label>
                   <Input
                     {...register(`services.${index}.name`)}
@@ -56,7 +56,7 @@ export const ServiceList = ({
                   )}
                 </div>
                 
-                <div className="w-32">
+                <div className="w-full md:w-32">
                   <Label className="text-[#062970]">Price</Label>
                   <div className="relative mt-1">
                     <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
@@ -71,7 +71,7 @@ export const ServiceList = ({
                   )}
                 </div>
                 
-                <div className="w-32">
+                <div className="w-full md:w-32">
                   <Label className="text-[#062970]">Deposit (≤50%)</Label>
                   <div className="relative mt-1">
                     <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
@@ -99,7 +99,7 @@ export const ServiceList = ({
                 </div>
 
                 
-                <div className="w-32">
+                <div className="w-full md:w-32">
                   <Label className="text-[#062970]">Duration</Label>
                   <div className="relative mt-1">
                     <Clock className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
@@ -115,15 +115,18 @@ export const ServiceList = ({
                   )}
                 </div>
                 
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(index)}
-                  className="mt-7 hover:bg-red-50"
-                >
-                  <Trash2Icon className="h-5 w-5 text-red-500" />
-                </Button>
+                <div className="w-full flex justify-end md:w-auto md:block">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => remove(index)}
+                    className="md:mt-7 hover:bg-red-50"
+                    style={{ color: "#062970"}}
+                  >
+                    <Trash2Icon className="h-5 w-5 text-red-500" />
+                  </Button>
+                </div>
               </div>
             </div>
           );
@@ -133,6 +136,7 @@ export const ServiceList = ({
           variant="outline"
           onClick={() => append({ name: "", price: "", duration: "", depositAmount: "" })}
           className="w-full bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+          style={{ color: "#062970"}}
         >
           <PlusCircleIcon className="h-5 w-5 mr-2" />
           Add Another Service

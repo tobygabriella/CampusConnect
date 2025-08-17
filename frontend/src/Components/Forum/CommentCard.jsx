@@ -43,8 +43,8 @@ const CommentCard = ({
               className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
               onClick={() => onUpvote(comment.id)}
             >
-              <ThumbsUp className="h-3 w-3" />
-              <span className="text-xs ml-1">{comment._count?.upvotes || 0}</span>
+              <ThumbsUp className="h-3 w-3" style={{ color: "#062970"}} />
+              <span className="text-xs ml-1 text-[#062970]">{comment._count?.upvotes || 0}</span>
             </Button>
             <Button 
               variant="ghost" 
@@ -52,8 +52,8 @@ const CommentCard = ({
               className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
               onClick={() => onDownvote(comment.id)}
             >
-              <ThumbsDown className="h-3 w-3" />
-              <span className="text-xs ml-1">{comment._count?.downvotes || 0}</span>
+              <ThumbsDown className="h-3 w-3" style={{ color: "#062970"}} />
+              <span className="text-xs ml-1 text-[#062970]">{comment._count?.downvotes || 0}</span>
             </Button>
             {showReply && (
               <Button
@@ -62,8 +62,8 @@ const CommentCard = ({
                 className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                 onClick={() => onReply(comment)}
               >
-                <Reply className="h-3 w-3" />
-                <span className="text-xs ml-1">Reply</span>
+                <Reply className="h-3 w-3" style={{ color: "#062970"}} />
+                <span className="text-xs ml-1 text-[#062970]">Reply</span>
               </Button>
             )}
           </div>

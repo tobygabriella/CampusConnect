@@ -50,13 +50,15 @@ router.post("/", requireAuth, upload.array("images", 10), async (req, res) => {
   }
 });
 
-// Get posts for home feed (only user's college or colleges they service)
+// Get posts for home feed with personalized algorithm
 router.get("/feed", requireAuth, async (req, res) => {
   const userId = req.user.userId;
   try {
+    // Get user info
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
+        id: true,
         collegeId: true,
         collegesServed: { select: { id: true } }
       }
@@ -67,6 +69,72 @@ router.get("/feed", requireAuth, async (req, res) => {
       ...user.collegesServed.map(c => c.id)
     ];
 
+    // Get posts the user has interacted with (liked or commented)
+    const [userUpvotes, userComments] = await Promise.all([
+      // Get posts the user has liked
+      prisma.upvote.findMany({
+        where: {
+          userId,
+          workPostId: { not: null }
+        },
+        include: {
+          workPost: {
+            include: {
+              author: { select: { id: true } },
+              service: { select: { id: true, name: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50 // Limit to recent interactions
+      }),
+      
+      // Get posts the user has commented on
+      prisma.comment.findMany({
+        where: {
+          authorId: userId,
+          workPostId: { not: null }
+        },
+        include: {
+          workPost: {
+            include: {
+              author: { select: { id: true } },
+              service: { select: { id: true, name: true } }
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 50 // Limit to recent interactions
+      })
+    ]);
+
+    // Extract interaction patterns
+    const interactionPatterns = {
+      authorIds: new Set(),
+      serviceIds: new Set()
+    };
+    
+    // Analyze liked posts
+    userUpvotes.forEach(upvote => {
+      if (upvote.workPost?.author?.id) {
+        interactionPatterns.authorIds.add(upvote.workPost.author.id);
+      }
+      if (upvote.workPost?.service?.id) {
+        interactionPatterns.serviceIds.add(upvote.workPost.service.id);
+      }
+    });
+    
+    // Analyze commented posts
+    userComments.forEach(comment => {
+      if (comment.workPost?.author?.id) {
+        interactionPatterns.authorIds.add(comment.workPost.author.id);
+      }
+      if (comment.workPost?.service?.id) {
+        interactionPatterns.serviceIds.add(comment.workPost.service.id);
+      }
+    });
+
+    // Get all relevant posts
     const posts = await prisma.workPost.findMany({
       where: {
         author: {
@@ -76,21 +144,85 @@ router.get("/feed", requireAuth, async (req, res) => {
           ]
         }
       },
-      orderBy: { createdAt: "desc" },
       include: {
         author: { select: { id: true, username: true, profilePicture: true } },
         service: true,
-        appointment: true,
+        appointment: {
+          include: {
+            service: true
+          }
+        },
         _count: {
-            select: {
-              upvotes: true,
-              comments: true,
-            },
+          select: {
+            upvotes: true,
+            comments: true,
           },
-          upvotes: { select: { userId: true } },
+        },
+        upvotes: { select: { userId: true } },
       },
     });
-    res.json(posts);
+
+    // Calculate a score for each post
+    const now = new Date();
+    const scoredPosts = posts.map(post => {
+      // Calculate hours since post creation
+      const createdAt = new Date(post.createdAt);
+      const hoursSinceCreation = Math.max(1, (now - createdAt) / (1000 * 60 * 60));
+      
+      // Base recency score - decays with time (higher for newer posts)
+      const recencyScore = 100 / Math.sqrt(hoursSinceCreation);
+      
+      // Engagement score
+      const upvoteScore = (post._count.upvotes || 0) * 10;
+      const commentScore = (post._count.comments || 0) * 15;
+      
+      // Relevance score based on user's previous interactions
+      let interactionScore = 0;
+      
+      // Boost posts from authors the user has previously interacted with
+      if (interactionPatterns.authorIds.has(post.author.id)) {
+        interactionScore += 30;
+      }
+      
+      // Boost posts with services the user has previously interacted with
+      if (post.service && interactionPatterns.serviceIds.has(post.service.id)) {
+        interactionScore += 25;
+      }
+      
+      // Boost posts with services from appointments the user has interacted with
+      if (post.appointment?.service && interactionPatterns.serviceIds.has(post.appointment.service.id)) {
+        interactionScore += 25;
+      }
+      
+      // Relevance score
+      const isAuthorInSameCollege = post.author.collegeId === user.collegeId;
+      const relevanceBoost = isAuthorInSameCollege ? 15 : 0;
+      
+      // Is post by a service provider? They often post more valuable content
+      const isServiceProvider = post.service || post.appointment;
+      const serviceProviderBoost = isServiceProvider ? 10 : 0;
+      
+      // User's own posts get a small boost
+      const ownPostBoost = post.author.id === userId ? 5 : 0;
+      
+      // Calculate final score
+      const totalScore = recencyScore + upvoteScore + commentScore +
+                        interactionScore + relevanceBoost +
+                        serviceProviderBoost + ownPostBoost;
+      
+      return {
+        ...post,
+        _algorithmScore: totalScore
+      };
+    });
+
+    // Sort posts by score (highest first)
+    scoredPosts.sort((a, b) => b._algorithmScore - a._algorithmScore);
+    
+    // Remove the score before sending to client
+    const finalPosts = scoredPosts.map(({ _algorithmScore, ...post }) => post);
+    
+    res.json(finalPosts);
   } catch (error) {
     console.error("Fetch Feed WorkPosts Error:", error);
     res.status(500).json({ message: "Failed to fetch feed work posts" });

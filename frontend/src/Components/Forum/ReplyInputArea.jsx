@@ -34,14 +34,16 @@ const ReplyInputArea = ({
                 type="button"
                 onClick={() => setActiveReplyId(null)}
                 variant="outline"
-                className="text-sm"
+                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                style={{ color: "#062970"}}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={commentLoading}
-                className="bg-[#6b46c1] text-white hover:bg-[#5a3cad] text-sm"
+                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                style={{ color: "#062970"}}
               >
                 Reply
               </Button>

@@ -13,6 +13,7 @@ import TopNavbar from "@/Components/Navigation/TopNavBar";
 import AvailabilityCalendar from "@/Components/Profile/AvailabilityCalendar";
 import WorkPostGrid from "../WorkPost/WorkPostGrid";
 import Loading from "@/Components/Loading/LoadingState";
+import { formatRoleName } from "@/utils/formatters";
 
 const ProfilePage = () => {
   const { user } = useAuth();
@@ -44,7 +45,7 @@ const ProfilePage = () => {
             console.warn("Failed to fetch Stripe onboarding status:", error);
           }
         }
-      } catch (error) {
+      } catch {
         toast.error("Error loading profile.");
       } finally {
         setLoading(false);
@@ -93,20 +94,23 @@ const ProfilePage = () => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav onSearchToggle={() => setSearchVisible(!searchVisible)} />
-      <div className="ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16">
-        <TopNavbar />
+      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto">
+      <TopNavbar />
 
         {/* Profile Header with right shift */}
-        <div className="px-8">
-          <div className="p-4">
-            <div className="flex flex-col md:flex-row items-center gap-20">
-              <div className="w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-4 border-white shadow-lg">
+        <div className="px-4 md:px-8">
+          <div className="p-2 md:p-4">
+            <div className="flex flex-col lg-custom:flex-row items-center gap-4 lg-custom:gap-20">
+              <div className="w-20 h-20 lg-custom:w-40 lg-custom:h-40 rounded-full overflow-hidden border-2 lg-custom:border-4 border-white shadow-lg">
                 <img src={profile.profilePicture || defaultProfile} alt="Profile" className="w-full h-full object-cover" />
               </div>
 
-              <div className="flex-1 ml-4">
-                <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
-                  <h2 className="text-2xl font-bold text-[#062970] capitalize">{profile.username}</h2>
+              <div className="flex-1 lg-custom:ml-4">
+                <div className="flex flex-col lg-custom:flex-row items-center lg-custom:items-start gap-2 lg-custom:gap-4">
+                  <h2 className="text-lg lg-custom:text-2xl font-bold text-[#010a4f] capitalize">{profile.username}</h2>
+                  <span className="text-sm bg-[#f3e8ff] text-[#6b46c1] px-2 py-1 rounded-full">
+                    {formatRoleName(profile.role)}
+                  </span>
                   {!isOwnProfile && (
                     <>
                       <Button
@@ -134,32 +138,32 @@ const ProfilePage = () => {
                   )}
                 </div>
 
-                <div className="flex gap-10 mt-4">
+                <div className="flex gap-6 lg-custom:gap-10 mt-2 lg-custom:mt-4">
                   <div className="text-center">
-                    <p className="font-bold text-[#062970]">{profile.followersCount || 0}</p>
-                    <p className="text-gray-600 text-sm">Followers</p>
+                    <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">{profile.followersCount || 0}</p>
+                    <p className="text-[#010a4f] text-xs lg-custom:text-sm">Followers</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-bold text-[#062970]">{profile.followingCount || 0}</p>
-                    <p className="text-gray-600 text-sm">Following</p>
+                    <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">{profile.followingCount || 0}</p>
+                    <p className="text-[#010a4f] text-xs lg-custom:text-sm">Following</p>
                   </div>
                   <div className="text-center">
-                    <p className="font-bold text-[#062970]">
+                    <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">
                       {isServiceProvider ? profile.services?.length || 0 : profile.posts?.length || 0}
                     </p>
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-[#010a4f] text-xs lg-custom:text-sm">
                       {isServiceProvider ? "Services" : "Posts"}
                     </p>
                   </div>
                 </div>
 
-                <div className="mt-4">
+                <div className="mt-2 lg-custom:mt-4">
                   {isServiceProvider && (
-                    <p className="font-semibold text-[#062970]">
+                    <p className="font-semibold text-[#010a4f] text-sm lg-custom:text-base">
                       {profile.profession || "No profession listed"}
                     </p>
                   )}
-                  <p className="text-gray-600">{profile.biography || "No bio available"}</p>
+                  <p className="text-[#010a4f] text-sm lg-custom:text-base line-clamp-2 lg-custom:line-clamp-none">{profile.biography || "No bio available"}</p>
                 </div>
               </div>
             </div>
@@ -187,15 +191,19 @@ const ProfilePage = () => {
                   key={tab.key}
                   variant="ghost"
                   onClick={() => setActiveTab(tab.key)}
-                  className={`rounded-none border-t-2 px-6 py-4 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wider !bg-transparent hover:!bg-[#f3e8ff] 
+                  className={`rounded-none border-t-2 px-3 lg-custom:px-6 py-4 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wider !bg-transparent hover:!bg-[#023e8a] hover:!text-white
                     ${
                       activeTab === tab.key
-                        ? "border-black text-[#062970]"
-                        : "border-transparent text-[#062970] hover:bg-[#f3e8ff] hover:text-[#6b46c1]"
+                        ? "border-[#062970] bg-white"
+                        : "border-transparent"
                     }`}
+                  style={{
+                    color: '#062970'
+                  }}
+                  title={tab.label}
                 >
-                  <span className="text-lg">{tab.icon}</span>
-                  {tab.label}
+                  <span className="text-lg" style={{ color: '#062970' }}>{tab.icon}</span>
+                  <span className="hidden lg-custom:inline">{tab.label}</span>
                 </Button>
               ))}
           </div>
@@ -207,7 +215,7 @@ const ProfilePage = () => {
           
           {activeTab === "posts" && !isServiceProvider && (
             <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#062970]">Posts</h3>
+              <h3 className="font-semibold text-lg text-[#010a4f]">Posts</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
                 {profile.posts && profile.posts.length > 0 ? (
                   profile.posts.map((post, index) => (
@@ -224,13 +232,13 @@ const ProfilePage = () => {
 
           {activeTab === "myWork" && isServiceProvider && (
             <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#062970]">My Work</h3>
+              <h3 className="font-semibold text-lg text-[#010a4f]">My Work</h3>
               <WorkPostGrid isOwnProfile={isOwnProfile} />
             </div>
           )}
           {activeTab === "services" && isServiceProvider && (
             <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#062970]">Services Offered</h3>
+              <h3 className="font-semibold text-lg text-[#010a4f]">Services Offered</h3>
               {isOwnProfile && stripeStatus && (!stripeStatus.payoutsEnabled || !stripeStatus.detailsSubmitted) && (
                 <div className="bg-yellow-100 text-yellow-800 border-l-4 border-yellow-400 p-4 mb-4 rounded-md">
                   <p className="font-semibold">🔔 Payout Setup Incomplete</p>
@@ -294,8 +302,9 @@ const ProfilePage = () => {
                         <p className="text-gray-600">${service.price}</p>
                       </div>
                       <Button
-                        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                        className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                         onClick={() => navigate(`/book/${profile.username}?service=${service.id}`)}
+                        style={{ color: "#062970" }}
                       >
                         Book Now
                       </Button>
@@ -309,14 +318,14 @@ const ProfilePage = () => {
           )}
           {activeTab === "availability" && isServiceProvider && (
             <div className="max-w-7xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#062970] mb-2">My Availability</h3>
+              <h3 className="font-semibold text-lg text-[#010a4f] mb-2">My Availability</h3>
               <AvailabilityCalendar />
             </div>
           )}
 
           {activeTab === "policies" && isServiceProvider && (
             <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#062970]">My Policies</h3>
+              <h3 className="font-semibold text-lg text-[#010a4f]">My Policies</h3>
               <div className="p-3 mt-2 border rounded-lg bg-gray-50">
                 {profile.policy ? (
                   <p className="text-gray-700">{profile.policy}</p>

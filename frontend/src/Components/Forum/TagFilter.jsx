@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import api from "@/utils/axiosInstance";
@@ -59,7 +60,7 @@ const TagFilter = ({ selectedTag, onSelectTag }) => {
             className={`w-full justify-start px-4 py-2 text-sm ${
                 selectedTag === null
                 ? "bg-[#f3e8ff] text-[#6b46c1]"
-                : "text-gray-700 hover:bg-gray-100"
+                : "text-[#062970] hover:bg-gray-100"
             }`}
             >
             All Tags
@@ -86,6 +87,11 @@ const TagFilter = ({ selectedTag, onSelectTag }) => {
       )}
     </div>
   );
+};
+
+TagFilter.propTypes = {
+  selectedTag: PropTypes.string,
+  onSelectTag: PropTypes.func.isRequired
 };
 
 export default TagFilter;

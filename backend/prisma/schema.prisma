@@ -370,3 +370,18 @@ enum Priority {
   HIGH
   CRITICAL
 }
+
+model Waitlist {
+  id                 String   @id @default(uuid())
+  name               String
+  email              String   @unique
+  role               String?
+  school             String?
+  city               String?
+  state              String?
+  verified           Boolean  @default(false)
+  verificationToken  String?
+  verificationSentAt DateTime?
+  verifiedAt         DateTime?
+  createdAt          DateTime @default(now())
+}

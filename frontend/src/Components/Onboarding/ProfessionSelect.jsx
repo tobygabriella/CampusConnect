@@ -1,5 +1,6 @@
 // src/components/ProfessionSelect.jsx
 import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ const ProfessionSelect = ({ value, onChange, error }) => {
     <div className="space-y-2">
       <Label className="text-lg font-semibold text-[#062970]">Profession</Label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">
+        <SelectTrigger className="border-[#062970] text-[#062970] hover:bg-[#f3e8ff]">
           <SelectValue placeholder="Select your profession" />
         </SelectTrigger>
         <SelectContent className="bg-white border-2 border-[#062970] z-[100]">
@@ -59,7 +60,7 @@ const ProfessionSelect = ({ value, onChange, error }) => {
           onChange={(e) => setNewProfession(e.target.value)}
           className="border-[#062970]"
         />
-        <Button type="button" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={handleAddProfession}>
+        <Button type="button" className="border-[#062970] text-[#062970] hover:bg-[#f3e8ff]" onClick={handleAddProfession}>
           {isAdding ? <Loading inline /> : "Add"}
         </Button>
       </div>
@@ -67,6 +68,11 @@ const ProfessionSelect = ({ value, onChange, error }) => {
       {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
+};
+ProfessionSelect.propTypes = {
+  value: PropTypes.string,
+  onChange: PropTypes.func.isRequired,
+  error: PropTypes.string
 };
 
 export default ProfessionSelect;

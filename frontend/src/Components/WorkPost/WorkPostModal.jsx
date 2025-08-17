@@ -162,7 +162,8 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
       {enableNav && currentIndex > 0 && (
         <Button
           onClick={prevPost}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 rounded-full p-2 shadow-lg text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 rounded-full p-2 shadow-lg  bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+          style={{ color: "#062970"}}
         >
           <ChevronLeft className="w-6 h-6" />
         </Button>
@@ -176,7 +177,8 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
           {currentImgIndex > 0 && (
             <Button 
               onClick={prevImage} 
-              className="absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] shadow"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 rounded-full p-2 shadow-lg  bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+              style={{ color: "#062970"}}
             >
               <ChevronLeft />
             </Button>
@@ -187,6 +189,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
             <Button 
               onClick={nextImage} 
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] shadow"
+              style={{ color: "#062970"}}
             >
               <ChevronRight />
             </Button>
@@ -202,7 +205,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
   
         {/* Right - Comments + Info */}
         <div className="w-1/3 flex flex-col p-4 relative">
-          <Button onClick={onClose} className="absolute top-2 right-2 text-gray-600 hover:text-black text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">
+          <Button onClick={onClose} className="absolute top-2 right-2 bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" style={{ color: "#062970" }}>
             <X />
           </Button>
   
@@ -220,15 +223,13 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
           </div>
           {(post.service || post.appointment?.service) && (
             <div className="bg-gray-50 border rounded-md p-3 mt-2 mb-4">
-              <div className="text-sm text-[#062970] font-semibold">
+              <div className="text-sm text-[#062970] font-semibold mb-2">
                 {(post.service || post.appointment.service)?.name}
-              </div>
-              <div className="text-sm text-gray-600 mb-2">
-                ${((post.service || post.appointment.service)?.price || 0).toFixed(2)}
               </div>
               {post.author?.username && (
                 <Button
-                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  style={{ color: "#062970" }}
                   onClick={() =>
                     navigate(
                       `/book/${post.author.username}?service=${
@@ -268,23 +269,19 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                     console.error("Failed to toggle post like", err);
                   }
                   }}
-                  className={`hover:bg-[#f3e8ff] !bg-transparent ${
-                  post.isUpvotedByCurrentUser
-                  ? "text-red-500 hover:text-red-500"
-                  : "text-[#062970] hover:text-red-500"
-                  }`}
+                  className={`hover:bg-[#f3e8ff] !bg-transparent text-[#062970]`}
                 >
                 <Heart
                   className="w-5 h-5"
-                  fill={post.isUpvotedByCurrentUser ? "currentColor" : "none"}
-                  stroke="currentColor"
+                  fill={post.isUpvotedByCurrentUser ? "#062970" : "none"}
+                  stroke="#062970"
                   strokeWidth={post.isUpvotedByCurrentUser ? "0" : "1.5"}
                 />
-                <span className="text-sm ml-1">{post._count?.upvotes || 0}</span>
+                <span className="text-sm ml-1 text-[#062970]">{post._count?.upvotes || 0}</span>
               </Button>
 
               <div className="text-sm text-[#062970] flex items-center gap-1">
-                <MessageSquare className="w-4 h-4" />
+                <MessageSquare className="w-4 h-4 text-[#062970]" />
                 <span>{post._count?.comments || 0}</span>
               </div>
             </div>
@@ -345,7 +342,8 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
               <Button
                 type="submit"
                 disabled={commentSubmitting || !commentInput.trim()}
-                className="ml-2 text-sm bg-transparent text-[#6b46c1] hover:underline text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                style={{ color: "#062970" }}
               >
                 {commentSubmitting ? <Loading fullScreen={false} className="inline" /> : "Post"}
               </Button>
@@ -358,9 +356,9 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
       {enableNav && currentIndex < posts.length - 1 && (
         <Button
           onClick={nextPost}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 text-[#062970] text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] rounded-full p-2 shadow-lg"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] rounded-full p-2 shadow-lg"
         >
-          <ChevronRight className="w-6 h-6" />
+          <ChevronRight className="w-6 h-6" style={{ color: "#062970"}}/>
         </Button>
       )}
     </div>

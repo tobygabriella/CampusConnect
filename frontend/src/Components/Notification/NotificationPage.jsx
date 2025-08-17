@@ -8,6 +8,7 @@ import TopNavbar from "@/Components/Navigation/TopNavBar";
 import WorkPostModal from "@/Components/WorkPost/WorkPostModal";
 import { Tabs } from "antd";
 import Loading from "@/Components/Loading/LoadingState";
+import PropTypes from 'prop-types';
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -166,7 +167,7 @@ const NotificationsPage = () => {
     return (
       <div className="flex w-screen overflow-x-hidden">
         <SidebarNav />
-        <div className="ml-64 min-h-screen w-full bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col pt-16">
+        <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto transition-all duration-300">
           <TopNavbar />
           <div className="p-6">
             <div className="bg-white rounded-lg shadow-sm p-6">
@@ -188,9 +189,8 @@ const NotificationsPage = () => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="ml-64 min-h-screen w-full bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col pt-16">
+      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto transition-all duration-300">
         <TopNavbar />
-        
         <div className="p-6">
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex justify-between items-center mb-6">
@@ -237,14 +237,23 @@ const NotificationsPage = () => {
 const NotificationList = ({ notifications, onClick }) => (
   <div className="space-y-4">
     {notifications.map((notif) => (
-      <NotificationItem 
-        key={notif.id} 
-        notif={notif} 
+      <NotificationItem
+        key={notif.id}
+        notif={notif}
         onClick={onClick}
       />
     ))}
   </div>
 );
+
+NotificationList.propTypes = {
+  notifications: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  onClick: PropTypes.func.isRequired,
+};
 
 const NotificationItem = ({ notif, onClick }) => {
   const iconProps = {
@@ -286,6 +295,18 @@ const NotificationItem = ({ notif, onClick }) => {
       </div>
     </div>
   );
+};
+
+NotificationItem.propTypes = {
+  notif: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    type: PropTypes.string.isRequired,
+    isRead: PropTypes.bool.isRequired,
+    title: PropTypes.string.isRequired,
+    message: PropTypes.string.isRequired,
+    createdAt: PropTypes.string.isRequired,
+  }).isRequired,
+  onClick: PropTypes.func.isRequired,
 };
 
 export default NotificationsPage;

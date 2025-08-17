@@ -79,7 +79,7 @@ const LoginPage = () => {
           type="text"
           name="email"
           placeholder="Enter Email or Username"
-          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          className="p-4 border border-gray-300 rounded-lg text-black text-lg focus:outline-none focus:border-[#062970]"
           onChange={handleChange}
           required
         />
@@ -89,7 +89,7 @@ const LoginPage = () => {
           type="password"
           name="password"
           placeholder="Enter Password"
-          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          className="p-4 border border-gray-300 rounded-lg text-black text-lg focus:outline-none focus:border-[#062970]"
           onChange={handleChange}
           required
         />

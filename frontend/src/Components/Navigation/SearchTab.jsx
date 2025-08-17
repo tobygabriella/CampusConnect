@@ -58,8 +58,8 @@ const SearchBarWithDropdown = () => {
   };
 
   return (
-    <div className="relative w-full max-w-lg" ref={containerRef}>
-      <div className="flex items-center bg-white rounded-full border border-[#d8b4fe] focus-within:border-[#6b46c1] transition-all">
+    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full w-full max-w-lg px-4 sm:px-0" ref={containerRef}>
+      <div className="flex items-center bg-white rounded-full border border-[#d8b4fe] focus-within:border-[#010a4f] transition-all py-0 h-6">
         <Input
           placeholder="Search..."
           value={query}
@@ -67,27 +67,27 @@ const SearchBarWithDropdown = () => {
             setQuery(e.target.value);
             handleSearch(e.target.value);
           }}
-          prefix={<SearchOutlined className="text-[#6b46c1]" />}
+          prefix={<SearchOutlined className="text-[#010a4f]" />}
           onFocus={() => query && results.length > 0 && setVisible(true)}
-          className="!bg-transparent !border-none !shadow-none focus:!ring-0 focus:!outline-none"
+          className="!bg-transparent !border-none !shadow-none focus:!ring-0 focus:!outline-none !py-0 !text-xs !h-6"
           style={{ borderRadius: "9999px" }}
         />
 
         <Button
           type="text"
-          icon={<FilterOutlined className="text-[#6b46c1]" />}
+          icon={<FilterOutlined className="text-[#010a4f]" />}
           onClick={() => {
             setShowFilters(!showFilters);
             if (!showFilters) setVisible(false);
           }}
-          className="rounded-r-full hover:bg-[#f3e8ff]"
+          className="rounded-r-full hover:bg-[#023e8a] hover:text-white active:bg-[#555555]"
         />
       </div>
 
       {/* Filter Dropdown */}
       {showFilters && (
         <div
-          className="absolute right-0 mt-2 bg-white rounded-md shadow-lg z-50 w-48"
+          className="absolute right-0 mt-2 bg-white rounded-md shadow-lg z-50 w-48 sm:w-56"
         >
           {[
             { value: "all", label: "All" },
@@ -104,8 +104,8 @@ const SearchBarWithDropdown = () => {
               }}
               className={`px-4 py-2 cursor-pointer transition rounded ${
                 filter === option.value
-                  ? "bg-[#e9e3ff] text-[#6b46c1] font-semibold"
-                  : "hover:bg-[#f3e8ff] text-gray-700"
+                  ? "bg-[#023e8a] text-white font-semibold"
+                  : "hover:bg-[#023e8a] hover:text-white text-[#010a4f]"
               }`}
             >
               {option.label}
@@ -117,24 +117,26 @@ const SearchBarWithDropdown = () => {
       {/* Results Dropdown */}
       {visible && results.length > 0 && (
         <div
-          className="absolute mt-2 w-full bg-white border border-gray-300 rounded-md shadow-lg z-40 max-h-80 overflow-y-auto"
+          className="absolute mt-2 w-full bg-white border border-gray-300 rounded-md shadow-lg z-40 max-h-60 sm:max-h-80 overflow-y-auto"
         >
           <List
             dataSource={results}
             renderItem={(item) => (
               <List.Item
                 onClick={() => handleSelect(item)}
-                className="hover:bg-[#f3e8ff] cursor-pointer px-3 py-2"
+                className="group hover:bg-[#023e8a] hover:text-white cursor-pointer px-3 py-2 transition-colors"
               >
                 <List.Item.Meta
                   avatar={
                     <Avatar src={item.profilePicture || defaultProfile} />
                   }
-                  title={<span>{item.name || item.username || "Unknown"}</span>}
+                  title={<span className="text-[#010a4f] group-hover:text-white">{item.name || item.username || "Unknown"}</span>}
                   description={
-                    item.role === "service"
-                      ? `Service by ${item.provider || "Unknown"}`
-                      : item.role || "No role"
+                    <span className="text-[#555555] group-hover:text-gray-200">
+                      {item.role === "service"
+                        ? `Service by ${item.provider || "Unknown"}`
+                        : item.role || "No role"}
+                    </span>
                   }
                 />
               </List.Item>

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import { Button } from "@/Components/ui/button";
 import PostCard from "@/Components/forum/PostCard";
-import {  ArrowLeft , Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import api from "@/utils/axiosInstance";
@@ -248,15 +248,16 @@ const PostDetailPage = () => {
 
 
   return (
-    <div className="flex w-screen overflow-x-hidden bg-white">
+    <div className="flex w-screen min-h-screen bg-gradient-to-b from-white to-[#f5f5f5] overflow-x-hidden">
       <SidebarNav />
-      <div className="ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16">
+      <div className="flex-1 flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64">
         <TopNavbar />
         <div className="max-w-4xl mx-auto p-4 w-full">
           <Button
             variant="ghost"
             onClick={() => navigate(-1)}
             className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+            style={{ color: "#062970"}}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Community
@@ -299,6 +300,7 @@ const PostDetailPage = () => {
                         type="submit"
                         disabled={commentLoading}
                         className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                        style={{ color: "#062970"}}
                       >
                         {commentLoading ? "Posting..." : "Post"}
                       </Button>

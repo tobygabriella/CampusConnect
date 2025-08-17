@@ -184,7 +184,7 @@ const handleCollegeSelect = (collegeId) => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16">
+      <div className="flex-1 flex flex-col pt-16 min-h-screen bg-gradient-to-b from-white to-[#f5f5f5] overflow-y-auto ml-16 min-[850px]:ml-64">
         <TopNavbar />
         <div className="max-w-4xl mx-auto p-4 w-full">
           <div className="flex justify-between items-center mb-6">
@@ -210,13 +210,14 @@ const handleCollegeSelect = (collegeId) => {
             </div>
             <Button
               onClick={() => setShowCreateModal(true)}
-              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]]"
+              className="text-[#062970] !bg-transparent hover:!bg-[#f3e8ff]"
               disabled={!canPostToCurrentCollege()}
               title={
                 !canPostToCurrentCollege()
                   ? "You can only post in communities you attend or service"
                   : ""
               }
+              style={{ color: "#062970"}}
             >
               New Post
             </Button>
@@ -242,7 +243,8 @@ const handleCollegeSelect = (collegeId) => {
               {canPostToCurrentCollege() && (
                 <Button
                   onClick={() => setShowCreateModal(true)}
-                  className="mt-4 bg-[#062970] hover:bg-[#051f5c]"
+                  className="mt-4 text-[#062970] !bg-transparent hover:!bg-[#f3e8ff] border border-[#062970]"
+                  style={{ color: "#062970"}}
                 >
                   Create First Post
                 </Button>
@@ -266,9 +268,10 @@ const handleCollegeSelect = (collegeId) => {
               {Array.from({ length: Math.ceil(pagination.total / pagination.limit) }, (_, i) => (
                 <Button
                   key={i + 1}
-                  variant={pagination.page === i + 1 ? "default" : "outline"}
-                  className={pagination.page === i + 1 ? "bg-[#062970]" : ""}
+                  variant="outline"
+                  className={pagination.page === i + 1 ? "text-[#062970] font-semibold border-[#062970]" : ""}
                   onClick={() => handlePageChange(i + 1)}
+                  style={{ color: "#062970"}}
                 >
                   {i + 1}
                 </Button>

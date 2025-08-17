@@ -266,8 +266,8 @@ const BookingPage = () => {
   if (loading) return <Loading />;
   
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white p-6">
-      <h2 className="text-2xl font-bold text-[#062970] mb-4">
+    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5] p-6">
+      <h2 className="text-2xl font-bold text-[#010a4f] mb-4">
         {rescheduleMode ? "Reschedule Appointment" : "Book a Service"}
       </h2>
 
@@ -286,7 +286,7 @@ const BookingPage = () => {
       </div>
 
       <div className="w-80 mb-6">
-        <label className="text-sm font-semibold text-[#062970]">Select a Service <span className="text-red-500">*</span></label>
+        <label className="text-sm font-semibold text-[#010a4f]">Select a Service <span className="text-red-500">*</span></label>
         {rescheduleMode ? (
           <div className="mt-2 p-2 bg-gray-100 rounded text-gray-700 font-medium border border-gray-300">
             {services.find(s => s.id === selectedService)?.name} – ${services.find(s => s.id === selectedService)?.price} ({services.find(s => s.id === selectedService)?.duration / 60} hrs)
@@ -308,7 +308,7 @@ const BookingPage = () => {
       </div>
 
       <div className="w-80 mb-6">
-        <label className="text-sm font-semibold text-[#062970]">Select a Date <span className="text-red-500">*</span></label>
+        <label className="text-sm font-semibold text-[#010a4f]">Select a Date <span className="text-red-500">*</span></label>
         <DatePicker
           className="w-full mt-2"
           value={selectedDate ? dayjs(selectedDate) : null} // ✅ Set this!
@@ -323,7 +323,7 @@ const BookingPage = () => {
       </div>
 
       <div className="w-80 mb-6">
-        <label className="text-sm font-semibold text-[#062970]">Select a Time Slot <span className="text-red-500">*</span></label>
+        <label className="text-sm font-semibold text-[#010a4f]">Select a Time Slot <span className="text-red-500">*</span></label>
         <Select
           className="w-full mt-2"
           placeholder="Select a Time Slot"
@@ -341,7 +341,7 @@ const BookingPage = () => {
 
       <Button
         type="primary"
-        className="w-80 bg-[#062970] text-white py-3 rounded-full shadow-md hover:bg-[#051f5c] transition-all duration-300"
+        className="w-80 bg-white text-[#010a4f] border-2 border-[#010a4f] py-3 rounded-full shadow-md hover:bg-[#023e8a] hover:text-white active:bg-[#555555] active:text-white transition-all duration-300"
         onClick={rescheduleMode ? handleRescheduleNow : handleBookNow}
         disabled={isAvailabilityEmpty|| bookingWithSelf || !providerIsReadyToBook}
       >

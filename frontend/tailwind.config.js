@@ -9,12 +9,21 @@ export default {
     ],
     theme: {
     	extend: {
+    		screens: {
+    			'lg-custom': '850px',
+    		},
     		borderRadius: {
     			lg: 'var(--radius)',
     			md: 'calc(var(--radius) - 2px)',
     			sm: 'calc(var(--radius) - 4px)'
     		},
     		colors: {
+    			// Custom Aro color scheme
+    			'aro-light-blue': '#023e8a',
+    			'aro-dark-blue': '#010a4f',
+    			'aro-gray': '#555555',
+    			'aro-light-gray': '#999999',
+    			
     			background: 'hsl(var(--background))',
     			foreground: 'hsl(var(--foreground))',
     			card: {

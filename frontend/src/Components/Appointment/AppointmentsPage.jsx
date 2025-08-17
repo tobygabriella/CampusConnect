@@ -275,6 +275,7 @@ const AppointmentsPage = () => {
               <Button variant="ghost" 
                 onClick={() => openCancelModal(appt)}
                 className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                style={{ color: "#062970"}}
               >
                 Cancel
               </Button>
@@ -282,6 +283,7 @@ const AppointmentsPage = () => {
                 <Button variant="ghost" 
                   onClick={() => openRescheduleModal(appt)}
                   className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  style={{ color: "#062970"}}
                 >
                   Reschedule
                 </Button>
@@ -319,6 +321,7 @@ const AppointmentsPage = () => {
                     onClick={() => handleConfirm(appt.id)}
                     className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                     disabled={user.id === appt.client.id && !appt.providerConfirmed}
+                    style={{ color: "#062970"}}
                   >
                     ✅ Confirm Appointment
                   </Button>
@@ -335,6 +338,7 @@ const AppointmentsPage = () => {
                       )
                     }
                     className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                    style={{ color: "#062970"}}
                   >
                     ❌ Report No-Show
                   </Button>
@@ -356,6 +360,7 @@ const AppointmentsPage = () => {
                 <Button variant="ghost" 
                   onClick={submitNote}
                   className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  style={{ color: "#062970"}}
                 >
                   💬 Submit Note
                 </Button>
@@ -414,87 +419,88 @@ const AppointmentsPage = () => {
   ];
 
   return (
-        <div className="flex w-screen overflow-x-hidden">
-            <SidebarNav />
-            <div className="ml-64 min-h-screen w-full bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col pt-16">
-                <TopNavbar />
-                
-                <div className="p-6">
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <h2 className="text-2xl font-bold text-[#062970] mb-6">Your Appointments</h2>
-
-                        <Tabs
-                        defaultActiveKey="1"
-                        items={items}
-                        tabBarStyle={{
-                            borderBottom: "1px solid #e2e8f0",
-                            marginBottom: "16px",
-                        }}
-                        tabBarGutter={32}
-                        className="custom-tabs"
-                        />
-                        {cancelModal.open && (
-                          <div className="fixed inset-0 z-50 flex items-center justify-center">
-                            <div className="relative bg-white p-6 rounded shadow-lg max-w-sm w-full">
-                              <Button variant="ghost" 
-                                onClick={closeCancelModal}
-                                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                                aria-label="Close"
-                              >
-                                &times;
-                              </Button>
-                              <h3 className="text-lg font-semibold mb-4 text-[#062970]">Cancel Appointment?</h3>
-                              <p className="text-sm mb-6 text-gray-600">
-                                Are you sure you want to cancel this appointment? {cancelModal.appt?.serviceProvider?.cancellationWindow} hour refund policy applies.
-                              </p>
-                              <p className="text-sm mb-4 text-gray-500 italic">
-                                {getTimeStatusMessage(cancelModal.appt, "cancel")}
-                              </p>
-                              <div className="flex justify-end gap-3">
-                                <Button variant="ghost"  onClick={closeCancelModal} className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">No</Button>
-                                <Button variant="ghost" 
-                                  onClick={async () => {
-                                    try {
-                                      await api.patch(`/appointments/${cancelModal.appt.id}/cancel`);
-                                      toast.success("Appointment cancelled");
-                                      closeCancelModal();
-                                      window.location.reload();
-                                    } catch {
-                                      toast.error("Failed to cancel appointment");
-                                    }
-                                  }}
-                                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                                >
-                                  Yes, Cancel
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        {retryPaymentModal.open && (
-                          <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
-                            <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                              <h2 className="text-xl font-bold mb-4 text-[#062970]">Add a Payment Method</h2>
-                              <p className="text-gray-600 mb-4">
-                                Your confirmation could not go through because we couldn’t charge your card. Please update your payment methodor contact your provider if you would prefer to handle this directly.
-                              </p>
-                              <div className="flex justify-end gap-4">
-                                <Button onClick={() => setRetryPaymentModal({ open: false, apptId: null })}>Close</Button>
-                                <Button
-                                  onClick={() =>
-                                    navigate(`/checkout?appointmentId=${retryPaymentModal.apptId}&mode=retry`)
-                                  }
-                                >
-                                  Update Payment
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        )}
+    <div className="flex w-screen overflow-x-hidden">
+      <SidebarNav />
+      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto">  
+            <TopNavbar />            
+            <div className="p-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h2 className="text-2xl font-bold text-[#010a4f] mb-6">Your Appointments</h2>
+                <Tabs
+                defaultActiveKey="1"
+                items={items}
+                tabBarStyle={{
+                    borderBottom: "1px solid #e2e8f0",
+                    marginBottom: "16px",
+                }}
+                tabBarGutter={32}
+                className="custom-tabs"
+                />
+                {cancelModal.open && (
+                  <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="relative bg-white p-6 rounded shadow-lg max-w-sm w-full">
+                      <Button variant="ghost" 
+                        onClick={closeCancelModal}
+                        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                        aria-label="Close"
+                        style={{ color: "#062970"}}
+                      >
+                        &times;
+                      </Button>
+                      <h3 className="text-lg font-semibold mb-4 text-[#062970]">Cancel Appointment?</h3>
+                      <p className="text-sm mb-6 text-gray-600">
+                        Are you sure you want to cancel this appointment? {cancelModal.appt?.serviceProvider?.cancellationWindow} hour refund policy applies.
+                      </p>
+                      <p className="text-sm mb-4 text-gray-500 italic">
+                        {getTimeStatusMessage(cancelModal.appt, "cancel")}
+                      </p>
+                      <div className="flex justify-end gap-3">
+                        <Button variant="ghost"  onClick={closeCancelModal} className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" style={{ color: "#062970"}}>No</Button>
+                        <Button variant="ghost" 
+                          onClick={async () => {
+                            try {
+                              await api.patch(`/appointments/${cancelModal.appt.id}/cancel`);
+                              toast.success("Appointment cancelled");
+                              closeCancelModal();
+                              window.location.reload();
+                            } catch {
+                              toast.error("Failed to cancel appointment");
+                            }
+                          }}
+                          className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                          style={{ color: "#062970"}}
+                        >
+                          Yes, Cancel
+                        </Button>
+                      </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                  </div>
+                )}
+                {retryPaymentModal.open && (
+                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
+                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+                      <h2 className="text-xl font-bold mb-4 text-[#062970]">Add a Payment Method</h2>
+                      <p className="text-gray-600 mb-4">
+                        Your confirmation could not go through because we couldn’t charge your card. Please update your payment methodor contact your provider if you would prefer to handle this directly.
+                      </p>
+                      <div className="flex justify-end gap-4">
+                        <Button onClick={() => setRetryPaymentModal({ open: false, apptId: null })} style={{ color: "#062970"}}>Close</Button>
+                        <Button
+                          onClick={() =>
+                            navigate(`/checkout?appointmentId=${retryPaymentModal.apptId}&mode=retry`)
+                          }
+                          style={{ color: "#062970"}}
+                        >
+                          Update Payment
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+          </div>
+      </div>
+  </div>
   );
 };
 

@@ -116,11 +116,10 @@ const HomeFeedPage = () => {
   
   return (
     <>
-      <div className="flex w-screen min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white overflow-x-hidden">
+      <div className="flex w-screen min-h-screen bg-gradient-to-b from-white to-[#f5f5f5] overflow-x-hidden">
         <SidebarNav />
-        <div className="flex-1 ml-64 pt-16">
+        <div className="flex-1 flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64">
           <TopNavbar />
-  
           <div className="max-w-xl mx-auto py-6 px-4 space-y-6">
             {posts.length === 0 ? (
               <p className="text-center text-gray-500">No posts available in your feed yet.</p>
@@ -181,27 +180,23 @@ const HomeFeedPage = () => {
                       variant="ghost"
                       size="icon"
                       onClick={() => toggleLike(post.id)}
-                      className={`hover:bg-[#f3e8ff] !bg-transparent hover:!bg-[#f3e8ff] ${
-                        likedPostIds.has(post.id) 
-                          ? "text-red-500 hover:text-red-500" // Keep red on hover when liked
-                          : "text-[#062970] hover:text-red-500" // Brand color to red on hover
-                      }`}
+                      className="hover:bg-[#f3e8ff] !bg-transparent hover:!bg-[#f3e8ff] text-[#062970]"
                     >
                       <Heart
                         className="w-5 h-5"
-                        fill={likedPostIds.has(post.id) ? "currentColor" : "none"}
-                        stroke="currentColor"
+                        fill={likedPostIds.has(post.id) ? "#062970" : "none"}
+                        stroke="#062970"
                         strokeWidth={likedPostIds.has(post.id) ? "0" : "1.5"} // Remove stroke when filled
                       />
-                      <span className="text-sm ml-1">{post._count?.upvotes || 0}</span>
+                      <span className="text-sm ml-1 text-[#062970]">{post._count?.upvotes || 0}</span>
                     </Button>
   
                       <Button
                         className="text-gray-600 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                         onClick={() => setSelectedPostId(post.id)}
                       >
-                        <MessageSquare className="w-5 h-5" />
-                        <span className="text-sm ml-1">{post._count?.comments || 0}</span>
+                        <MessageSquare className="w-5 h-5 text-[#062970]" />
+                        <span className="text-sm ml-1 text-[#062970]">{post._count?.comments || 0}</span>
                       </Button>
                     </div>
   
@@ -211,14 +206,12 @@ const HomeFeedPage = () => {
                           <p className="font-semibold">
                             {(post.service || post.appointment?.service)?.name}
                           </p>
-                          <p className="text-gray-600">
-                            ${((post.service || post.appointment?.service)?.price || 0).toFixed(2)}
-                          </p>
                         </div>
   
                         {post.author?.username && (
                           <Button
-                            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                            className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                            style={{ color: "#062970" }}
                             onClick={() =>
                               navigate(
                                 `/book/${post.author.username}?service=${

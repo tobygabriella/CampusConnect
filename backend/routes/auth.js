@@ -191,7 +191,11 @@ router.post("/login", async (req, res) => {
     
 
     // Check password
+    if (!user.password) {
+      return res.status(400).json({ message: "This account uses Google login. Please sign in with Google." });
+    }
     const isMatch = await bcrypt.compare(password, user.password);
+    
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials." });
     }
@@ -236,8 +240,6 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-
 
 //log out
 router.post("/logout", requireAuth, async (req, res) => {

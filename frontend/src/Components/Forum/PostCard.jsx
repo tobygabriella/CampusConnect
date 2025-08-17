@@ -52,16 +52,16 @@ const PostCard = ({ post, onVote, onPostClick }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <Button variant="ghost" size="sm" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={() => onVote?.("upvote")}>
-              <ThumbsUp className="h-4 w-4" />
-              <span>{upvotesCount}</span>
+              <ThumbsUp className="h-4 w-4  text-[#062970] " />
+              <span className="text-[#062970]" >{upvotesCount}</span>
             </Button>
             <Button variant="ghost" size="sm" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={() => onVote?.("downvote")}>
-              <ThumbsDown className="h-4 w-4" />
-              <span>{downvotesCount}</span>
+              <ThumbsDown className="h-4 w-4  text-[#062970] " />
+              <span className="text-[#062970]">{downvotesCount}</span>
             </Button>
             <Button variant="ghost" size="sm" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={onPostClick}>
-              <MessageSquare className="h-4 w-4" />
-              <span>{commentsCount}</span>
+              <MessageSquare className="h-4 w-4 text-[#062970]" />
+              <span className="text-[#062970]">{commentsCount}</span>
             </Button>
           </div>
         </div>

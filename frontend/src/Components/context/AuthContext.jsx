@@ -22,6 +22,10 @@ export const AuthProvider = ({ children }) =>  {
     } catch (error) {
       console.error("Token verification failed:", error.response?.status);
       
+      // Define public paths that don't require authentication
+      const publicPaths = ["/", "/waitlist", "/login", "/signup", "/getting-started"];
+      const currentPath = window.location.pathname;
+      
       if (error.response?.status === 401) {
         try {
           const refreshResponse = await api.post("/auth/refresh-token", {}, { withCredentials: true });
@@ -31,10 +35,16 @@ export const AuthProvider = ({ children }) =>  {
           }
         } catch (refreshError) {
           console.error("Token refresh failed:", refreshError.response?.status);
-          clearAuthCookiesAndRedirect();
+          // Only redirect if not on a public page
+          if (!publicPaths.includes(currentPath)) {
+            clearAuthCookiesAndRedirect();
+          }
         }
       } else {
-        clearAuthCookiesAndRedirect();
+        // Only redirect if not on a public page
+        if (!publicPaths.includes(currentPath)) {
+          clearAuthCookiesAndRedirect();
+        }
       }
     } finally {
       setIsLoading(false);

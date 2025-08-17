@@ -16,6 +16,7 @@ import { toast } from "react-toastify";
 import useUsernameAvailability from "@/hooks/useUsernameAvailability";
 import ProfessionSelect from "@/Components/Onboarding/ProfessionSelect";
 import { getCombinedSchema } from "@/utils/schema";
+import { formatRoleName } from "@/utils/formatters";
 
 export const EditProfileForm = () => {
   const { user, verifyAuth } = useAuth();
@@ -225,16 +226,14 @@ export const EditProfileForm = () => {
   };
 
   if (isLoading) {
-    return <div>Loading profile data...</div>;
+    return <div className="text-center text-[#010a4f] mt-10">Loading profile data...</div>;
   }
 
   return (
-    <div className="min-h-screen flex w-screen bg-gradient-to-b from-[#f3e8ff] overflow-x-hidden to-white">
+    <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="max-w-4xl mx-auto p-4 md:p-8 ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 pt-16" >
-      <TopNavbar />
-        <h1 className="text-3xl font-bold text-[#062970] mb-8">Edit Profile</h1>
-        
+      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64 p-4 lg-custom:p-8 transition-all duration-300">
+        <TopNavbar />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Profile Picture Section */}
           <div className="flex flex-col items-center">
@@ -270,25 +269,26 @@ export const EditProfileForm = () => {
           </div>
 
           {/* Role Switch */}
-          <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow">
+          <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow border border-gray-200">
             <div>
               <h3 className="font-semibold text-[#062970]">
-                Current Role: <span className="capitalize">{role}</span>
+                Current Role: <span>{formatRoleName(role)}</span>
               </h3>
               {user?.role === "student" && !isPreparingSwitch && (
-                <p className="text-sm text-gray-600 mt-1">
-                  Switch to service provider to offer services
+                <p className="text-sm text-[#010a4f] mt-1">
+                  Switch to {formatRoleName("service_provider")} to offer services
                 </p>
               )}
               {user?.role === "student" && !isPreparingSwitch && (
                 <Button
-                  className="mt-2"
+                  className="mt-2 bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                   onClick={() => {
                     setIsPreparingSwitch(true);
                     setValue("role", "service_provider", { shouldDirty: true }); // Temporary UI update
                   }}
+                  style={{ color: "#062970"}}
                 >
-                  Switch to Service Provider
+                  Switch to {formatRoleName("service_provider")}
                 </Button>
               )}
             </div>
@@ -350,19 +350,21 @@ export const EditProfileForm = () => {
             <Button
               type="button"
               variant="outline"
-              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+              className="text-[#062970] !bg-transparent hover:!bg-[#f3e8ff] border border-[#062970]"
               onClick={() => navigate(-1)}
+              style={{ color: "#062970"}}
             >
               Cancel
             </Button>
             <Button
               type="submit"
-              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+              className="text-[#062970] !bg-transparent hover:!bg-[#f3e8ff] border border-[#062970]"
               disabled={
                 isUploading || 
                 (watchedUsername && isAvailable === false && watchedUsername !== initialUsername) || 
                 (!isDirty && !fileChangesExist)
               }
+              style={{ color: "#062970"}}
             >
               {isUploading ? "Saving..." : "Save Changes"}
             </Button>

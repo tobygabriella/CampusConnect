@@ -1,31 +1,31 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/Components/context/AuthContext";
-import { useNavigate } from "react-router-dom";
 import axios from "@/utils/axiosInstance";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { toast } from "react-toastify";
-import SidebarNav from "@/Components/Navigation/SideBarNav";
-import TopNavbar from "@/Components/Navigation/TopNavBar";
 import ImageUploadSection from "../Profile/ImageUploadSection";
 import Loading from "@/Components/Loading/LoadingState";
+import { X } from "lucide-react";
+import PropTypes from 'prop-types';
+import { formatRoleName } from "@/utils/formatters";
 
-const CreateWorkPost = () => {
+const CreateWorkPost = ({ isOpen, onClose, onPostCreated }) => {
   const { user } = useAuth();
-  const navigate = useNavigate();
-  const { register, handleSubmit, setValue } = useForm();
+  const { register, handleSubmit, setValue, reset } = useForm();
   const [files, setFiles] = useState([]);
   const [services, setServices] = useState([]);
   const [appointments, setAppointments] = useState([]);
-  const [searchVisible, setSearchVisible] = useState(false);
-  const [loading, setLoading] = useState(true); 
-  const [submitting, setSubmitting] = useState(false); 
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-// Load services or appointments based on role
-useEffect(() => {
+  // Load services or appointments based on role
+  useEffect(() => {
+    if (!isOpen) return;
+    
     const fetchData = async () => {
       try {
         setLoading(true);
@@ -56,7 +56,7 @@ useEffect(() => {
     };
   
     fetchData();
-  }, [user]);
+  }, [user, isOpen]);
 
   const handleImageChange = (e) => {
     const filesArray = Array.from(e.target.files);
@@ -88,31 +88,63 @@ useEffect(() => {
 
     try {
       setSubmitting(true);
-      await axios.post("/work-posts", formData, {
+      const response = await axios.post("/work-posts", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       toast.success("Post created!");
-      navigate("/profile");
+      
+      // Reset form and close modal
+      reset();
+      setFiles([]);
+      onClose();
+      
+      // Notify parent component if callback provided
+      if (onPostCreated) {
+        onPostCreated(response.data);
+      }
     } catch (err) {
       console.error("Create post error:", err);
       toast.error("Failed to create post");
-    }finally {
+    } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading) return <Loading />;
+  const handleClose = () => {
+    reset();
+    setFiles([]);
+    onClose();
+  };
+
+  if (!isOpen) return null;
 
   return (
-    <div className="flex w-screen overflow-x-hidden">
-      <SidebarNav onSearchToggle={() => setSearchVisible(!searchVisible)} />
-      <div className="ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16">
-        <TopNavbar />
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/10 p-4">
+      <div className="bg-white rounded-lg max-w-xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <div>
+            <h2 className="text-xl font-bold text-[#062970]">Create New Post</h2>
+            {user && (
+              <span className="text-xs bg-[#f3e8ff] text-[#6b46c1] px-2 py-0.5 rounded-full">
+                {formatRoleName(user.role)}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={handleClose}
+            className="p-1 hover:bg-gray-100 rounded-full"
+          >
+            <X size={24} className="text-gray-500" />
+          </button>
+        </div>
 
-        <div className="max-w-4xl mx-auto p-4 md:p-8 w-full">
-          <h1 className="text-3xl font-bold text-[#062970] mb-8">Create New Post</h1>
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {/* Content */}
+        <div className="p-4">
+          {loading ? (
+            <Loading />
+          ) : (
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Image Upload */}
             <ImageUploadSection
               title="Post Photos"
@@ -132,8 +164,9 @@ useEffect(() => {
               <Textarea
                 id="caption"
                 {...register("caption", { required: true })}
-                rows={4}
-                className="bg-white text-[#062970] border-2 border-[#062970]"
+                rows={1}
+                className="bg-white text-[#062970] border border-[#062970]/70 rounded-full shadow-sm px-4 py-2 min-h-[42px] focus:border-[#062970] focus:ring-1 focus:ring-[#062970]/30 transition-all"
+                style={{ resize: 'vertical' }}
               />
             </div>
 
@@ -146,10 +179,10 @@ useEffect(() => {
                     Related Service (optional)
                   </Label>
                   <Select onValueChange={(value) => setValue("serviceId", value)}>
-                    <SelectTrigger className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">
-                      <SelectValue placeholder="Select a service" />
+                    <SelectTrigger className="!bg-transparent hover:!bg-[#f3e8ff]/50 border border-[#062970]/70 rounded-full shadow-sm h-[42px] px-4 text-[#062970] [&>span]:text-[#062970] transition-all">
+                      <SelectValue placeholder="Select a service"/>
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-2 border-[#062970] z-[100]">
+                    <SelectContent className="bg-white border text-[#062970] border-[#062970]/70 rounded-2xl shadow-sm z-[100] overflow-hidden">
                       {services.map((svc) => (
                         <SelectItem 
                           key={svc.id} 
@@ -169,10 +202,10 @@ useEffect(() => {
                     Related Appointment (optional)
                   </Label>
                   <Select onValueChange={(value) => setValue("appointmentId", value)}>
-                    <SelectTrigger className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">
+                    <SelectTrigger className="!bg-transparent hover:!bg-[#f3e8ff]/50 border border-[#062970]/70 rounded-full shadow-sm h-[42px] px-4 text-[#062970] [&>span]:text-[#062970] transition-all">
                       <SelectValue placeholder="Select an appointment" />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-2 border-[#062970] z-[100]">
+                    <SelectContent className="bg-white border border-[#062970]/70 rounded-2xl shadow-sm z-[100] overflow-hidden">
                       {appointments.map((apt) => (
                         <SelectItem 
                           key={apt.id} 
@@ -193,10 +226,10 @@ useEffect(() => {
                   Related Service (optional)
                 </Label>
                 <Select onValueChange={(value) => setValue("serviceId", value)}>
-                  <SelectTrigger className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]">
+                  <SelectTrigger className="!bg-transparent hover:!bg-[#f3e8ff]/50 text-[#062970] border border-[#062970]/70 rounded-full shadow-sm h-[42px] px-4 transition-all">
                     <SelectValue placeholder="Select a service" />
                   </SelectTrigger>
-                  <SelectContent className="bg-white border-2 border-[#062970] z-[100]">
+                  <SelectContent className="bg-white border border-[#062970]/70 rounded-2xl shadow-sm z-[100] overflow-hidden">
                     {services.map((svc) => (
                       <SelectItem 
                         key={svc.id} 
@@ -211,29 +244,36 @@ useEffect(() => {
               </div>
             )}
 
-            {/* Submit */}
-            <div className="flex justify-end gap-4 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                onClick={() => navigate(-1)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                type="submit" 
-                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                disabled={loading || files.length === 0}
-              >
-                 {submitting ? <Loading inline={true} /> : "Create Post"}
-              </Button>
-            </div>
-          </form>
+              {/* Submit */}
+              <div className="flex justify-end gap-4 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="!bg-transparent hover:!bg-[#f3e8ff] !text-[#062970] border-2 border-[#062970]"
+                  onClick={handleClose}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="!bg-[#062970] hover:!bg-[#051f5c] !text-white"
+                  disabled={loading || files.length === 0 || submitting}
+                >
+                   {submitting ? <Loading inline={true} /> : "Create Post"}
+                </Button>
+              </div>
+            </form>
+          )}
         </div>
       </div>
     </div>
   );
+};
+
+CreateWorkPost.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onPostCreated: PropTypes.func,
 };
 
 export default CreateWorkPost;

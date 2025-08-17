@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import PostCard from "@/Components/forum/PostCard";
@@ -189,14 +189,14 @@ const CommentThreadPage = () => {
   }
 
   return (
-    <div className="flex w-screen overflow-x-hidden bg-white">
+    <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="ml-64 min-h-screen bg-gradient-to-b from-[#f3e8ff] to-white flex flex-col flex-1 w-screen pt-16">
+      <div className="flex-1 flex flex-col pt-16 min-h-screen bg-gradient-to-b from-white to-[#f5f5f5] overflow-y-auto ml-16 min-[850px]:ml-64">
         <TopNavbar />
         <div className="max-w-4xl mx-auto p-4 w-full">
           <Button
             variant="ghost"
-            className="text-[#062970] hover:underline mb-4 bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+            className="text-[#062970] hover:underline mb-4 !bg-transparent hover:!bg-[#f3e8ff]"
             onClick={() => navigate(-1)}
           >
             <ArrowLeft className="w-4 h-4 mr-1" /> Back to Post

@@ -69,7 +69,7 @@ const SignupPage = () => {
           type="text"
           name="name"
           placeholder="Full Name"
-          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          className="p-4 border border-gray-300 rounded-lg text-black text-lg focus:outline-none focus:border-[#062970]"
           onChange={handleChange}
         />
         {errors.name && <p className="text-red-500 text-sm">{errors.name}</p>}
@@ -78,7 +78,7 @@ const SignupPage = () => {
           type="email"
           name="email"
           placeholder="Email Address"
-          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          className="p-4 border border-gray-300 rounded-lg text-black text-lg focus:outline-none focus:border-[#062970]"
           onChange={handleChange}
         />
         {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
@@ -88,7 +88,7 @@ const SignupPage = () => {
           type="password"
           name="password"
           placeholder="Password"
-          className="p-3 border border-gray-300 rounded-lg text-black focus:outline-none focus:border-[#062970]"
+          className="p-4 border border-gray-300 rounded-lg text-black text-lg focus:outline-none focus:border-[#062970]"
           onChange={handleChange}
         />
         {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}

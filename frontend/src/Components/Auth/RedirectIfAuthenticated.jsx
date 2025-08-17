@@ -11,23 +11,25 @@ const RedirectIfAuthenticated = () => {
     return <Loading />;
   }
 
-  // If the user is authenticated and tries to access the getting-started page, redirect to profile
+  const publicPaths = ["/getting-started", "/login", "/signup", "/waitlist"];
+
+  // Allow access to public pages explicitly
+  if (!isAuthenticated && publicPaths.includes(location.pathname)) {
+    if (location.pathname === "/getting-started") return <GettingStarted />;
+    return null; // proceed to requested public route
+  }
+
+  // If authenticated user tries accessing getting-started, redirect them to profile
   if (isAuthenticated && location.pathname === "/getting-started") {
     return <Navigate to="/profile" replace />;
   }
 
-  // If the user is not authenticated and tries to access the getting-started page, allow it
-  if (!isAuthenticated && location.pathname === "/getting-started") {
-    return <GettingStarted />;
-  }
-
-  // If the user is not authenticated and tries to access any other page, redirect to getting-started
-  if (!isAuthenticated) {
+  // If unauthenticated user accesses any protected page, redirect them to getting-started
+  if (!isAuthenticated && !publicPaths.includes(location.pathname)) {
     return <Navigate to="/getting-started" replace />;
   }
 
-  // If none of the above, allow the user to proceed
-  return <Navigate to="/" replace />;
+  return null; // allow authenticated users to proceed
 };
 
 export default RedirectIfAuthenticated;
