@@ -44,7 +44,7 @@ export const EditableField = ({
             onClick={onSave}
             className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
           >
-            <Save size={16} />
+            <Save size={16} style={{ color: "#062970" }} />
           </Button>
         )}
       </div>

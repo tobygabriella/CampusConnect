@@ -4,7 +4,7 @@ import AroLogo from "@/assets/aro.png"; // Import your logo
 
 const GettingStarted = () => {
   return (
-    <div className="flex justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
+    <div className="flex justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5]">
       {/* Content directly on the background */}
       <div className="text-center max-w-lg -mt-20">
         {/* Logo */}

@@ -39,7 +39,7 @@ const SignupPage = () => {
         return; // stop redirect
       }
     } catch (error) {
-      console.error("❌ Signup failed:", error.response?.data?.message);
+      console.error("Signup failed:", error.response?.data?.message);
       setErrors({ form: error.response?.data?.message || "Signup failed." });
     }finally {
       setLoading(false); // Set loading to false when done
@@ -47,7 +47,7 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
+    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5]">
       <img src={AroLogo} alt="ARO Logo" className="h-40 mb-6" />
       
       {/* Google Signup Button */}

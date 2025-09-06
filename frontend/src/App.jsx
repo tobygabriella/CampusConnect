@@ -56,7 +56,6 @@ function App() {
           <Route path="/book/:username" element={<BookingPage />} />
           <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/edit-profile" element={<EditProfilePage />} />
-          <Route path="/community" element={<CommunityPage />} />
           <Route path="/community/posts/:postId" element={<PostDetailPage />} />
           <Route path="/create-post" element={<CreatePostModal />} />
           <Route path="/comments/:commentId/thread" element={<CommentThreadPage />} />
@@ -70,8 +69,20 @@ function App() {
               </Elements>} 
           />
         </Route>
+        
+        {/* Student-only routes */}
+        <Route
+          element={
+            <ProtectedRoute
+              requiresAuth={true}
+              allowedRoles={["student"]}
+            />
+          }
+        >
+          <Route path="/community" element={<CommunityPage />} />
+        </Route>
 
-          {/* Service provider-only route */}
+        {/* Service provider-only route */}
           <Route 
             element={
               <ProtectedRoute 

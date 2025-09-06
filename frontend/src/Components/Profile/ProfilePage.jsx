@@ -6,7 +6,7 @@ import api from "@/utils/axiosInstance";
 import defaultProfile from "@/assets/default-profile.jpg";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
-import { FaTh, FaBookmark, FaTags } from "react-icons/fa";
+import { FaTh, FaBookmark, FaTags, FaThumbsUp } from "react-icons/fa";
 import SearchTab from "@/Components/Navigation/SearchTab";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
@@ -105,19 +105,20 @@ const ProfilePage = () => {
                 <img src={profile.profilePicture || defaultProfile} alt="Profile" className="w-full h-full object-cover" />
               </div>
 
-              <div className="flex-1 lg-custom:ml-4">
-                <div className="flex flex-col lg-custom:flex-row items-center lg-custom:items-start gap-2 lg-custom:gap-4">
+              <div className="flex-1 lg-custom:ml-4 text-center">
+                <div className="flex flex-col lg-custom:flex-row items-center gap-2 lg-custom:gap-4 justify-center">
                   <h2 className="text-lg lg-custom:text-2xl font-bold text-[#010a4f] capitalize">{profile.username}</h2>
                   <span className="text-sm bg-[#f3e8ff] text-[#6b46c1] px-2 py-1 rounded-full">
                     {formatRoleName(profile.role)}
                   </span>
                   {!isOwnProfile && (
-                    <>
+                    <div className="flex flex-row gap-2">
                       <Button
                         className={`bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]${
                           profile.isFollowing ? "bg-red-500" : "bg-[#062970]"
                         } hover:opacity-75`}
                         onClick={handleFollowToggle}
+                        style={{ color: "#062970" }}
                       >
                         {profile.isFollowing
                           ? "Unfollow"
@@ -130,15 +131,16 @@ const ProfilePage = () => {
                         <Button
                           className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                           onClick={() => navigate(`/book/${profile.username}`)}
+                          style={{ color: "#062970" }}
                         >
                           Book Now
                         </Button>
                       )}
-                    </>
+                    </div>
                   )}
                 </div>
 
-                <div className="flex gap-6 lg-custom:gap-10 mt-2 lg-custom:mt-4">
+                <div className="flex justify-center gap-6 lg-custom:gap-10 mt-2 lg-custom:mt-4">
                   <div className="text-center">
                     <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">{profile.followersCount || 0}</p>
                     <p className="text-[#010a4f] text-xs lg-custom:text-sm">Followers</p>
@@ -157,7 +159,7 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                <div className="mt-2 lg-custom:mt-4">
+                <div className="mt-2 lg-custom:mt-4 text-center">
                   {isServiceProvider && (
                     <p className="font-semibold text-[#010a4f] text-sm lg-custom:text-base">
                       {profile.profession || "No profession listed"}
@@ -176,16 +178,19 @@ const ProfilePage = () => {
             {[
               { key: "posts", label: "Posts", icon: <FaTh /> },
               { key: "myWork", label: "My Work", icon: <FaTh /> },
+              { key: "upvoted", label: "Upvoted", icon: <FaThumbsUp /> },
               { key: "services", label: "Services", icon: <FaBookmark /> },
               { key: "policies", label: "Policies", icon: <FaTags /> },
               ...(isOwnProfile && isServiceProvider
                 ? [{ key: "availability", label: "Availability", icon: <Calendar /> }]
                 : []),
             ]
-              .filter((tab) =>
-                (isServiceProvider && tab.key !== "posts") ||
-                (!isServiceProvider && tab.key === "posts")
-              )
+              .filter((tab) => {
+                if (!isOwnProfile && tab.key === "upvoted") return false;
+                return (isServiceProvider && tab.key !== "posts") ||
+                      (!isServiceProvider && tab.key === "posts") ||
+                      tab.key === "upvoted";
+              })
               .map((tab) => (
                 <Button
                   key={tab.key}
@@ -234,6 +239,14 @@ const ProfilePage = () => {
             <div className="max-w-4xl mx-auto">
               <h3 className="font-semibold text-lg text-[#010a4f]">My Work</h3>
               <WorkPostGrid isOwnProfile={isOwnProfile} />
+            </div>
+          )}
+          
+          {activeTab === "upvoted" && isOwnProfile && (
+            <div className="max-w-4xl mx-auto">
+              <h3 className="font-semibold text-lg text-[#010a4f]">Upvoted Posts</h3>
+              {console.log("Rendering upvoted posts section - user:", user?.username)}
+              <WorkPostGrid showUpvoted={true} isOwnProfile={true} />
             </div>
           )}
           {activeTab === "services" && isServiceProvider && (

@@ -145,7 +145,7 @@ router.get("/feed", requireAuth, async (req, res) => {
         }
       },
       include: {
-        author: { select: { id: true, username: true, profilePicture: true } },
+        author: { select: { id: true, username: true, profilePicture: true, role: true } },
         service: true,
         appointment: {
           include: {
@@ -275,6 +275,51 @@ router.get("/user/:username", async (req, res) => {
       res.status(500).json({ message: "Failed to fetch user's work posts" });
     }
   });
+
+  router.get("/upvoted", requireAuth, async (req, res) => {
+    const userId = req.user.userId;
+    try {
+      const upvotedPosts = await prisma.upvote.findMany({
+        where: {
+          userId,
+          workPostId: { not: null }
+        },
+        include: {
+          workPost: {
+            include: {
+              author: { select: { id: true, username: true, profilePicture: true, role: true } },
+              service: true,
+              appointment: {
+                include: {
+                  service: true
+                }
+              },
+              _count: {
+                select: {
+                  upvotes: true,
+                  comments: true,
+                },
+              },
+            }
+          }
+        },
+        orderBy: { createdAt: "desc" },
+      });
+  
+      // Extract just the workPost objects with a check for null
+      const posts = upvotedPosts
+        .filter(upvote => upvote.workPost) // Filter out any null workPost
+        .map(upvote => ({
+          ...upvote.workPost,
+          isUpvotedByCurrentUser: true, // Mark as upvoted since this is from upvotes
+        }));
+  
+      res.json(posts);
+    } catch (error) {
+      console.error("Fetch Upvoted WorkPosts Error:", error);
+      res.status(500).json({ message: "Failed to fetch upvoted posts" });
+    }
+  });
   
 
   router.get("/:id", requireAuth, async (req, res) => {
@@ -285,12 +330,12 @@ router.get("/user/:username", async (req, res) => {
       const post = await prisma.workPost.findUnique({
         where: { id: postId },
         include: {
-          author: { select: { id: true, username: true, profilePicture: true } },
+          author: { select: { id: true, username: true, profilePicture: true, role: true } },
           service: true,
           appointment: true,
           comments: {
             include: {
-              author: { select: { id: true, username: true, profilePicture: true } },
+              author: { select: { id: true, username: true, profilePicture: true, role: true } },
               upvotes: { select: { userId: true } },
               downvotes: { select: { userId: true } },
             },
@@ -442,7 +487,7 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
           workPostId: postId
         },
         include: {
-          author: { select: { id: true, username: true, profilePicture: true } },
+          author: { select: { id: true, username: true, profilePicture: true, role: true } },
           upvotes: true,
           downvotes: true,
         }
@@ -588,8 +633,8 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
             recipientId: comment.authorId,
             senderId: userId,
             type: NotificationType.COMMENT_DOWNVOTE,
-            title: "Comment Upvoted",
-            message: `@${sender.username} upvoted your comment.`,
+            title: "Comment Downvoted",
+            message: `@${sender.username} downvoted your comment.`,
             metadata: {
               workPostId: comment.workPostId,
               commentId: comment.id
@@ -606,5 +651,5 @@ router.post("/:id/comments", requireAuth, async (req, res) => {
       res.status(500).json({ message: "Failed to toggle downvote" });
     }
   });
-  
+
 export default router;

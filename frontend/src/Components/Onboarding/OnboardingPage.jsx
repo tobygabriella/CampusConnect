@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import { toast } from "react-toastify";
@@ -51,7 +51,7 @@ const OnboardingPage = () => {
       });
       toast.success("Profile picture uploaded!");
       setImagePreview(response.data.imageUrl);
-    } catch (error) {
+    } catch {
       toast.error("Failed to upload profile picture.");
     } finally {
       setIsUploading(false);
@@ -79,7 +79,7 @@ const OnboardingPage = () => {
     }
 
     try {
-      const response = await api.post(
+      await api.post(
         "http://localhost:5001/onboarding/complete",
         {
           username,
@@ -128,18 +128,18 @@ const OnboardingPage = () => {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
+    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5]">
       {/* ARO Logo at the top */}
       <img src={AroLogo} alt="ARO Logo" className="h-40 mb-6" />
 
       {/* Profile Section */}
-      <Card className="w-full max-w-md p-6 shadow-lg">
+      <Card className="w-full max-w-md p-6 shadow-lg border-none">
         <CardContent>
-          <h1 className="text-2xl font-bold text-center text-[#062970] mb-6">Set Up Your Profile</h1>
+          <div style={{fontSize: "25px"}} className="font-bold text-center text-[#062970] mb-6">Set Up Your Profile</div>
 
           {/* Profile Picture Upload */}
           <div className="flex flex-col items-center mb-6">
-            <div className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-white">
+            <div className="relative w-24 h-24 rounded-full overflow-hidden">
               <img src={imagePreview} alt="Profile Preview" className="w-full h-full object-cover" />
               <label htmlFor="fileUpload" className="absolute bottom-0 w-full h-1/3 bg-black bg-opacity-50 flex justify-center items-center cursor-pointer">
                 <CameraIcon size={18} className="text-white" />

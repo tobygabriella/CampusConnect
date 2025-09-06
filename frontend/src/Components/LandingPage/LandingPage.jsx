@@ -1,11 +1,11 @@
-import { Button } from "@/components/ui/button"; 
+import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"; // shadcn/ui card
-import AroLogo from "@/assets/aro.png"; 
-import Aro1 from "@/assets/Aro1.jpg"; 
-import Aro2 from "@/assets/Aro2.jpg"; 
-import Aro3 from "@/assets/Aro3.jpg"; 
-import Aro4 from "@/assets/Aro4.jpg"; 
-import { Link } from "react-router-dom";
+import AroLogo from "@/assets/aro.png";
+import Aro1 from "@/assets/Aro1.jpg";
+import Aro2 from "@/assets/Aro2.jpg";
+import Aro3 from "@/assets/Aro3.jpg";
+import Aro4 from "@/assets/Aro4.jpg";
+import { Link} from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 
 const LandingPage = () => {

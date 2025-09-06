@@ -52,7 +52,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
+    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5]">
       <img src={AroLogo} alt="ARO Logo" className="h-40 mb-6" />
       
       {/* Google Login Button */}

@@ -29,7 +29,11 @@ const CommentCard = ({
             >
               {comment.author.username}
             </Link>
-            <span className="text-xs text-gray-500 capitalize">{comment.author.role}</span>
+            {comment.author.role && (
+              <span className="text-xs bg-[#f3e8ff] text-[#6b46c1] px-2 py-0.5 rounded-full font-medium">
+                {comment.author.role.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+              </span>
+            )}
             <span className="text-xs text-gray-500">•</span>
             <span className="text-xs text-gray-500">
               {formatTimeAgo(comment.createdAt)} ago

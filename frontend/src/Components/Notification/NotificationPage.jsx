@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageSquare, Mail, Bell } from "lucide-react";
+import { Heart, MessageSquare, Mail, Bell, CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
 import api from "@/utils/axiosInstance";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
@@ -258,8 +258,65 @@ NotificationList.propTypes = {
 const NotificationItem = ({ notif, onClick }) => {
   const iconProps = {
     className: "w-5 h-5",
-    fill: notif.type === 'like' ? "currentColor" : "none"
+    fill: notif.type.includes('LIKE') ? "currentColor" : "none"
   };
+
+  const getIconAndBg = () => {
+    const type = notif.type;
+    
+    // Comment related
+    if (type.includes('COMMENT') || type.includes('POST_COMMENT')) {
+      return {
+        icon: <MessageSquare {...iconProps} className="text-blue-600" />,
+        bg: 'bg-blue-100'
+      };
+    }
+    
+    // Like related
+    if (type.includes('LIKE') || type.includes('UPVOTE')) {
+      return {
+        icon: <Heart {...iconProps} className="text-red-600" />,
+        bg: 'bg-red-100'
+      };
+    }
+    
+    // Appointment related
+    if (type.includes('APPOINTMENT')) {
+      if (type === 'APPOINTMENT_CONFIRMED') {
+        return {
+          icon: <CheckCircle {...iconProps} className="text-green-600" />,
+          bg: 'bg-green-100'
+        };
+      }
+      
+      if (type === 'APPOINTMENT_CANCELLED') {
+        return {
+          icon: <XCircle {...iconProps} className="text-red-600" />,
+          bg: 'bg-red-100'
+        };
+      }
+      
+      if (type.includes('REMINDER') || type === 'APPOINTMENT_RESCHEDULED') {
+        return {
+          icon: <Clock {...iconProps} className="text-amber-600" />,
+          bg: 'bg-amber-100'
+        };
+      }
+      
+      return {
+        icon: <Calendar {...iconProps} className="text-indigo-600" />,
+        bg: 'bg-indigo-100'
+      };
+    }
+    
+    // Default for other types
+    return {
+      icon: <Bell {...iconProps} className="text-purple-600" />,
+      bg: 'bg-purple-100'
+    };
+  };
+
+  const { icon, bg } = getIconAndBg();
 
   return (
     <div
@@ -271,14 +328,8 @@ const NotificationItem = ({ notif, onClick }) => {
       } hover:shadow-md`}
     >
       <div className="flex items-start gap-4">
-        <div className={`p-3 rounded-full ${
-          notif.type === 'comment' ? 'bg-blue-100' : 'bg-red-100'
-        }`}>
-          {notif.type === 'comment' ? (
-            <MessageSquare {...iconProps} className="text-blue-600" />
-          ) : (
-            <Heart {...iconProps} className="text-red-600" />
-          )}
+        <div className={`p-3 rounded-full ${bg}`}>
+          {icon}
         </div>
         <div className="flex-1">
           <div className="flex justify-between items-start">

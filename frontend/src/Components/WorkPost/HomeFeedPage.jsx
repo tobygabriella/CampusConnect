@@ -6,6 +6,7 @@ import TopNavbar from "@/Components/Navigation/TopNavBar";
 import defaultProfile from "@/assets/default-profile.jpg";
 import { Heart, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatRoleName } from "@/utils/formatters";
 import WorkPostModal from "./WorkPostModal";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/Components/context/AuthContext";
@@ -136,7 +137,12 @@ const HomeFeedPage = () => {
                       alt="Profile"
                       className="w-10 h-10 rounded-full object-cover"
                     />
-                    <p className="text-[#062970] font-semibold">{post.author.username}</p>
+                    <div>
+                      <p className="text-[#062970] font-semibold">{post.author.username}</p>
+                      {post.author.role === "service_provider" && (
+                        <p className="text-xs text-gray-500">{formatRoleName(post.author.role)}</p>
+                      )}
+                    </div>
                   </div>
   
                   {/* Image */}

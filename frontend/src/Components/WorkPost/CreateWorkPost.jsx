@@ -11,7 +11,6 @@ import ImageUploadSection from "../Profile/ImageUploadSection";
 import Loading from "@/Components/Loading/LoadingState";
 import { X } from "lucide-react";
 import PropTypes from 'prop-types';
-import { formatRoleName } from "@/utils/formatters";
 
 const CreateWorkPost = ({ isOpen, onClose, onPostCreated }) => {
   const { user } = useAuth();
@@ -125,11 +124,6 @@ const CreateWorkPost = ({ isOpen, onClose, onPostCreated }) => {
         <div className="flex items-center justify-between p-4 border-b">
           <div>
             <h2 className="text-xl font-bold text-[#062970]">Create New Post</h2>
-            {user && (
-              <span className="text-xs bg-[#f3e8ff] text-[#6b46c1] px-2 py-0.5 rounded-full">
-                {formatRoleName(user.role)}
-              </span>
-            )}
           </div>
           <button
             onClick={handleClose}

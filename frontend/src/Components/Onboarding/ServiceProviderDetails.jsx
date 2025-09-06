@@ -152,11 +152,11 @@ const ServiceProviderDetails = () => {
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen w-screen bg-gradient-to-b from-[#f3e8ff] to-white">
+    <div className="flex justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5]">
       <div className="w-full max-w-4xl p-8">
-        <h1 className="text-3xl font-bold text-center mb-8 text-[#062970]">
+        <div style={{fontSize: "25px"}} className="font-bold text-center mb-8 text-[#062970]">
           {existingWorkImages.length > 0 ? "Update Your Profile" : "Complete Your Profile"}
-        </h1>
+        </div>
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <ServiceProviderSection

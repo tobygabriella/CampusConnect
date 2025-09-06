@@ -4,11 +4,13 @@ import CommentCard from "@/Components/Forum/CommentCard";
 import api from "@/utils/axiosInstance";
 import { useAuth } from "@/Components/context/AuthContext";
 import { Button } from "@/components/ui/button";
+import { formatRoleName } from "@/utils/formatters";
 import defaultProfile from "@/assets/default-profile.jpg";
 import { Heart, MessageSquare } from "lucide-react";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Loading from "@/Components/Loading/LoadingState";
+import PropTypes from 'prop-types';
 
 const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0, onClose, onPostUpdate, disablePostNavigation = false, highlightedCommentId }) => {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
@@ -57,7 +59,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
         comments: post.comments.map((c) => {
           if (c.id !== commentId) return c;
       
-          const wasUpvoted = c.isUpvotedByCurrentUser;
+          // Variable used in logic below for vote counts
           const wasDownvoted = c.isDownvotedByCurrentUser;
       
           let newUpvotes = c._count?.upvotes || 0;
@@ -94,7 +96,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
           if (c.id !== commentId) return c;
   
           const wasUpvoted = c.isUpvotedByCurrentUser;
-          const wasDownvoted = c.isDownvotedByCurrentUser;
+          // Variable used in logic below for vote counts
   
           // Calculate new counts
           let newUpvotes = c._count?.upvotes || 0;
@@ -170,9 +172,9 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
       )}
   
       {/* Modal Content */}
-      <div className="relative flex w-full max-w-6xl bg-white rounded-lg overflow-hidden">
-        {/* Left - Image Viewer */}
-        <div className="relative w-2/3 flex items-center justify-center">
+      <div className="relative flex flex-col md:flex-row w-full max-w-6xl bg-white rounded-lg overflow-hidden">
+        {/* Image Viewer - Takes full width on mobile, 2/3 on desktop */}
+        <div className="relative w-full md:w-2/3 flex items-center justify-center">
           {/* Inner Image Navigation - Left */}
           {currentImgIndex > 0 && (
             <Button 
@@ -203,15 +205,24 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
           <img src={currentImage} alt="Work Post" className="w-full aspect-square object-contain" />
         </div>
   
-        {/* Right - Comments + Info */}
-        <div className="w-1/3 flex flex-col p-4 relative">
+        {/* Comments + Info - Below on mobile, Right side on desktop */}
+        <div className="w-full md:w-1/3 flex flex-col p-4 relative">
           <Button onClick={onClose} className="absolute top-2 right-2 bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" style={{ color: "#062970" }}>
             <X />
           </Button>
   
           <div className="flex items-center gap-2 mb-4">
             <img src={post.author.profilePicture || defaultProfile} alt="Author" className="w-10 h-10 rounded-full" />
-            <div className="font-semibold text-[#062970]">{post.author.username}</div>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-[#062970]">{post.author.username}</span>
+                {post.author.role && (
+                  <span className="text-xs bg-[#f3e8ff] text-[#6b46c1] px-2 py-0.5 rounded-full font-medium">
+                    {formatRoleName(post.author.role)}
+                  </span>
+                )}
+              </div>
+            </div>
           </div>
   
           <p className="text-gray-700 mb-2">{post.caption}</p>
@@ -285,7 +296,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                 <span>{post._count?.comments || 0}</span>
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto pr-1 space-y-3" style={{ maxHeight: '500px' }}>
+            <div className="flex-1 overflow-y-auto pr-1 space-y-3" style={{ maxHeight: 'calc(min(500px, 60vh))' }}>
             {Array.isArray(post.comments) && post.comments.length > 0 ? (
                 post.comments.map(comment => (
                   <div
@@ -363,6 +374,18 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
       )}
     </div>
   );
+};
+
+// Add prop validation
+WorkPostModal.propTypes = {
+  postId: PropTypes.string,
+  post: PropTypes.object,
+  posts: PropTypes.array,
+  initialIndex: PropTypes.number,
+  onClose: PropTypes.func.isRequired,
+  onPostUpdate: PropTypes.func,
+  disablePostNavigation: PropTypes.bool,
+  highlightedCommentId: PropTypes.string
 };
 
 export default WorkPostModal;

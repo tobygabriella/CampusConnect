@@ -142,12 +142,14 @@ const SidebarNav = () => {
             onClick={() => handleNavigation("/appointments")}
             isCompact={isCompact}
           />
-          <SidebarButton
-            icon={<Users size={20} className="text-[#062970]" />}
-            label="Community"
-            onClick={() => handleNavigation("/community")}
-            isCompact={isCompact}
-          />
+          {user?.role !== "service_provider" && (
+            <SidebarButton
+              icon={<Users size={20} className="text-[#062970]" />}
+              label="Community"
+              onClick={() => handleNavigation("/community")}
+              isCompact={isCompact}
+            />
+          )}
         </nav>
       </div>
 
