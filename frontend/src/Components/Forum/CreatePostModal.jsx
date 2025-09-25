@@ -71,7 +71,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, us
               </span>
             )}
           </div>
-          <Button variant="ghost" onClick={onClose} className= "bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+          <Button variant="ghost" onClick={onClose} className="hover:bg-[#f3e8ff]"
            style={{ color: "#062970"}}>
             <X className="h-5 w-5" />
           </Button>
@@ -111,7 +111,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, us
               <Button
                 type="button"
                 onClick={addTag}
-                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                className="hover:bg-[#f3e8ff]"
                 style={{ color: "#062970"}}
               >
                 <Plus className="h-4 w-4" />
@@ -140,7 +140,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, us
               type="button"
               onClick={onClose}
               variant="outline"
-              className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+              className="hover:bg-[#f3e8ff]"
               style={{ color: "#062970"}}
             >
               Cancel
@@ -148,7 +148,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, us
             <Button
                 type="submit"
                 disabled={loading || tags.length === 0}
-                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                className="hover:bg-[#f3e8ff]"
                 style={{ color: "#062970"}}
                 >
                 {loading ? <Loading inline={true} /> : "Create Post"}
