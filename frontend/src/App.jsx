@@ -1,4 +1,10 @@
+import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+
+// Import modern UI styles
+import "@/styles/aro-ui-styles.css";
+import "@/styles/modern-tabs.css";
+import "@/styles/component-overrides.css"; // Style overrides to prevent conflicts
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Elements } from "@stripe/react-stripe-js";
@@ -28,10 +34,14 @@ import CreatePostPage from "./Components/WorkPost/CreatePostPage.jsx";
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
+// Import DevPanel conditionally based on environment
+const DevPanel = import.meta.env.DEV ? React.lazy(() => import('./Components/DevTools/DevPanel')) : null;
+
 function App() {
   return (
     <AuthProvider>
       <ToastContainer position="top-right" autoClose={3000} />
+      {DevPanel && <DevPanel />}
       <Router>
         <Routes>
         <Route path = "/" element = {<LandingPage/>} />
@@ -57,7 +67,7 @@ function App() {
           <Route path="/appointments" element={<AppointmentsPage />} />
           <Route path="/edit-profile" element={<EditProfilePage />} />
           <Route path="/community/posts/:postId" element={<PostDetailPage />} />
-          <Route path="/create-post" element={<CreatePostModal />} />
+          <Route path="/create-post" element={<CreatePostPage />} />
           <Route path="/comments/:commentId/thread" element={<CommentThreadPage />} />
           {/* Removed CreateWorkPost route as it should only be used as a modal */}
           <Route path="/home" element={<HomeFeedPage />} />

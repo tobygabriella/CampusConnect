@@ -281,7 +281,7 @@ export const EditProfileForm = () => {
               )}
               {user?.role === "student" && !isPreparingSwitch && (
                 <Button
-                  className="mt-2 bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  className="mt-2 !bg-transparent text-[#062970] hover:!bg-[#f3e8ff]"
                   onClick={() => {
                     setIsPreparingSwitch(true);
                     setValue("role", "service_provider", { shouldDirty: true }); // Temporary UI update

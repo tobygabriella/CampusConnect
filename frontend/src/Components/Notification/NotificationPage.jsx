@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
-import { Heart, MessageSquare, Mail, Bell, CheckCircle, XCircle, Clock, Calendar } from "lucide-react";
+import { Heart, MessageSquare, Mail, Bell, CheckCircle, XCircle, Clock, Calendar, RefreshCw, AlertCircle } from "lucide-react";
 import api from "@/utils/axiosInstance";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
@@ -9,6 +9,11 @@ import WorkPostModal from "@/Components/WorkPost/WorkPostModal";
 import { Tabs } from "antd";
 import Loading from "@/Components/Loading/LoadingState";
 import PropTypes from 'prop-types';
+import { motion, AnimatePresence } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
+
+// Import our custom styles
+import "@/styles/modern-tabs.css";
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);
@@ -122,10 +127,17 @@ const NotificationsPage = () => {
       children: (
         <div className="mt-4">
           {unreadNotifications.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <Mail size={48} className="mx-auto mb-4" />
-              <p>No unread notifications</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 px-4"
+            >
+              <div className="bg-gray-50 inline-flex rounded-full p-6 mb-4">
+                <Mail size={42} className="text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No unread notifications</h3>
+              <p className="text-gray-500 text-sm">When you receive notifications, they'll appear here</p>
+            </motion.div>
           ) : (
             <NotificationList 
               notifications={unreadNotifications} 
@@ -146,10 +158,17 @@ const NotificationsPage = () => {
       children: (
         <div className="mt-4">
           {readNotifications.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              <Mail size={48} className="mx-auto mb-4" />
-              <p>No read notifications</p>
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-12 px-4"
+            >
+              <div className="bg-gray-50 inline-flex rounded-full p-6 mb-4">
+                <Mail size={42} className="text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-1">No read notifications</h3>
+              <p className="text-gray-500 text-sm">Your history of read notifications will appear here</p>
+            </motion.div>
           ) : (
             <NotificationList 
               notifications={readNotifications} 
@@ -167,19 +186,34 @@ const NotificationsPage = () => {
     return (
       <div className="flex w-screen overflow-x-hidden">
         <SidebarNav />
-        <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto transition-all duration-300">
+        <div className="flex-1 bg-gradient-to-b from-gray-50 to-white ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto transition-all duration-300">
           <TopNavbar />
           <div className="p-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
-              <h2 className="text-2xl font-bold text-[#062970] mb-6">Notifications</h2>
-              <div className="text-red-500 p-4 bg-red-50 rounded-lg">{error}</div>
-              <button
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+            >
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">Notifications</h2>
+              
+              <div className="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-lg mb-6">
+                <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-red-700 mb-1">Error Loading Notifications</p>
+                  <p className="text-red-600">{error}</p>
+                </div>
+              </div>
+              
+              <ModernButton
+                variant="primary"
+                size="md"
+                icon={<RefreshCw className="h-4 w-4" />}
+                iconPosition="left"
                 onClick={() => window.location.reload()}
-                className="mt-4 px-4 py-2 bg-[#062970] text-white rounded hover:bg-[#051d5c]"
               >
                 Retry
-              </button>
-            </div>
+              </ModernButton>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -189,20 +223,35 @@ const NotificationsPage = () => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto transition-all duration-300">
+      <div className="flex-1 bg-gradient-to-b from-gray-50 to-white ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto transition-all duration-300">
         <TopNavbar />
         <div className="p-6">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-[#062970]">Notifications</h2>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+          >
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Notifications</h2>
+                <p className="text-gray-500 text-sm">
+                  {unreadCount > 0 
+                    ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` 
+                    : "You're all caught up!"}
+                </p>
+              </div>
+              
               {unreadCount > 0 && (
-                <button
+                <ModernButton
+                  variant="outline"
+                  size="sm"
                   onClick={markAllAsRead}
-                  className="text-sm text-[#6b46c1] hover:underline flex items-center gap-1"
+                  icon={<Bell size={16} />}
+                  iconPosition="left"
                 >
-                  <Bell size={16} />
-                  <span>Mark all as read</span>
-                </button>
+                  Mark all as read
+                </ModernButton>
               )}
             </div>
 
@@ -214,9 +263,9 @@ const NotificationsPage = () => {
                 marginBottom: "16px",
               }}
               tabBarGutter={32}
-              className="custom-tabs"
+              className="modern-tabs"
             />
-          </div>
+          </motion.div>
         </div>
       </div>
       {selectedWorkPostId && (
@@ -236,13 +285,15 @@ const NotificationsPage = () => {
 // Sub-components
 const NotificationList = ({ notifications, onClick }) => (
   <div className="space-y-4">
-    {notifications.map((notif) => (
-      <NotificationItem
-        key={notif.id}
-        notif={notif}
-        onClick={onClick}
-      />
-    ))}
+    <AnimatePresence>
+      {notifications.map((notif) => (
+        <NotificationItem
+          key={notif.id}
+          notif={notif}
+          onClick={onClick}
+        />
+      ))}
+    </AnimatePresence>
   </div>
 );
 
@@ -268,7 +319,8 @@ const NotificationItem = ({ notif, onClick }) => {
     if (type.includes('COMMENT') || type.includes('POST_COMMENT')) {
       return {
         icon: <MessageSquare {...iconProps} className="text-blue-600" />,
-        bg: 'bg-blue-100'
+        bg: 'bg-blue-100',
+        borderColor: 'border-blue-200'
       };
     }
     
@@ -276,7 +328,8 @@ const NotificationItem = ({ notif, onClick }) => {
     if (type.includes('LIKE') || type.includes('UPVOTE')) {
       return {
         icon: <Heart {...iconProps} className="text-red-600" />,
-        bg: 'bg-red-100'
+        bg: 'bg-red-100',
+        borderColor: 'border-red-200'
       };
     }
     
@@ -285,46 +338,55 @@ const NotificationItem = ({ notif, onClick }) => {
       if (type === 'APPOINTMENT_CONFIRMED') {
         return {
           icon: <CheckCircle {...iconProps} className="text-green-600" />,
-          bg: 'bg-green-100'
+          bg: 'bg-green-100',
+          borderColor: 'border-green-200'
         };
       }
       
       if (type === 'APPOINTMENT_CANCELLED') {
         return {
           icon: <XCircle {...iconProps} className="text-red-600" />,
-          bg: 'bg-red-100'
+          bg: 'bg-red-100',
+          borderColor: 'border-red-200'
         };
       }
       
       if (type.includes('REMINDER') || type === 'APPOINTMENT_RESCHEDULED') {
         return {
           icon: <Clock {...iconProps} className="text-amber-600" />,
-          bg: 'bg-amber-100'
+          bg: 'bg-amber-100',
+          borderColor: 'border-amber-200'
         };
       }
       
       return {
         icon: <Calendar {...iconProps} className="text-indigo-600" />,
-        bg: 'bg-indigo-100'
+        bg: 'bg-indigo-100',
+        borderColor: 'border-indigo-200'
       };
     }
     
     // Default for other types
     return {
       icon: <Bell {...iconProps} className="text-purple-600" />,
-      bg: 'bg-purple-100'
+      bg: 'bg-purple-100',
+      borderColor: 'border-purple-200'
     };
   };
 
-  const { icon, bg } = getIconAndBg();
+  const { icon, bg, borderColor } = getIconAndBg();
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      whileHover={{ y: -2, transition: { duration: 0.2 } }}
       onClick={() => onClick(notif)}
-      className={`p-6 rounded-lg border shadow-sm cursor-pointer transition-all ${
+      className={`p-5 rounded-xl border shadow-sm cursor-pointer transition-colors ${
         notif.isRead
-          ? "bg-gray-50 opacity-90"
-          : "bg-white border-l-4 border-[#6b46c1]"
+          ? "bg-gray-50 border-gray-100"
+          : `bg-white border ${borderColor}`
       } hover:shadow-md`}
     >
       <div className="flex items-start gap-4">
@@ -333,18 +395,25 @@ const NotificationItem = ({ notif, onClick }) => {
         </div>
         <div className="flex-1">
           <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-[#062970]">{notif.title}</h3>
-            {!notif.isRead && (
-              <span className="inline-block w-2 h-2 bg-[#6b46c1] rounded-full"></span>
-            )}
+            <h3 className="font-semibold text-gray-900">{notif.title}</h3>
+            <AnimatePresence>
+              {!notif.isRead && (
+                <motion.span 
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="inline-block w-2 h-2 bg-blue-600 rounded-full"
+                ></motion.span>
+              )}
+            </AnimatePresence>
           </div>
-          <p className="text-gray-700 mt-1">{notif.message}</p>
+          <p className="text-gray-700 mt-1 text-sm">{notif.message}</p>
           <p className="text-xs text-gray-500 mt-2">
             {formatDistanceToNow(new Date(notif.createdAt), { addSuffix: true })}
           </p>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 

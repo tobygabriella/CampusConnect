@@ -7,7 +7,9 @@ import { useAuth } from "@/Components/context/AuthContext";
 import Loading from "@/Components/Loading/LoadingState";
 import { useLocation } from "react-router-dom";
 import AnimatedElement from "@/Components/Animation/AnimatedElement";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
+import { ArrowLeft, LogIn, Mail, Lock, Eye, EyeOff } from "lucide-react";
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +20,7 @@ const LoginPage = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const verified = queryParams.get("verified") === "true";
@@ -74,15 +77,16 @@ const LoginPage = () => {
               </Link>
             </motion.div>
             
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+            <ModernButton 
+              variant="ghost"
+              size="sm"
+              icon={<ArrowLeft className="h-4 w-4" />}
+              iconPosition="left"
+              rounded="full"
+              href="/"
             >
-              <Link to="/" className="text-aro-navy font-medium hover:text-aro-accent transition-colors">
-                Back to home
-              </Link>
-            </motion.div>
+              Back to Home
+            </ModernButton>
           </div>
         </div>
       </motion.header>
@@ -143,18 +147,22 @@ const LoginPage = () => {
           
           {/* Google Login Button */}
           <AnimatedElement animation="fade-in-up" delay={0.7} className="mb-6">
-            <a
+            <ModernButton
+              variant="secondary"
+              fullWidth
               href="http://localhost:5001/auth/google"
-              className="flex items-center justify-center w-full bg-white text-black py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200"
+              icon={<img src={GoogleLogo} alt="Google Logo" className="h-5 w-5" />}
+              iconPosition="left"
+              rounded="xl"
+              className="bg-white py-3"
             >
-              <img src={GoogleLogo} alt="Google Logo" className="h-5 w-5 mr-3" />
-              <span className="font-medium">Continue with Google</span>
-            </a>
+              Continue with Google
+            </ModernButton>
             
             {/* Separator */}
             <div className="flex items-center my-6">
               <div className="flex-grow border-t border-gray-300"></div>
-              <span className="px-4 text-sm text-aro-gray">or continue with email</span>
+              <span className="px-4 text-sm text-gray-500">or continue with email</span>
               <div className="flex-grow border-t border-gray-300"></div>
             </div>
           </AnimatedElement>
@@ -163,58 +171,91 @@ const LoginPage = () => {
           <AnimatedElement animation="fade-in-up" delay={0.9}>
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
               <div>
-                <label className="text-sm font-medium text-aro-navy block mb-2">Email or Username</label>
-                <input
-                  type="text"
-                  name="email"
-                  placeholder="Enter your email or username"
-                  className="w-full p-3 border border-gray-200 rounded-lg text-black text-base focus:outline-none focus:ring-2 focus:ring-aro-accent focus:border-transparent transition-all"
-                  onChange={handleChange}
-                  required
-                />
+                <label className="text-sm font-medium text-gray-700 block mb-2">Email or Username</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Mail size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    name="email"
+                    placeholder="Enter your email or username"
+                    className="w-full pl-10 p-3 border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                    onChange={handleChange}
+                    required
+                  />
+                </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-aro-navy block mb-2">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="••••••••"
-                  className="w-full p-3 border border-gray-200 rounded-lg text-black text-base focus:outline-none focus:ring-2 focus:ring-aro-accent focus:border-transparent transition-all"
-                  onChange={handleChange}
-                  required
-                />
+                <label className="text-sm font-medium text-gray-700 block mb-2">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Lock size={18} />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="••••••••"
+                    className="w-full pl-10 p-3 border border-gray-200 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+                    onChange={handleChange}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {/* Display error message */}
-              {errorMessage && (
-                <motion.p 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="text-red-500 text-sm text-center"
-                >
-                  {errorMessage}
-                </motion.p>
-              )}
+              <AnimatePresence>
+                {errorMessage && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-red-50 border border-red-200 rounded-lg overflow-hidden"
+                  >
+                    <p className="text-red-600 text-sm p-3">
+                      {errorMessage}
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
               <div className="flex justify-between items-center mt-1 mb-2">
                 <div className="flex items-center">
-                  <input type="checkbox" id="remember" className="h-4 w-4 text-aro-accent focus:ring-aro-accent border-gray-300 rounded" />
-                  <label htmlFor="remember" className="ml-2 text-sm text-aro-gray">Remember me</label>
+                  <input 
+                    type="checkbox" 
+                    id="remember" 
+                    className="h-4 w-4 text-blue-600 focus:ring-blue-400 border-gray-300 rounded" 
+                  />
+                  <label htmlFor="remember" className="ml-2 text-sm text-gray-600">Remember me</label>
                 </div>
-                <a href="#" className="text-sm font-medium text-aro-accent hover:text-aro-navy transition-colors">Forgot password?</a>
+                <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">Forgot password?</a>
               </div>
 
-              <button
+              <ModernButton
                 type="submit"
-                className="w-full bg-aro-navy text-white py-3 px-4 rounded-xl shadow-sm hover:bg-aro-blue transition-all duration-300 mt-2 font-medium"
+                variant="primary"
+                size="lg"
+                fullWidth
+                rounded="xl"
+                icon={<LogIn size={18} />}
+                iconPosition="left"
+                disabled={loading}
+                className="mt-2"
               >
                 {loading ? <Loading inline={true} /> : "Sign in"}
-              </button>
+              </ModernButton>
               
-              <p className="text-center text-sm text-aro-gray mt-4">
+              <p className="text-center text-sm text-gray-600 mt-4">
                 Don't have an account? 
-                <Link to="/signup" className="text-aro-accent font-medium hover:text-aro-navy ml-1 transition-colors">Sign up</Link>
+                <Link to="/signup" className="text-blue-600 font-medium hover:text-blue-800 ml-1 transition-colors">Sign up</Link>
               </p>
             </form>
           </AnimatedElement>

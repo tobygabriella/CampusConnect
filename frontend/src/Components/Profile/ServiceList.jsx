@@ -135,7 +135,7 @@ export const ServiceList = ({
           type="button"
           variant="outline"
           onClick={() => append({ name: "", price: "", duration: "", depositAmount: "" })}
-          className="w-full bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+          className="w-full !bg-transparent text-[#062970] hover:!bg-[#f3e8ff]"
           style={{ color: "#062970"}}
         >
           <PlusCircleIcon className="h-5 w-5 mr-2" />

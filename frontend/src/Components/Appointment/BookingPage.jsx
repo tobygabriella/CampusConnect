@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import api from "@/utils/axiosInstance";
-import { Button, DatePicker, Select } from "antd";
+import { DatePicker, Select } from "antd";
 import { useAuth } from "@/Components/context/AuthContext";
 import dayjs from "dayjs";
 import Loading from "@/Components/Loading/LoadingState";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, Clock, ArrowLeft, Check, X, AlertCircle, ChevronRight } from "lucide-react";
+import ModernButton from "@/Components/UI/ModernButton";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 dayjs.extend(isSameOrBefore);
 import utc from "dayjs/plugin/utc";
@@ -266,107 +269,211 @@ const BookingPage = () => {
   if (loading) return <Loading />;
   
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen w-screen bg-gradient-to-b from-white to-[#f5f5f5] p-6">
-      <h2 className="text-2xl font-bold text-[#010a4f] mb-4">
-        {rescheduleMode ? "Reschedule Appointment" : "Book a Service"}
-      </h2>
-
-      <div className="flex justify-center items-center gap-8 mb-8 w-full max-w-2xl">
-        {["Personal Details", "Payment"].map((step, i) => (
-          <div
-            key={step}
-            className={`flex flex-col items-center text-sm font-semibold ${i === 0 ? "text-[#062970]" : "text-gray-400"}`}
-          >
-            <div className={`rounded-full h-8 w-8 flex items-center justify-center border-2 ${i === 0 ? "bg-[#062970] text-white border-[#062970]" : "border-gray-400"}`}>
-              {i + 1}
-            </div>
-            <span className="mt-2">{step}</span>
-          </div>
-        ))}
-      </div>
-
-      <div className="w-80 mb-6">
-        <label className="text-sm font-semibold text-[#010a4f]">Select a Service <span className="text-red-500">*</span></label>
-        {rescheduleMode ? (
-          <div className="mt-2 p-2 bg-gray-100 rounded text-gray-700 font-medium border border-gray-300">
-            {services.find(s => s.id === selectedService)?.name} – ${services.find(s => s.id === selectedService)?.price} ({services.find(s => s.id === selectedService)?.duration / 60} hrs)
-          </div>
-        ) : (
-          <Select
-            className="w-full mt-2"
-            placeholder="Select a Service"
-            value={selectedService}
-            onChange={setSelectedService}
-          >
-            {services.map((service) => (
-              <Select.Option key={service.id} value={service.id}>
-                {service.name} - ${service.price} ({service.duration / 60} hrs)
-              </Select.Option>
-            ))}
-          </Select>
-        )}
-      </div>
-
-      <div className="w-80 mb-6">
-        <label className="text-sm font-semibold text-[#010a4f]">Select a Date <span className="text-red-500">*</span></label>
-        <DatePicker
-          className="w-full mt-2"
-          value={selectedDate ? dayjs(selectedDate) : null} // ✅ Set this!
-          placeholder="Select a Date"
-          onChange={(date) => {
-            setSelectedDate(dayjs(date));
-            setSelectedTimeSlot(null);
-          }}
-          disabled={isAvailabilityEmpty}
-          disabledDate={disabledDate}
-        />
-      </div>
-
-      <div className="w-80 mb-6">
-        <label className="text-sm font-semibold text-[#010a4f]">Select a Time Slot <span className="text-red-500">*</span></label>
-        <Select
-          className="w-full mt-2"
-          placeholder="Select a Time Slot"
-          value={selectedTimeSlot}
-          onChange={setSelectedTimeSlot}
-          disabled={generateAvailableSlots().length === 0}
-        >
-          {generateAvailableSlots().map((slot, index) => (
-            <Select.Option key={index} value={slot}>
-              {slot}
-            </Select.Option>
-          ))}
-        </Select>
-      </div>
-
-      <Button
-        type="primary"
-        className="w-80 bg-white text-[#010a4f] border-2 border-[#010a4f] py-3 rounded-full shadow-md hover:bg-[#023e8a] hover:text-white active:bg-[#555555] active:text-white transition-all duration-300"
-        onClick={rescheduleMode ? handleRescheduleNow : handleBookNow}
-        disabled={isAvailabilityEmpty|| bookingWithSelf || !providerIsReadyToBook}
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-white shadow-sm border-b border-gray-100 py-4 px-6 mb-8"
       >
-        {isAvailabilityEmpty
-          ? "No Availability Set"
-           : bookingWithSelf
-          ? "You cannot book yourself"
-          : !providerIsReadyToBook
-          ? "Unavailable"
-          : rescheduleMode
-          ? "Confirm Reschedule"
-          : "Confirm Booking"}
-      </Button>
+        <div className="container mx-auto max-w-6xl flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <Link to="/appointments" className="text-gray-500 hover:text-blue-600 transition-colors">
+              <ArrowLeft className="h-5 w-5" />
+            </Link>
+            <h1 className="text-xl md:text-2xl font-bold text-gray-900">
+              {rescheduleMode ? "Reschedule Appointment" : "Book a Service"}
+            </h1>
+          </div>
+        </div>
+      </motion.div>
+      
+      <div className="container mx-auto max-w-3xl px-4 pb-12">
+        {/* Progress Steps */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="flex justify-center items-center gap-8 mb-10 w-full"
+        >
+          {["Service Details", "Payment"].map((step, i) => (
+            <div
+              key={step}
+              className={`flex flex-col items-center text-sm font-medium ${i === 0 ? "text-blue-600" : "text-gray-400"}`}
+            >
+              <div className={`rounded-full h-10 w-10 flex items-center justify-center shadow-sm ${i === 0 ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-400"}`}>
+                {i === 0 ? (
+                  <Check className="h-5 w-5" />
+                ) : (
+                  <span>{i + 1}</span>
+                )}
+              </div>
+              <span className="mt-2">{step}</span>
+              {i === 0 && (
+                <motion.div 
+                  className="h-1 w-12 bg-blue-600 mt-1 rounded-full"
+                  layoutId="activeStep"
+                />
+              )}
+            </div>
+          ))}
+        </motion.div>
 
+      {/* Booking Form Card */}
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+      >
+        <div className="p-6 space-y-6">
+          {/* Service Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <label className="text-sm font-medium text-gray-700">Select a Service <span className="text-red-500">*</span></label>
+            </div>
+            
+            {rescheduleMode ? (
+              <div className="p-4 bg-blue-50 rounded-lg text-gray-800 font-medium border border-blue-100 flex items-center justify-between">
+                <div>
+                  <p className="font-semibold">{services.find(s => s.id === selectedService)?.name}</p>
+                  <p className="text-sm text-gray-600 mt-1">{services.find(s => s.id === selectedService)?.duration / 60} hrs</p>
+                </div>
+                <p className="text-lg font-semibold text-blue-600">${services.find(s => s.id === selectedService)?.price}</p>
+              </div>
+            ) : (
+              <Select
+                className="w-full"
+                placeholder="Select a Service"
+                value={selectedService}
+                onChange={setSelectedService}
+                dropdownStyle={{ borderRadius: '0.5rem' }}
+                style={{ borderRadius: '0.5rem' }}
+              >
+                {services.map((service) => (
+                  <Select.Option key={service.id} value={service.id}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-medium">{service.name}</span>
+                        <span className="text-gray-500 text-sm ml-2">({service.duration / 60} hrs)</span>
+                      </div>
+                      <span className="font-semibold text-blue-600">${service.price}</span>
+                    </div>
+                  </Select.Option>
+                ))}
+              </Select>
+            )}
+          </div>
 
-      {!providerIsReadyToBook && (
-        <p className="text-red-600 font-medium mt-4">
-          This provider is not currently accepting bookings.
-        </p>
-      )}
-      {isAvailabilityEmpty && (
-        <p className="text-red-500 mt-4">
-          This service provider has not set their availability yet. Please check back later.
-        </p>
-      )}
+          {/* Date Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-blue-600" />
+              <label className="text-sm font-medium text-gray-700">Select a Date <span className="text-red-500">*</span></label>
+            </div>
+            <DatePicker
+              className="w-full rounded-lg"
+              value={selectedDate ? dayjs(selectedDate) : null}
+              placeholder="Select a Date"
+              onChange={(date) => {
+                setSelectedDate(dayjs(date));
+                setSelectedTimeSlot(null);
+              }}
+              disabled={isAvailabilityEmpty}
+              disabledDate={disabledDate}
+              style={{ borderRadius: '0.5rem', height: '42px' }}
+            />
+          </div>
+
+          {/* Time Selection */}
+          <div className="space-y-2">
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-blue-600" />
+              <label className="text-sm font-medium text-gray-700">Select a Time <span className="text-red-500">*</span></label>
+            </div>
+            
+            {generateAvailableSlots().length > 0 ? (
+              <div>
+                <Select
+                  className="w-full"
+                  placeholder="Select a Time Slot"
+                  value={selectedTimeSlot}
+                  onChange={setSelectedTimeSlot}
+                  style={{ borderRadius: '0.5rem' }}
+                >
+                  {generateAvailableSlots().map((slot, index) => (
+                    <Select.Option key={index} value={slot}>
+                      <div className="py-1">
+                        <span className="font-medium">{slot}</span>
+                      </div>
+                    </Select.Option>
+                  ))}
+                </Select>
+              </div>
+            ) : (
+              <div className="bg-amber-50 text-amber-800 p-4 rounded-lg border border-amber-200 flex items-start space-x-2">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <p className="text-sm">
+                  {!selectedDate ? "Please select a date first" : "No available time slots on the selected date"}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Button */}
+          <div className="pt-4">
+            <ModernButton
+              variant={isAvailabilityEmpty || bookingWithSelf || !providerIsReadyToBook ? "ghost" : "primary"}
+              size="lg"
+              fullWidth
+              rounded="lg"
+              icon={<ChevronRight className="h-5 w-5" />}
+              iconPosition="right"
+              onClick={rescheduleMode ? handleRescheduleNow : handleBookNow}
+              disabled={isAvailabilityEmpty || bookingWithSelf || !providerIsReadyToBook}
+              className="font-medium"
+            >
+              {isAvailabilityEmpty
+                ? "No Availability Set"
+                : bookingWithSelf
+                ? "You cannot book yourself"
+                : !providerIsReadyToBook
+                ? "Provider Unavailable"
+                : rescheduleMode
+                ? "Confirm Reschedule"
+                : "Continue to Payment"}
+            </ModernButton>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Error Messages */}
+      <AnimatePresence>
+        {!providerIsReadyToBook && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-red-50 border border-red-100 rounded-lg p-4 mt-6 text-red-600 text-sm flex items-center space-x-2"
+          >
+            <X className="h-5 w-5" />
+            <p>This provider is not currently accepting bookings.</p>
+          </motion.div>
+        )}
+        {isAvailabilityEmpty && (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="bg-amber-50 border border-amber-100 rounded-lg p-4 mt-6 text-amber-700 text-sm flex items-center space-x-2"
+          >
+            <AlertCircle className="h-5 w-5" />
+            <p>This service provider has not set their availability yet. Please check back later.</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
     </div>
   );
 };

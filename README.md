@@ -62,35 +62,80 @@ Aro is a full-stack web application with the following key features:
 - npm or yarn
 - PostgreSQL database
 
-### Environment Configuration
+### Environment Configuration and Feature Flags
 
-Both the backend and frontend require their own environment variables.
+Both the backend and frontend use environment variables for configuration and feature flags.
 
-1. **Backend Configuration**
+#### 1. Backend Configuration
 
-   Copy the example environment file and update with your values:
+Copy the example environment file and update with your values:
 
-   ```bash
-   cd backend
-   cp .env.example .env
-   ```
+```bash
+cd backend
+cp .env.example .env
+```
 
-   Key variables to configure:
-   - `DATABASE_URL`: PostgreSQL connection string
-   - `JWT_SECRET`: Secret for JWT token generation
-   - `STRIPE_SECRET_KEY`: Stripe API secret key
-   - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`: AWS credentials
+##### Core Configuration
+- `PORT`: Server port number (default: 5001)
+- `NODE_ENV`: Environment (development/production/test)
+- `DATABASE_URL`: PostgreSQL connection string
+- `FRONTEND_URL`: URL for the frontend application (CORS)
 
-2. **Frontend Configuration**
+##### Authentication & Security
+- `JWT_SECRET`: Secret key for JWT token generation
+- `JWT_EXPIRATION`: Token expiration time (e.g., "24h")
+- `JWT_REFRESH_SECRET`: Secret for refresh tokens
+- `JWT_REFRESH_EXPIRATION`: Refresh token expiration
+- `SESSION_SECRET`: Session cookie secret
+- `BCRYPT_SALT_ROUNDS`: Password hashing strength (10-12 recommended)
 
-   ```bash
-   cd frontend
-   cp .env.example .env
-   ```
+##### External Services
+- `STRIPE_SECRET_KEY`: Stripe API secret key for payments
+- `STRIPE_WEBHOOK_SECRET`: Secret for Stripe webhook validation
+- `AWS_S3_BUCKET_NAME`: S3 bucket for file uploads
+- `AWS_REGION`: AWS region for S3 bucket
+- `AWS_ACCESS_KEY_ID`: AWS access key
+- `AWS_SECRET_ACCESS_KEY`: AWS secret key
 
-   Key variables to configure:
-   - `VITE_API_URL`: Backend API URL
-   - `VITE_STRIPE_PUBLISHABLE_KEY`: Stripe publishable key
+##### Email Configuration
+- `EMAIL_SERVICE`: Email provider (e.g., "Gmail", "SendGrid")
+- `EMAIL_USER`: Sender email address
+- `EMAIL_PASSWORD`: Email account password or API key
+
+##### Feature Flags
+- `ENABLE_SOCIAL_FEATURES`: Enable/disable social interaction features (true/false)
+- `ENABLE_EMAIL_NOTIFICATIONS`: Enable/disable email notifications (true/false)
+- `ENABLE_SMS_NOTIFICATIONS`: Enable/disable SMS notifications (true/false)
+- `ENABLE_GOOGLE_AUTH`: Enable/disable Google OAuth login (true/false)
+- `MAINTENANCE_MODE`: Put application in maintenance mode (true/false)
+
+#### 2. Frontend Configuration
+
+```bash
+cd frontend
+cp .env.example .env
+```
+
+##### Core Configuration
+- `VITE_API_URL`: URL for the backend API
+- `VITE_API_TIMEOUT`: API request timeout in milliseconds
+- `VITE_SOCKET_URL`: URL for real-time socket connection
+
+##### Third-party Integration Keys
+- `VITE_STRIPE_PUBLISHABLE_KEY`: Stripe publishable key for payment UI
+- `VITE_GOOGLE_CLIENT_ID`: Google OAuth client ID
+- `VITE_ANALYTICS_ID`: Web analytics ID (if used)
+
+##### Feature Flags
+- `VITE_ENABLE_MOCK_API`: Use mock API data for development (true/false)
+- `VITE_ENABLE_ANALYTICS`: Enable usage analytics tracking (true/false)
+- `VITE_ENABLE_SOCIAL_FEATURES`: Enable social interaction features (true/false)
+- `VITE_ENABLE_NOTIFICATIONS`: Enable in-app notifications (true/false)
+
+##### UI Configuration
+- `VITE_DEFAULT_THEME`: Default theme (light/dark)
+- `VITE_ENABLE_ANIMATIONS`: Enable UI animations (true/false)
+- `VITE_DEBUG_UI`: Show UI debug information in development (true/false)
 
 ### Running the Application
 
@@ -133,6 +178,83 @@ However, full functionality (authentication, data persistence, real-time feature
 3. Install dependencies for both frontend and backend
 4. Start both servers in development mode
 5. Make changes and see them reflected in real-time
+
+## Managing Feature Flags
+
+Aro uses a comprehensive feature flag system to enable controlled feature releases and A/B testing. These flags can be configured at both the backend and frontend levels.
+
+### Types of Feature Flags
+
+1. **Environment Flags**: Set through environment variables (`.env` files)
+2. **Dynamic Flags**: Managed through the admin interface or database
+3. **User-specific Flags**: Features enabled for specific user roles or accounts
+4. **Development Flags**: Features only active in development environments
+
+### Adding New Feature Flags
+
+#### Backend Feature Flags
+
+1. Add the flag to the `.env.example` file with documentation
+2. Add the flag to the environment variable validation schema in `/backend/config/env.js`
+3. Access the flag in your code using `process.env.FLAG_NAME`
+
+```javascript
+// Example in backend/config/env.js
+module.exports = {
+  // ... other validations
+  ENABLE_NEW_FEATURE: Joi.boolean().default(false),
+};
+
+// Usage in a controller or service
+if (process.env.ENABLE_NEW_FEATURE === 'true') {
+  // Feature-specific code
+}
+```
+
+#### Frontend Feature Flags
+
+1. Add the flag to the `.env.example` file with documentation
+2. Access the flag in components using `import.meta.env.VITE_FLAG_NAME`
+
+```jsx
+// Example in a React component
+const MyComponent = () => {
+  const isFeatureEnabled = import.meta.env.VITE_ENABLE_NEW_FEATURE === 'true';
+  
+  return (
+    <div>
+      {isFeatureEnabled && <NewFeatureComponent />}
+    </div>
+  );
+};
+```
+
+### Testing with Feature Flags
+
+To test features behind flags:
+
+1. Create a separate `.env.local` file (gitignored) with the flag enabled
+2. Use environment-specific test setups in test files
+3. Mock the environment variables in unit tests
+
+```javascript
+// Example test with mocked feature flag
+before(() => {
+  process.env.ENABLE_NEW_FEATURE = 'true';
+});
+
+after(() => {
+  delete process.env.ENABLE_NEW_FEATURE;
+});
+```
+
+### Feature Flag Best Practices
+
+1. **Default to Off**: New feature flags should default to `false` for safety
+2. **Clear Documentation**: Document the purpose and expected behavior of each flag
+3. **Clean Up**: Remove flags once features are fully deployed and stable
+4. **Avoid Dependencies**: Don't make feature flags dependent on other flags
+5. **Consistent Naming**: Follow the `ENABLE_FEATURE_NAME` convention
 
 ## License
 

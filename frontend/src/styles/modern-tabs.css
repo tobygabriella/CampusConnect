@@ -1,0 +1,54 @@
+/* Modern Tabs Styling for Aro application */
+
+.modern-tabs .ant-tabs-tab {
+  position: relative;
+  padding: 8px 0;
+  font-weight: 500;
+  font-size: 14px;
+  color: #64748b; /* gray-500 */
+  margin-right: 24px;
+  transition: all 0.3s;
+}
+
+.modern-tabs .ant-tabs-tab:hover {
+  color: #3b82f6; /* blue-500 */
+}
+
+.modern-tabs .ant-tabs-tab-active {
+  font-weight: 600;
+  color: #2563eb !important; /* blue-600 */
+}
+
+.modern-tabs .ant-tabs-ink-bar {
+  background-color: #2563eb; /* blue-600 */
+  height: 2px;
+  border-radius: 2px;
+}
+
+.modern-tabs .ant-tabs-nav::before {
+  border-bottom-color: #f1f5f9 !important; /* slate-100 */
+}
+
+/* Empty state styling */
+.modern-tabs .ant-empty-description {
+  color: #64748b; /* gray-500 */
+  font-size: 14px;
+}
+
+.modern-tabs .ant-empty-img-simple-ellipse {
+  fill: #e2e8f0; /* gray-200 */
+}
+
+.modern-tabs .ant-empty-img-simple-path {
+  fill: #f1f5f9; /* gray-100 */
+}
+
+/* Card hover effect for lists */
+.modern-tabs .appointment-card {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.modern-tabs .appointment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+}

@@ -31,7 +31,7 @@ export const EditableField = ({
             variant="ghost"
             size="icon"
             onClick={onEdit}
-            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+            className="!bg-transparent text-[#062970] hover:!bg-[#f3e8ff]"
           >
             <Edit2 size={16} style={{ color: "#062970"}}/>
           </Button>
@@ -42,7 +42,7 @@ export const EditableField = ({
             variant="ghost"
             size="icon"
             onClick={onSave}
-            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+            className="!bg-transparent text-[#062970] hover:!bg-[#f3e8ff]"
           >
             <Save size={16} style={{ color: "#062970" }} />
           </Button>

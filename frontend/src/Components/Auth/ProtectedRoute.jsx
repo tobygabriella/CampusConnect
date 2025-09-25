@@ -4,11 +4,40 @@ import { useEffect, useState } from "react";
 import api from "@/utils/axiosInstance";
 import Loading from "@/Components/Loading/LoadingState";
 
+// DEVELOPMENT MODE - Using environment variable
+// Control this via the VITE_DEV_MODE in .env file
+const BYPASS_AUTH = import.meta.env.VITE_DEV_MODE === "true";
+// Mock user for development - change role as needed: "student" or "service_provider"
+const DEV_USER = {
+  id: "dev-user-123",
+  name: "Development User",
+  email: "dev@example.com",
+  role: "student", // Change this to test different roles
+  username: "dev_user",
+  avatar: null
+};
+
 const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
+  // In development bypass mode, we won't need these values from AuthContext
   const { user, isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
-  const [hasProviderDetails, setHasProviderDetails] = useState(null);
+  const [hasProviderDetails, setHasProviderDetails] = useState(true); // Assume true in dev mode
 
+  // For development mode, skip the authentication checks
+  if (BYPASS_AUTH) {
+    console.log("⚠️ DEVELOPMENT MODE: Authentication checks bypassed");
+    
+    // Check for role restrictions even in dev mode
+    if (requiresAuth && allowedRoles.length > 0 && !allowedRoles.includes(DEV_USER.role)) {
+      console.warn(`⚠️ DEV MODE: Role ${DEV_USER.role} not allowed here. Allowed roles: ${allowedRoles.join(', ')}`);
+      console.warn("Change DEV_USER.role in ProtectedRoute.jsx to access this route");
+      return <Navigate to="/not-authorized" replace />;
+    }
+    
+    return <Outlet />;
+  }
+
+  // Original authentication logic follows
   useEffect(() => {
     const checkDetails = async () => {
       if (user?.role === "service_provider") {
@@ -39,24 +68,24 @@ const ProtectedRoute = ({ requiresAuth = false, allowedRoles = [] }) => {
   }
 
   if (user?.role === "service_provider" && hasProviderDetails === null) {
-    return <Loading />;
+    return <Loading />
   }
 
-if (
-  user?.role === "service_provider" &&
-  location.pathname === "/service-provider-info" &&
-  hasProviderDetails === true
-) {
-  return <Navigate to="/profile" replace />;
-}
+  if (
+    user?.role === "service_provider" &&
+    location.pathname === "/service-provider-info" &&
+    hasProviderDetails === true
+  ) {
+    return <Navigate to="/profile" replace />;
+  }
 
-if (
-  user?.role === "service_provider" &&
-  hasProviderDetails === false &&
-  location.pathname !== "/service-provider-info"
-) {
-  return <Navigate to="/service-provider-info" replace />;
-}
+  if (
+    user?.role === "service_provider" &&
+    hasProviderDetails === false &&
+    location.pathname !== "/service-provider-info"
+  ) {
+    return <Navigate to="/service-provider-info" replace />;
+  }
 
   if (requiresAuth) {
     if (!isAuthenticated) {

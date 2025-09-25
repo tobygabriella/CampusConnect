@@ -5,9 +5,14 @@ import { toast } from "react-toastify";
 import { Tabs } from "antd";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
-import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import Loading from "@/Components/Loading/LoadingState";
+import ModernButton from "@/Components/UI/ModernButton";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, Clock, AlertCircle, CheckCircle, X, Calendar as CalendarIcon, MessageSquare, Ban, Pencil, User } from "lucide-react";
+
+// Import custom styles for tabs
+import "@/styles/modern-tabs.css";
 
 const AppointmentsPage = () => {
   const navigate = useNavigate();
@@ -159,7 +164,6 @@ const AppointmentsPage = () => {
     }
   };
 
-
   const getTimeStatusMessage = (appt, type) => {
     if (!appt?.startTime || !appt?.serviceProvider?.cancellationWindow) return "";
   
@@ -184,7 +188,6 @@ const AppointmentsPage = () => {
     return "";
   };
 
-  
   const renderCard = (appt) => {
     const now = new Date();
     const startTime = new Date(appt.startTime);
@@ -209,167 +212,259 @@ const AppointmentsPage = () => {
     const isOwnAppointment = isProvider && appt.serviceProvider.user.id === user.id;
     const appointmentType = isOwnAppointment ? "Providing" : "Receiving";
 
+    // Style based on status
+    const getStatusStyle = (status) => {
+      switch (status) {
+        case 'confirmed':
+          return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        case 'cancelled':
+          return 'bg-red-50 text-red-700 border-red-200';
+        case 'completed':
+          return 'bg-blue-50 text-blue-700 border-blue-200';
+        case 'paid':
+          return 'bg-green-50 text-green-700 border-green-200';
+        case 'no_show_client':
+        case 'no_show_provider':
+          return 'bg-amber-50 text-amber-700 border-amber-200';
+        default:
+          return 'bg-gray-50 text-gray-700 border-gray-200';
+      }
+    };
+
     return (
-      <div 
+      <motion.div 
         key={appt.id} 
-        className={`p-6 mb-4 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 ${
-          isProvider ? (isOwnAppointment ? "border-l-4 border-blue-500" : "border-l-4 border-green-500") : ""
-        }`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3 }}
+        className={`mb-4 bg-white rounded-xl shadow-sm hover:shadow-md border border-gray-100 overflow-hidden transition-all duration-300`}
+        whileHover={{ y: -2 }}
       >
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-lg font-semibold text-[#062970]">
-              {appt.service.name}
-              {isProvider && (
-                <span className="ml-2 text-sm font-normal text-gray-500">
-                  ({appointmentType})
-                </span>
-              )}
-            </h3>
-            <p className="text-gray-600">
-              {isOwnAppointment ? (
-                <>Client: {appt.client.name}</>
-              ) : (
-                <>Provider: {appt.serviceProvider.user.name}</>
-              )}
-            </p>
-          </div>
-          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-            appt.status === 'confirmed' ? 'bg-green-100 text-green-800' : 
-            appt.status === 'cancelled' ? 'bg-red-100 text-red-800' : 
-            'bg-blue-100 text-blue-800'
-          }`}>
-            {appt.status}
-          </span>
+        {/* Status indicator */}
+        <div className="h-1 w-full bg-gray-100">
+          <div 
+            className={`h-full ${appt.status === 'confirmed' ? 'bg-blue-500' : 
+            appt.status === 'cancelled' ? 'bg-red-500' : 
+            appt.status === 'completed' ? 'bg-green-500' : 
+            'bg-gray-300'}`} 
+            style={{ width: isProvider && isOwnAppointment ? '60%' : '100%' }}
+          />
         </div>
-        
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Start Time</p>
-            <p className="font-medium">{formatDateTime(appt.startTime)}</p>
+
+        <div className="p-6">
+          {/* Header */}
+          <div className="flex justify-between items-start mb-5">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                {appt.service.name}
+                {isProvider && (
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${isOwnAppointment ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
+                    {appointmentType}
+                  </span>
+                )}
+              </h3>
+              <p className="text-gray-600 mt-1 flex items-center gap-1.5">
+                <User className="h-4 w-4 text-gray-400" />
+                {isOwnAppointment ? (
+                  <>Client: <span className="font-medium">{appt.client.name}</span></>
+                ) : (
+                  <>Provider: <span className="font-medium">{appt.serviceProvider.user.name}</span></>
+                )}
+              </p>
+            </div>
+            <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${getStatusStyle(appt.status)}`}>
+              {appt.status === 'confirmed' && <CheckCircle className="h-3 w-3 inline mr-1" />}
+              {appt.status === 'cancelled' && <Ban className="h-3 w-3 inline mr-1" />}
+              {appt.status.includes('no_show') && <X className="h-3 w-3 inline mr-1" />}
+              {appt.status === 'completed' && <CheckCircle className="h-3 w-3 inline mr-1" />}
+              {appt.status.charAt(0).toUpperCase() + appt.status.slice(1).replace('_', ' ')}
+            </span>
           </div>
-          <div>
-            <p className="text-sm text-gray-500">End Time</p>
-            <p className="font-medium">{formatDateTime(appt.endTime)}</p>
-          </div>
-        </div>
-        
-        <div className="mt-4 grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm text-gray-500">Duration</p>
-            <p className="font-medium">{appt.service.duration / 60} hours</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">Price</p>
-            <p className="font-medium">${appt.service.price}</p>
-          </div>
-        </div>
-        {isUpcoming && (
-          <div className="flex justify-between items-center mt-4">
-            <p className="text-sm text-gray-500">
-            {isOwnAppointment
-              ? "Canceling this appointment will refund the client in full."
-              : `Can cancel up to ${appt.serviceProvider.cancellationWindow} hours before appointment for full deposit refund.`}
-            </p>       
-            <div className="flex gap-4">
-              <Button variant="ghost" 
-                onClick={() => openCancelModal(appt)}
-                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                style={{ color: "#062970"}}
-              >
-                Cancel
-              </Button>
-              {!isOwnAppointment && (
-                <Button variant="ghost" 
-                  onClick={() => openRescheduleModal(appt)}
-                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                  style={{ color: "#062970"}}
-                >
-                  Reschedule
-                </Button>
-              )}
+          
+          {/* Time and Details */}
+          <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="flex items-center">
+                <Calendar className="h-4 w-4 text-blue-600 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500">Start Time</p>
+                  <p className="font-medium text-gray-800">{formatDateTime(appt.startTime)}</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 text-blue-600 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500">End Time</p>
+                  <p className="font-medium text-gray-800">{formatDateTime(appt.endTime)}</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 text-blue-600 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-500">Duration</p>
+                  <p className="font-medium text-gray-800">{appt.service.duration / 60} hours</p>
+                </div>
+              </div>
+              <div className="flex items-center">
+                <span className="h-4 w-4 text-blue-600 mr-2 flex-shrink-0 font-bold">$</span>
+                <div>
+                  <p className="text-xs text-gray-500">Price</p>
+                  <p className="font-medium text-gray-800">${appt.service.price}</p>
+                </div>
+              </div>
             </div>
           </div>
-        )}
-        {appt.notes && (
-          <div className="mt-4">
-            <p className="text-sm text-gray-500">Notes</p>
-            <p className="font-medium">{appt.notes}</p>
-          </div>
-        )}
-        {isAwaiting && (
-          <div className="mt-6 border-t pt-4">
-            {(
-              (user.id === appt.client.id && appt.clientConfirmed) ||
-              (user.id === appt.serviceProvider.user.id && appt.providerConfirmed)
-            ) ? (
-              <p className="text-sm text-gray-600">
-                ✅ You have confirmed this appointment. Waiting for{" "}
-                <span className="font-semibold">
-                  {user.id === appt.client.id ? "the service provider" : "the client"}
-                </span>{" "}
-                to confirm.
+          
+          {/* Notes Section */}
+          {appt.notes && (
+            <div className="mb-4">
+              <div className="flex items-center text-gray-700 mb-1">
+                <MessageSquare className="h-4 w-4 mr-1.5" />
+                <p className="text-sm font-medium">Notes</p>
+              </div>
+              <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg border border-gray-100">{appt.notes}</p>
+            </div>
+          )}
+          
+          {/* Actions Section for Upcoming Appointments */}
+          {isUpcoming && (
+            <div className="mt-5">
+              {/* Policy Info */}
+              <p className="text-xs text-gray-500 mb-3">
+                {isOwnAppointment
+                  ? "Canceling this appointment will refund the client in full."
+                  : `Can cancel up to ${appt.serviceProvider.cancellationWindow} hours before appointment for full refund.`}
               </p>
-            ) : (
-              <>
-                <p className="text-sm text-gray-600 mb-2">
-                  Help us confirm whether this appointment occurred:
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="ghost" 
-                    onClick={() => handleConfirm(appt.id)}
-                    className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                    disabled={user.id === appt.client.id && !appt.providerConfirmed}
-                    style={{ color: "#062970"}}
+              
+              <div className="flex gap-2">
+                <ModernButton
+                  variant="outline"
+                  size="sm"
+                  icon={<Ban className="h-4 w-4" />}
+                  iconPosition="left"
+                  onClick={() => openCancelModal(appt)}
+                  className="text-sm"
+                >
+                  Cancel
+                </ModernButton>
+                
+                {!isOwnAppointment && (
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<CalendarIcon className="h-4 w-4" />}
+                    iconPosition="left"
+                    onClick={() => openRescheduleModal(appt)}
+                    className="text-sm"
                   >
-                    ✅ Confirm Appointment
-                  </Button>
+                    Reschedule
+                  </ModernButton>
+                )}
+              </div>
+            </div>
+          )}
+          
+          {/* Awaiting Confirmation Section */}
+          {isAwaiting && (
+            <div className="mt-5 border-t border-gray-100 pt-4">
+              {(
+                (user.id === appt.client.id && appt.clientConfirmed) ||
+                (user.id === appt.serviceProvider.user.id && appt.providerConfirmed)
+              ) ? (
+                <div className="flex items-start gap-2 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                  <CheckCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm text-blue-800 font-medium">Appointment Confirmed</p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Waiting for {user.id === appt.client.id ? "the service provider" : "the client"} to confirm.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex items-start gap-2 bg-amber-50 p-3 rounded-lg border border-amber-100">
+                    <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-amber-800">
+                      Please confirm whether this appointment occurred:
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <ModernButton
+                      variant="primary"
+                      size="sm"
+                      icon={<CheckCircle className="h-4 w-4" />}
+                      iconPosition="left"
+                      onClick={() => handleConfirm(appt.id)}
+                      disabled={user.id === appt.client.id && !appt.providerConfirmed}
+                      className="text-sm"
+                    >
+                      Confirm
+                    </ModernButton>
+                    
+                    <ModernButton
+                      variant="outline"
+                      size="sm"
+                      icon={<X className="h-4 w-4" />}
+                      iconPosition="left"
+                      onClick={() =>
+                        handleReportNoShow(
+                          appt.id,
+                          user.id === appt.client.id ? "client" : "provider"
+                        )
+                      }
+                      className="text-sm"
+                    >
+                      Report No-Show
+                    </ModernButton>
+                  </div>
+
                   {user.id === appt.client.id && !appt.providerConfirmed && (
-                    <p className="text-sm text-yellow-600 mt-2">
+                    <p className="text-xs text-amber-600 mt-1">
+                      <AlertCircle className="h-3 w-3 inline mr-1" />
                       Waiting for the provider to confirm before you can confirm.
                     </p>
                   )}
-                  <Button variant="ghost" 
-                    onClick={() =>
-                      handleReportNoShow(
-                        appt.id,
-                        user.id === appt.client.id ? "client" : "provider"
-                      )
-                    }
-                    className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                    style={{ color: "#062970"}}
-                  >
-                    ❌ Report No-Show
-                  </Button>
+                  
+                  {/* Notes Input */}
+                  <div className="mt-3">
+                    <div className="flex items-center text-gray-700 mb-1">
+                      <MessageSquare className="h-4 w-4 mr-1" />
+                      <p className="text-sm">Add a note (optional)</p>
+                    </div>
+                    <textarea
+                      className="w-full p-3 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-colors"
+                      rows={2}
+                      placeholder="Add feedback or any other relevant information..."
+                      onChange={(e) =>
+                        setNoteModal((prev) => ({
+                          ...prev,
+                          apptId: appt.id,
+                          note: e.target.value,
+                        }))
+                      }
+                    />
+                    
+                    <div className="mt-2 flex justify-end">
+                      <ModernButton
+                        variant="ghost"
+                        size="sm"
+                        icon={<MessageSquare className="h-4 w-4" />}
+                        iconPosition="left"
+                        onClick={submitNote}
+                        className="text-sm"
+                        disabled={!noteModal.note}
+                      >
+                        Submit Note
+                      </ModernButton>
+                    </div>
+                  </div>
                 </div>
-
-                <textarea
-                  className="w-full mt-4 p-2 border rounded-md"
-                  rows={3}
-                  placeholder="Optional notes (e.g. feedback, what happened)..."
-                  onChange={(e) =>
-                    setNoteModal((prev) => ({
-                      ...prev,
-                      apptId: appt.id,
-                      note: e.target.value,
-                    }))
-                  }
-                />
-
-                <Button variant="ghost" 
-                  onClick={submitNote}
-                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                  style={{ color: "#062970"}}
-                >
-                  💬 Submit Note
-                </Button>
-              </>
-            )}
-          </div>
-        )}
-
-      </div>
+              )}
+            </div>
+          )}
+        </div>
+      </motion.div>
     );
   };
 
@@ -415,92 +510,184 @@ const AppointmentsPage = () => {
         </div>
       ),
     }
-    
   ];
 
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto">  
-            <TopNavbar />            
-            <div className="p-6">
-              <div className="bg-white rounded-lg shadow-sm p-6">
-                <h2 className="text-2xl font-bold text-[#010a4f] mb-6">Your Appointments</h2>
-                <Tabs
-                defaultActiveKey="1"
-                items={items}
-                tabBarStyle={{
-                    borderBottom: "1px solid #e2e8f0",
-                    marginBottom: "16px",
-                }}
-                tabBarGutter={32}
-                className="custom-tabs"
-                />
-                {cancelModal.open && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    <div className="relative bg-white p-6 rounded shadow-lg max-w-sm w-full">
-                      <Button variant="ghost" 
-                        onClick={closeCancelModal}
-                        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                        aria-label="Close"
-                        style={{ color: "#062970"}}
-                      >
-                        &times;
-                      </Button>
-                      <h3 className="text-lg font-semibold mb-4 text-[#062970]">Cancel Appointment?</h3>
-                      <p className="text-sm mb-6 text-gray-600">
-                        Are you sure you want to cancel this appointment? {cancelModal.appt?.serviceProvider?.cancellationWindow} hour refund policy applies.
-                      </p>
-                      <p className="text-sm mb-4 text-gray-500 italic">
+      <div className="flex-1 bg-gradient-to-b from-gray-50 to-white ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto">  
+        <TopNavbar />            
+        <div className="p-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Your Appointments</h2>
+              <div className="flex items-center gap-2">
+                <ModernButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<Calendar className="h-4 w-4" />}
+                  iconPosition="left"
+                  onClick={() => navigate("/book")}
+                >
+                  Book New
+                </ModernButton>
+              </div>
+            </div>
+            
+            <Tabs
+              defaultActiveKey="1"
+              items={items}
+              tabBarStyle={{
+                borderBottom: "1px solid #e2e8f0",
+                marginBottom: "16px",
+              }}
+              tabBarGutter={32}
+              className="modern-tabs"
+            />
+          </motion.div>
+        </div>
+          
+        {/* Cancel Modal */}
+        <AnimatePresence>
+          {cancelModal.open && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black z-50"
+                onClick={closeCancelModal}
+              />
+              <motion.div 
+                className="fixed inset-0 z-50 flex items-center justify-center"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ type: 'spring', damping: 25 }}
+              >
+                <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">Cancel Appointment?</h3>
+                    <ModernButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<X className="h-5 w-5" />}
+                      onClick={closeCancelModal}
+                      className="text-gray-500 hover:text-gray-700"
+                      rounded="full"
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <p className="text-gray-600 mb-4">
+                      Are you sure you want to cancel this appointment? {cancelModal.appt?.serviceProvider?.cancellationWindow} hour refund policy applies.
+                    </p>
+                    <div className={`p-3 rounded-lg ${getTimeStatusMessage(cancelModal.appt, "cancel").startsWith("✅") ? 'bg-green-50 border border-green-200' : 'bg-amber-50 border border-amber-200'}`}>
+                      <p className={`text-sm ${getTimeStatusMessage(cancelModal.appt, "cancel").startsWith("✅") ? 'text-green-700' : 'text-amber-700'}`}>
                         {getTimeStatusMessage(cancelModal.appt, "cancel")}
                       </p>
-                      <div className="flex justify-end gap-3">
-                        <Button variant="ghost"  onClick={closeCancelModal} className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" style={{ color: "#062970"}}>No</Button>
-                        <Button variant="ghost" 
-                          onClick={async () => {
-                            try {
-                              await api.patch(`/appointments/${cancelModal.appt.id}/cancel`);
-                              toast.success("Appointment cancelled");
-                              closeCancelModal();
-                              window.location.reload();
-                            } catch {
-                              toast.error("Failed to cancel appointment");
-                            }
-                          }}
-                          className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                          style={{ color: "#062970"}}
-                        >
-                          Yes, Cancel
-                        </Button>
-                      </div>
                     </div>
                   </div>
-                )}
-                {retryPaymentModal.open && (
-                  <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-30">
-                    <div className="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
-                      <h2 className="text-xl font-bold mb-4 text-[#062970]">Add a Payment Method</h2>
-                      <p className="text-gray-600 mb-4">
-                        Your confirmation could not go through because we couldn’t charge your card. Please update your payment methodor contact your provider if you would prefer to handle this directly.
+                  
+                  <div className="flex justify-end gap-3">
+                    <ModernButton 
+                      variant="ghost" 
+                      onClick={closeCancelModal}
+                    >
+                      Keep Appointment
+                    </ModernButton>
+                    <ModernButton 
+                      variant="danger"
+                      onClick={async () => {
+                        try {
+                          await api.patch(`/appointments/${cancelModal.appt.id}/cancel`);
+                          toast.success("Appointment cancelled");
+                          closeCancelModal();
+                          window.location.reload();
+                        } catch (error) {
+                          toast.error("Failed to cancel appointment");
+                          console.error("Cancel error:", error);
+                        }
+                      }}
+                    >
+                      Yes, Cancel
+                    </ModernButton>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+        
+        {/* Retry Payment Modal */}
+        <AnimatePresence>
+          {retryPaymentModal.open && (
+            <>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.5 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black z-50"
+                onClick={() => setRetryPaymentModal({ open: false, apptId: null })}
+              />
+              <motion.div 
+                className="fixed inset-0 z-50 flex items-center justify-center"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+              >
+                <div className="bg-white p-6 rounded-xl shadow-lg max-w-md w-full border border-gray-100">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-semibold text-gray-900">Update Payment Method</h3>
+                    <ModernButton
+                      variant="ghost"
+                      size="sm"
+                      icon={<X className="h-5 w-5" />}
+                      onClick={() => setRetryPaymentModal({ open: false, apptId: null })}
+                      className="text-gray-500 hover:text-gray-700"
+                      rounded="full"
+                    />
+                  </div>
+                  
+                  <div className="mb-6">
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg mb-4">
+                      <p className="text-amber-700">
+                        Your confirmation could not be processed because we couldn't charge your card.
                       </p>
-                      <div className="flex justify-end gap-4">
-                        <Button onClick={() => setRetryPaymentModal({ open: false, apptId: null })} style={{ color: "#062970"}}>Close</Button>
-                        <Button
-                          onClick={() =>
-                            navigate(`/checkout?appointmentId=${retryPaymentModal.apptId}&mode=retry`)
-                          }
-                          style={{ color: "#062970"}}
-                        >
-                          Update Payment
-                        </Button>
-                      </div>
                     </div>
+                    <p className="text-gray-600">
+                      Please update your payment method or contact your provider if you prefer to handle this directly.
+                    </p>
                   </div>
-                )}
-              </div>
-          </div>
+                  
+                  <div className="flex justify-end gap-3">
+                    <ModernButton 
+                      variant="ghost" 
+                      onClick={() => setRetryPaymentModal({ open: false, apptId: null })}
+                    >
+                      Close
+                    </ModernButton>
+                    <ModernButton 
+                      variant="primary"
+                      onClick={() =>
+                        navigate(`/checkout?appointmentId=${retryPaymentModal.apptId}&mode=retry`)
+                      }
+                    >
+                      Update Payment
+                    </ModernButton>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
-  </div>
+    </div>
   );
 };
 

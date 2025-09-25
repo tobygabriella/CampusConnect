@@ -1,18 +1,30 @@
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import AroLogo from "@/assets/aro.png";
-import Aro1 from "@/assets/Aro1.jpg";
-import Aro2 from "@/assets/Aro2.jpg";
-import Aro3 from "@/assets/Aro3.jpg";
-import Aro4 from "@/assets/Aro4.jpg";
-import { Link } from "react-router-dom";
-import { ArrowRight, Search, MessageSquare, Calendar, Heart } from "lucide-react";
-import { motion } from "framer-motion";
-import AnimatedElement from "@/Components/Animation/AnimatedElement";
-import { useState, useEffect } from "react";
+import { ArrowRight, Search, MessageSquare, Calendar, Heart, Menu, X, Check } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { motion, AnimatePresence, useScroll, useTransform, useSpring } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
+
+// Import style overrides
+import "@/styles/component-overrides.css";
 
 const LandingPage = () => {
   const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end start"]
+  });
+
+  // Faster parallax transforms - content appears much sooner
+  const heroParallax = useTransform(scrollYProgress, [0, 0.3], ["0%", "-20%"]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const servicesParallax = useTransform(scrollYProgress, [0.1, 0.4], ["-10%", "10%"]);
+  const stepsParallax = useTransform(scrollYProgress, [0.2, 0.6], ["-5%", "15%"]);
+  
+  // Spring animations for smoother movement
+  const smoothHeroParallax = useSpring(heroParallax, { stiffness: 100, damping: 30 });
+  const smoothServicesParallax = useSpring(servicesParallax, { stiffness: 100, damping: 30 });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -22,14 +34,32 @@ const LandingPage = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  const scrollToSection = (sectionId) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
+    setMobileMenuOpen(false);
+  };
+
+  const navItems = [
+    { id: "whats-inside", label: "What's inside" },
+    { id: "how-it-works", label: "How it works" },
+    { id: "join-community", label: "Join community" }
+  ];
+
   return (
-    <div className="w-screen min-h-screen flex flex-col bg-aro-light-blue">
+    <div ref={containerRef} className="landing-page-container w-screen min-h-screen flex flex-col overflow-x-hidden bg-white">
       {/* Navigation Bar */}
       <motion.header 
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white shadow-lg' : 'bg-transparent'}`}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled 
+            ? 'bg-white shadow-lg border-b border-gray-200' 
+            : 'bg-white/95 backdrop-blur-sm'
+        }`}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
+        transition={{ duration: 0.6 }}
       >
         <div className="container mx-auto py-4 px-6">
           <div className="flex justify-between items-center">
@@ -37,488 +67,741 @@ const LandingPage = () => {
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              whileHover={{ scale: 1.02 }}
             >
-              <Link to="/">
-                <img src={AroLogo} alt="ARO Logo" className="h-12" />
-              </Link>
+              <ModernButton 
+                variant="text"
+                size="lg"
+                onClick={() => window.scrollTo(0, 0)}
+                className="!p-0 text-2xl font-bold text-blue-600 hover:text-blue-700"
+              >
+                ARO
+              </ModernButton>
             </motion.div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-10">
-              {/* Main Nav Links */}
-              <motion.nav 
-                className="flex space-x-8"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3, duration: 0.5 }}
-              >
-                {[
-                  { href: "#whats-inside", label: "What's inside" },
-                  { href: "#how-it-works", label: "How it works" },
-                  { href: "#join-community", label: "Join community" }
-                ].map((link, index) => (
-                  <motion.a 
-                    key={link.href}
-                    href={link.href} 
-                    className="text-aro-navy font-medium hover:text-aro-accent relative"
-                    whileHover={{ scale: 1.05 }}
-                    transition={{ duration: 0.2 }}
+            <div className="hidden lg:flex items-center space-x-8">
+              <nav className="flex space-x-6">
+                {navItems.map((item) => (
+                  <ModernButton
+                    key={item.id}
+                    variant="text"
+                    size="sm"
+                    onClick={() => scrollToSection(item.id)}
+                    className="relative group font-medium"
                   >
-                    {link.label}
-                    <motion.div 
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-aro-accent" 
-                      initial={{ width: 0 }}
-                      whileHover={{ width: "100%" }}
-                      transition={{ duration: 0.3 }}
-                    />
-                  </motion.a>
+                    {item.label}
+                    <span className="absolute inset-x-0 bottom-0 h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200"></span>
+                  </ModernButton>
                 ))}
-              </motion.nav>
+              </nav>
 
               {/* Auth Buttons */}
-              <motion.div
-                className="flex items-center space-x-4"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-              >
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link 
-                    to="/login" 
-                    className="px-5 py-2 bg-aro-light-blue text-aro-navy font-medium rounded-full hover:bg-aro-bg transition-all"
-                  >
-                    Log In
-                  </Link>
-                </motion.div>
-                
-                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                  <Link 
-                    to="/signup" 
-                    className="px-5 py-2 bg-aro-navy text-white font-medium rounded-full hover:bg-aro-blue transition-all"
-                  >
-                    Sign Up
-                  </Link>
-                </motion.div>
-              </motion.div>
+              <div className="flex items-center space-x-3 ml-6">
+                <ModernButton 
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => alert('Login functionality would be implemented here')}
+                >
+                  Log In
+                </ModernButton>
+                <ModernButton 
+                  variant="primary"
+                  size="sm"
+                  onClick={() => alert('Signup functionality would be implemented here')}
+                >
+                  Sign Up
+                </ModernButton>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
-            <motion.button 
-              className="lg:hidden p-2 rounded-md text-aro-navy hover:bg-aro-light-blue transition-colors"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.3 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => alert('Mobile menu functionality would be implemented here')}
+            <ModernButton 
+              variant="ghost"
+              size="sm"
+              className="lg:hidden !p-2"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </motion.button>
+              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </ModernButton>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            className="lg:hidden bg-white border-t border-gray-200"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+          >
+            <div className="px-6 py-4 space-y-4">
+              {navItems.map((item) => (
+                <ModernButton
+                  key={item.id}
+                  variant="text"
+                  size="sm"
+                  onClick={() => scrollToSection(item.id)}
+                  className="w-full justify-start py-2"
+                >
+                  {item.label}
+                </ModernButton>
+              ))}
+              <div className="flex space-x-4 pt-4 border-t border-gray-100">
+                <ModernButton 
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => alert('Login functionality would be implemented here')}
+                >
+                  Log In
+                </ModernButton>
+                <ModernButton 
+                  variant="primary"
+                  size="sm"
+                  onClick={() => alert('Signup functionality would be implemented here')}
+                >
+                  Sign Up
+                </ModernButton>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </motion.header>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 px-6">
-        <div className="container mx-auto max-w-6xl">
+      <motion.section 
+        className="relative pt-32 pb-20 px-6 min-h-screen flex items-center bg-gradient-to-br from-gray-50 to-blue-50"
+        style={{ 
+          y: smoothHeroParallax,
+          opacity: heroOpacity 
+        }}
+      >
+        {/* Background Elements */}
+        <motion.div 
+          className="absolute top-20 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-xl opacity-30"
+          style={{ 
+            y: useTransform(scrollYProgress, [0, 0.3], ["0px", "-50px"]),
+            scale: useTransform(scrollYProgress, [0, 0.3], [1, 0.8])
+          }}
+        />
+        <motion.div 
+          className="absolute bottom-20 left-10 w-64 h-64 bg-gray-200 rounded-full mix-blend-multiply filter blur-xl opacity-30"
+          style={{ 
+            y: useTransform(scrollYProgress, [0, 0.3], ["0px", "30px"]),
+            scale: useTransform(scrollYProgress, [0, 0.3], [1, 1.2])
+          }}
+        />
+
+        <div className="container mx-auto max-w-6xl relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <AnimatedElement animation="fade-in-up" delay={0.1} className="mb-6">
-                <h1 className="text-5xl lg:text-6xl font-bold text-aro-navy">
-                  Skip the <span className="italic">guesswork</span>
-                  <span className="absolute -mt-4 ml-2 text-blue-300 opacity-50">.</span>
+            <motion.div
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <motion.div
+                className="mb-6"
+                style={{
+                  y: useTransform(scrollYProgress, [0, 0.2], ["0px", "-25px"]),
+                  opacity: useTransform(scrollYProgress, [0, 0.15], [1, 0])
+                }}
+              >
+                <h1 className="text-6xl lg:text-7xl font-black text-gray-900 leading-tight">
+                  Skip the{" "}
+                  <span className="italic text-blue-600">
+                    guesswork
+                  </span>
                 </h1>
-              </AnimatedElement>
+              </motion.div>
 
-              <AnimatedElement animation="fade-in-up" delay={0.3}>
+              <motion.div
+                style={{
+                  y: useTransform(scrollYProgress, [0, 0.2], ["0px", "-15px"]),
+                  opacity: useTransform(scrollYProgress, [0, 0.18], [1, 0])
+                }}
+              >
                 <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-                  Discover and book <span className="text-aro-navy font-medium">local service providers</span>, recommended by your <span className="text-aro-navy font-medium">campus community</span>. From hairstylists to nail artists, find the perfect match for your style.
+                  Discover and book{" "}
+                  <span className="font-semibold text-blue-600">
+                    local service providers
+                  </span>
+                  , recommended by your{" "}
+                  <span className="font-semibold text-blue-600">
+                    campus community
+                  </span>
+                  . From hairstylists to nail artists, find the perfect match for your style.
                 </p>
 
-                <div className="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                  <Link to="/signup" className="flex items-center justify-center px-8 py-3 bg-aro-navy text-white rounded-full hover:bg-aro-blue transition-all text-lg font-medium">
-                    Get Started
-                    <ArrowRight className="ml-2 h-5 w-5" />
-                  </Link>
-                  <a href="#how-it-works" className="flex items-center justify-center px-8 py-3 bg-white border border-gray-200 text-aro-navy rounded-full hover:bg-aro-bg transition-all text-lg font-medium">
-                    Learn More
-                  </a>
+                <div className="mt-10 flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-6">
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ModernButton 
+                      variant="primary"
+                      size="lg"
+                      icon={<ArrowRight className="h-5 w-5" />}
+                      iconPosition="right"
+                      className="rounded-full text-lg px-8 py-6"
+                      onClick={() => alert('Signup functionality would be implemented here')}
+                    >
+                      Get Started
+                    </ModernButton>
+                  </motion.div>
+                  <motion.div
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <ModernButton 
+                      variant="outline"
+                      size="lg"
+                      className="rounded-full text-lg px-8 py-6"
+                      onClick={() => scrollToSection('how-it-works')}
+                    >
+                      Learn More
+                    </ModernButton>
+                  </motion.div>
                 </div>
-              </AnimatedElement>
-            </div>
+              </motion.div>
+            </motion.div>
 
-            <div className="relative">
-              <AnimatedElement animation="fade-in" delay={0.6} className="rounded-2xl overflow-hidden shadow-xl">
-                <div className="relative bg-white rounded-2xl p-6 pt-12">
-                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-6 py-3 rounded-full shadow-md">
-                    <Search className="h-6 w-6 text-aro-accent" />
+            <motion.div 
+              className="relative"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              style={{
+                y: useTransform(scrollYProgress, [0, 0.2], ["0px", "-40px"]),
+                scale: useTransform(scrollYProgress, [0, 0.2], [1, 0.95]),
+                opacity: useTransform(scrollYProgress, [0, 0.2], [1, 0])
+              }}
+            >
+              <div className="relative bg-white/90 backdrop-blur-sm rounded-3xl p-8 pt-16 shadow-2xl border border-gray-200">
+                <motion.div 
+                  className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-blue-600 p-4 rounded-full shadow-lg"
+                  animate={{ rotate: [0, 5, -5, 0] }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                >
+                  <Search className="h-6 w-6 text-white" />
+                </motion.div>
+                
+                <div className="mb-6">
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl mb-4">
+                    <div className="flex items-center">
+                      <Search className="h-5 w-5 text-gray-400 mr-3" />
+                      <input 
+                        type="text" 
+                        placeholder="Find your service provider" 
+                        className="bg-transparent border-none focus:outline-none text-gray-700 w-full font-medium"
+                        disabled
+                      />
+                    </div>
                   </div>
-                  <div className="mb-4">
-                    <div className="flex items-center justify-between p-3 bg-aro-bg rounded-xl mb-3">
-                      <div className="flex items-center">
-                        <Search className="h-5 w-5 text-aro-gray mr-3" />
-                        <input 
-                          type="text" 
-                          placeholder="Find your service provider" 
-                          className="bg-transparent border-none focus:outline-none text-aro-navy w-full"
-                          disabled
-                        />
-                      </div>
-                    </div>
 
-                    <div className="space-y-3">
-                      <div className="p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer">
-                        <h3 className="font-medium text-aro-navy">Sarah's Hair Studio</h3>
-                        <p className="text-sm text-gray-500">Specializes in curly hair</p>
-                      </div>
-                      <div className="p-4 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-all cursor-pointer">
-                        <h3 className="font-medium text-aro-navy">Nail Art by Emma</h3>
-                        <p className="text-sm text-gray-500">Custom designs</p>
-                      </div>
-                    </div>
+                  <div className="space-y-3">
+                    {[
+                      { name: "Sarah's Hair Studio", specialty: "Specializes in curly hair" },
+                      { name: "Nail Art by Emma", specialty: "Custom designs" }
+                    ].map((provider, index) => (
+                      <motion.div 
+                        key={provider.name}
+                        className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition-all cursor-pointer"
+                        whileHover={{ scale: 1.02, y: -2 }}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.5 + index * 0.1 }}
+                      >
+                        <h3 className="font-semibold text-gray-800">{provider.name}</h3>
+                        <p className="text-sm text-gray-500">{provider.specialty}</p>
+                      </motion.div>
+                    ))}
                   </div>
                 </div>
-              </AnimatedElement>
+              </div>
+              
               <motion.div 
-                className="absolute -bottom-6 -right-6 h-24 w-24 bg-aro-accent rounded-full z-[-1]"
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ repeat: Infinity, duration: 5 }}
+                className="absolute -bottom-8 -right-8 h-24 w-24 bg-blue-300 rounded-full z-[-1]"
+                style={{
+                  scale: useTransform(scrollYProgress, [0, 0.15], [1, 1.2]),
+                  y: useTransform(scrollYProgress, [0, 0.15], ["0px", "10px"])
+                }}
               />
               <motion.div 
-                className="absolute -top-6 -left-6 h-16 w-16 bg-blue-200 rounded-full z-[-1]"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 4, delay: 1 }}
+                className="absolute -top-8 -left-8 h-20 w-20 bg-gray-300 rounded-full z-[-1]"
+                style={{
+                  scale: useTransform(scrollYProgress, [0, 0.15], [1, 0.8]),
+                  y: useTransform(scrollYProgress, [0, 0.15], ["0px", "-15px"])
+                }}
               />
-            </div>
+            </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
       
-
       {/* Services Section */}
-      <section id="whats-inside" className="py-24 bg-white">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <AnimatedElement animation="fade-in" delay={0.1} className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-aro-navy mb-6">We make it easy to find, trust, and book quality personal care services for you</h2>
-          </AnimatedElement>
+      <motion.section 
+        id="whats-inside" 
+        className="py-24 bg-white relative overflow-hidden"
+        style={{ y: smoothServicesParallax }}
+      >
+        <motion.div 
+          className="absolute top-0 right-0 w-96 h-96 bg-gray-100 rounded-full filter blur-3xl opacity-50"
+          style={{ 
+            y: useTransform(scrollYProgress, [0.1, 0.4], ["25px", "-25px"]),
+            rotate: useTransform(scrollYProgress, [0.1, 0.4], [0, 45])
+          }}
+        />
+        
+        <div className="container mx-auto px-6 max-w-6xl relative z-10">
+          <motion.div
+            className="text-center mb-16"
+            style={{
+              opacity: useTransform(scrollYProgress, [0.05, 0.15], [0, 1]),
+              y: useTransform(scrollYProgress, [0.05, 0.15], ["50px", "0px"])
+            }}
+          >
+            <h2 className="text-5xl font-bold text-gray-900 mb-6">
+              We make it easy to find, trust, and book quality personal care services for you
+            </h2>
+          </motion.div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Feature Card 1 */}
-            <AnimatedElement animation="fade-in-up" delay={0.2}>
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full">
-                <h3 className="text-xl font-bold text-aro-navy text-center mb-4">Peer-Vetted Providers</h3>
-                <p className="text-gray-600 text-center">
-                  All service providers are verified and reviewed by fellow students in your campus community
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            {[
+              { title: "Peer-Vetted Providers", desc: "All service providers are verified and reviewed by fellow students in your campus community" },
+              { title: "Local Discovery", desc: "Find beauty and grooming professionals near your campus" },
+              { title: "Direct Communication", desc: "Chat directly with providers to discuss your needs, ask questions, and coordinate appointments seamlessly" }
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                className="group bg-white p-8 rounded-3xl border border-gray-200 shadow-lg hover:shadow-xl hover:border-blue-300 transition-all duration-500 h-full"
+                style={{
+                  opacity: useTransform(scrollYProgress, [0.08 + index * 0.01, 0.18 + index * 0.01], [0, 1]),
+                  y: useTransform(scrollYProgress, [0.08 + index * 0.01, 0.18 + index * 0.01], ["40px", "0px"]),
+                  scale: useTransform(scrollYProgress, [0.08 + index * 0.01, 0.18 + index * 0.01], [0.95, 1])
+                }}
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <h3 className="text-xl font-bold text-gray-800 text-center mb-4 group-hover:text-blue-600 transition-colors duration-300">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 text-center leading-relaxed">
+                  {feature.desc}
                 </p>
-              </div>
-            </AnimatedElement>
-
-            {/* Feature Card 2 */}
-            <AnimatedElement animation="fade-in-up" delay={0.4}>
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full">
-                <h3 className="text-xl font-bold text-aro-navy text-center mb-4">Local Discovery</h3>
-                <p className="text-gray-600 text-center">
-                  Find beauty and grooming professionals near your campus
-                </p>
-              </div>
-            </AnimatedElement>
-
-            {/* Feature Card 3 */}
-            <AnimatedElement animation="fade-in-up" delay={0.6}>
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full">
-                <h3 className="text-xl font-bold text-aro-navy text-center mb-4">Direct Communication</h3>
-                <p className="text-gray-600 text-center">
-                  Chat directly with providers to discuss your needs, ask questions, and coordinate appointments seamlessly
-                </p>
-              </div>
-            </AnimatedElement>
+              </motion.div>
+            ))}
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-            {/* Feature Card 4 */}
-            <AnimatedElement animation="fade-in-up" delay={0.8}>
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full">
-                <h3 className="text-xl font-bold text-aro-navy text-center mb-4">Easy Scheduling</h3>
-                <p className="text-gray-600 text-center">
-                  Book appointments that fit your busy student schedule with our streamlined booking system
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {[
+              { title: "Easy Scheduling", desc: "Book appointments that fit your busy student schedule with our streamlined booking system" },
+              { title: "Campus Community", desc: "Join discussion groups, share photos, and connect with other students about beauty trends and recommendations" }
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                className="group bg-white p-8 rounded-3xl border border-gray-200 shadow-lg hover:shadow-xl hover:border-blue-300 transition-all duration-500 h-full"
+                style={{
+                  opacity: useTransform(scrollYProgress, [0.15 + index * 0.01, 0.25 + index * 0.01], [0, 1]),
+                  y: useTransform(scrollYProgress, [0.15 + index * 0.01, 0.25 + index * 0.01], ["40px", "0px"]),
+                  scale: useTransform(scrollYProgress, [0.15 + index * 0.01, 0.25 + index * 0.01], [0.95, 1])
+                }}
+                whileHover={{ scale: 1.02, y: -5 }}
+              >
+                <h3 className="text-xl font-bold text-gray-800 text-center mb-4 group-hover:text-blue-600 transition-colors duration-300">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-600 text-center leading-relaxed">
+                  {feature.desc}
                 </p>
-              </div>
-            </AnimatedElement>
-
-            {/* Feature Card 5 */}
-            <AnimatedElement animation="fade-in-up" delay={1.0}>
-              <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm hover:shadow-md transition-all h-full">
-                <h3 className="text-xl font-bold text-aro-navy text-center mb-4">Campus Community</h3>
-                <p className="text-gray-600 text-center">
-                  Join discussion groups, share photos, and connect with other students about beauty trends and recommendations
-                </p>
-              </div>
-            </AnimatedElement>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="py-24 bg-aro-light-blue">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <AnimatedElement animation="fade-in" className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-aro-navy mb-4">How Aro works</h2>
-          </AnimatedElement>
+      <motion.section 
+        id="how-it-works" 
+        className="py-24 bg-gray-50 relative overflow-hidden"
+        style={{ y: stepsParallax }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 to-gray-100/50"></div>
+        
+        <div className="container mx-auto px-6 max-w-6xl relative z-10">
+          <motion.div
+            className="text-center mb-16"
+            style={{
+              opacity: useTransform(scrollYProgress, [0.2, 0.3], [0, 1]),
+              y: useTransform(scrollYProgress, [0.2, 0.3], ["50px", "0px"])
+            }}
+          >
+            <h2 className="text-5xl font-bold text-gray-900 mb-4">
+              How Aro works
+            </h2>
+          </motion.div>
           
-          <div className="space-y-16">
-            {/* Step 1 */}
-            <AnimatedElement animation="fade-in-up" delay={0.2}>
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="flex-shrink-0 bg-blue-100 rounded-full h-20 w-20 flex items-center justify-center">
-                  <Search className="h-8 w-8 text-aro-blue" />
-                  <div className="absolute -top-2 -left-2 bg-white rounded-full px-3 py-1 text-sm font-bold text-aro-navy border border-gray-100 shadow-sm">
-                    01
+          <div className="space-y-20">
+            {[
+              {
+                step: "01",
+                icon: Search,
+                title: "Discover Providers",
+                desc: "Browse through vetted beauty professionals in your area. See their specialties, certifications, and student reviews",
+                content: "Search results"
+              },
+              {
+                step: "02",
+                icon: MessageSquare,
+                title: "Check Reviews & Ratings",
+                desc: "Read reviews from fellow students and see ratings to make informed decisions about your beauty care.",
+                content: "Recent Reviews"
+              },
+              {
+                step: "03",
+                icon: Calendar,
+                title: "Book Your Appointments",
+                desc: "Message providers directly and schedule appointments that work with your busy student schedule.",
+                content: "Book an appointment"
+              },
+              {
+                step: "04",
+                icon: Heart,
+                title: "Share Your Experience",
+                desc: "After your service, share photos and reviews to help other students discover great providers.",
+                content: "New set! ✨"
+              }
+            ].map((step, index) => (
+              <motion.div
+                key={step.step}
+                className={`flex flex-col ${index % 2 === 1 ? 'md:flex-row-reverse' : 'md:flex-row'} items-center gap-12`}
+                style={{
+                  opacity: useTransform(scrollYProgress, [0.25 + index * 0.03, 0.35 + index * 0.03], [0, 1]),
+                  y: useTransform(scrollYProgress, [0.25 + index * 0.03, 0.35 + index * 0.03], ["50px", "0px"]),
+                  scale: useTransform(scrollYProgress, [0.25 + index * 0.03, 0.35 + index * 0.03], [0.9, 1])
+                }}
+              >
+                <div className="relative flex-shrink-0">
+                  <motion.div 
+                    className="bg-blue-600 rounded-full h-24 w-24 flex items-center justify-center shadow-xl"
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.3 }}
+                    style={{
+                      y: useTransform(scrollYProgress, [0.25 + index * 0.03, 0.5], ["0px", `-${5 + index * 3}px`])
+                    }}
+                  >
+                    <step.icon className="h-10 w-10 text-white" />
+                  </motion.div>
+                  <div className="absolute -top-3 -left-3 bg-white rounded-full px-4 py-2 text-sm font-bold text-gray-800 border border-gray-200 shadow-lg">
+                    {step.step}
                   </div>
                 </div>
-                <div className="flex-grow">
-                  <h3 className="text-2xl font-bold text-aro-navy mb-2">Discover Providers</h3>
-                  <p className="text-gray-600">
-                    Browse through vetted beauty professionals in your area. See their specialties, certifications, and student reviews
-                  </p>
+                
+                <div className="flex-grow text-center md:text-left">
+                  <h3 className="text-3xl font-bold text-gray-800 mb-4">{step.title}</h3>
+                  <p className="text-lg text-gray-600 leading-relaxed">{step.desc}</p>
                 </div>
-                <div className="md:w-1/3 bg-white p-4 rounded-xl shadow-lg">
-                  <div className="flex items-center mb-3">
-                    <Search className="h-5 w-5 text-aro-accent mr-2" />
-                    <div className="text-sm text-gray-500">Search results</div>
-                  </div>
-                  <div>
-                    <div className="mb-3 p-2 border-b border-gray-100">
-                      <h4 className="font-medium">Sarah's Hair Studio</h4>
-                      <p className="text-xs text-gray-500">Specializes in curly hair</p>
-                    </div>
-                    <div className="p-2">
-                      <h4 className="font-medium">Nail Art by Emma</h4>
-                      <p className="text-xs text-gray-500">Custom designs</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </AnimatedElement>
-
-            {/* Step 2 */}
-            <AnimatedElement animation="fade-in-up" delay={0.4}>
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="md:order-3 flex-shrink-0 bg-blue-100 rounded-full h-20 w-20 flex items-center justify-center">
-                  <MessageSquare className="h-8 w-8 text-aro-blue" />
-                  <div className="absolute -top-2 -left-2 bg-white rounded-full px-3 py-1 text-sm font-bold text-aro-navy border border-gray-100 shadow-sm">
-                    02
-                  </div>
-                </div>
-                <div className="md:order-2 flex-grow">
-                  <h3 className="text-2xl font-bold text-aro-navy mb-2">Check Reviews & Ratings</h3>
-                  <p className="text-gray-600">
-                    Read reviews from fellow students and see ratings to make informed decisions about your beauty care.
-                  </p>
-                </div>
-                <div className="md:order-1 md:w-1/3 bg-white p-4 rounded-xl shadow-lg">
-                  <div className="flex justify-between items-center mb-3">
-                    <div className="text-sm font-medium">Recent Reviews</div>
-                    <div className="flex">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <svg key={star} className="h-4 w-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
-                        </svg>
-                      ))}
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">"Absolutely loved my haircut! Emma really understood what I wanted and the price was perfect for my student budget."</p>
-                  <p className="text-xs text-gray-500">— Jessica T., 3 days ago</p>
-                </div>
-              </div>
-            </AnimatedElement>
-
-            {/* Step 3 */}
-            <AnimatedElement animation="fade-in-up" delay={0.6}>
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="flex-shrink-0 bg-blue-100 rounded-full h-20 w-20 flex items-center justify-center">
-                  <Calendar className="h-8 w-8 text-aro-blue" />
-                  <div className="absolute -top-2 -left-2 bg-white rounded-full px-3 py-1 text-sm font-bold text-aro-navy border border-gray-100 shadow-sm">
-                    03
-                  </div>
-                </div>
-                <div className="flex-grow">
-                  <h3 className="text-2xl font-bold text-aro-navy mb-2">Book Your Appointments</h3>
-                  <p className="text-gray-600">
-                    Message providers directly and schedule appointments that work with your busy student schedule.
-                  </p>
-                </div>
-                <div className="md:w-1/3 bg-white p-4 rounded-xl shadow-lg">
-                  <div className="mb-3">
-                    <div className="text-sm font-medium mb-2">Book an appointment</div>
-                    <div className="grid grid-cols-4 gap-1">
-                      {['10:00', '11:30', '1:00', '2:30'].map((time) => (
-                        <div key={time} className="p-2 text-xs text-center bg-aro-light-blue rounded-lg hover:bg-blue-200 transition-colors cursor-pointer">
-                          {time}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <button className="w-full mt-2 bg-aro-navy text-white py-2 rounded-lg text-sm font-medium">
-                    Confirm Booking
-                  </button>
-                </div>
-              </div>
-            </AnimatedElement>
-
-            {/* Step 4 */}
-            <AnimatedElement animation="fade-in-up" delay={0.8}>
-              <div className="flex flex-col md:flex-row items-center gap-8">
-                <div className="md:order-3 flex-shrink-0 bg-blue-100 rounded-full h-20 w-20 flex items-center justify-center">
-                  <Heart className="h-8 w-8 text-aro-blue" />
-                  <div className="absolute -top-2 -left-2 bg-white rounded-full px-3 py-1 text-sm font-bold text-aro-navy border border-gray-100 shadow-sm">
-                    04
-                  </div>
-                </div>
-                <div className="md:order-2 flex-grow">
-                  <h3 className="text-2xl font-bold text-aro-navy mb-2">Share Your Experience</h3>
-                  <p className="text-gray-600">
-                    After your service, share photos and reviews to help other students discover great providers.
-                  </p>
-                </div>
-                <div className="md:order-1 md:w-1/3 bg-white p-4 rounded-xl shadow-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center">
-                      <div className="h-8 w-8 rounded-full bg-blue-100 mr-2"></div>
-                      <div>
-                        <p className="text-sm font-medium">@jessica_styles</p>
-                        <p className="text-xs text-gray-500">New set! ✨</p>
+                
+                <motion.div 
+                  className="md:w-1/3 bg-white p-6 rounded-2xl shadow-xl border border-gray-200"
+                  whileHover={{ scale: 1.02, y: -5 }}
+                  transition={{ duration: 0.3 }}
+                  style={{
+                    y: useTransform(scrollYProgress, [0.25 + index * 0.03, 0.5], ["0px", `${3 + index * 2}px`])
+                  }}
+                >
+                  <div className="text-sm font-medium mb-3 text-gray-700">{step.content}</div>
+                  {step.step === "01" && (
+                    <div className="space-y-2">
+                      <div className="p-3 border-b border-gray-100">
+                        <h4 className="font-medium text-gray-800">Sarah's Hair Studio</h4>
+                        <p className="text-xs text-gray-500">Specializes in curly hair</p>
+                      </div>
+                      <div className="p-3">
+                        <h4 className="font-medium text-gray-800">Nail Art by Emma</h4>
+                        <p className="text-xs text-gray-500">Custom designs</p>
                       </div>
                     </div>
-                  </div>
-                  <div className="rounded-lg overflow-hidden mb-2">
-                    <div className="h-32 bg-gray-100"></div>
-                  </div>
-                  <div className="flex items-center text-xs text-gray-500">
-                    <Heart className="h-3 w-3 mr-1" /> 206
-                    <MessageSquare className="h-3 w-3 ml-3 mr-1" /> 14
-                  </div>
-                </div>
-              </div>
-            </AnimatedElement>
+                  )}
+                  {step.step === "02" && (
+                    <div>
+                      <div className="flex justify-between items-center mb-3">
+                        <div className="flex">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg key={star} className="h-4 w-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
+                            </svg>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">"Absolutely loved my haircut! Emma really understood what I wanted and the price was perfect for my student budget."</p>
+                      <p className="text-xs text-gray-500">— Jessica T., 3 days ago</p>
+                    </div>
+                  )}
+                  {step.step === "03" && (
+                    <div>
+                      <div className="grid grid-cols-2 gap-2 mb-4">
+                        {['10:00', '11:30', '1:00', '2:30'].map((time) => (
+                          <motion.div 
+                            key={time} 
+                            className="p-2 text-xs text-center bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                            whileHover={{ scale: 1.05 }}
+                          >
+                            {time}
+                          </motion.div>
+                        ))}
+                      </div>
+                      <ModernButton
+                        variant="primary"
+                        size="md"
+                        className="w-full"
+                        icon={<Calendar className="h-4 w-4" />}
+                        iconPosition="left"
+                      >
+                        Confirm Booking
+                      </ModernButton>
+                    </div>
+                  )}
+                  {step.step === "04" && (
+                    <div>
+                      <div className="flex items-center mb-3">
+                        <div className="h-8 w-8 rounded-full bg-blue-100 mr-2"></div>
+                        <div>
+                          <p className="text-sm font-medium">@jessica_styles</p>
+                          <p className="text-xs text-gray-500">New set! ✨</p>
+                        </div>
+                      </div>
+                      <div className="h-24 bg-gray-100 rounded-lg mb-3"></div>
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Heart className="h-3 w-3 mr-1 text-blue-500" /> 206
+                        <MessageSquare className="h-3 w-3 ml-3 mr-1" /> 14
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              </motion.div>
+            ))}
           </div>
         </div>
-      </section>
-
+      </motion.section>
 
       {/* Campus Community Section */}
-      <section id="join-community" className="py-24 bg-white">
-        <div className="container mx-auto px-6 max-w-6xl">
-          <AnimatedElement animation="fade-in" className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-aro-navy mb-4">Join your campus community</h2>
-            <p className="text-xl text-gray-600 mx-auto max-w-3xl">
-              Share your experiences, discover new trends, and support your friends on their beauty and grooming journies
+      <motion.section 
+        id="join-community" 
+        className="py-24 bg-white relative overflow-hidden"
+        style={{
+          opacity: useTransform(scrollYProgress, [0.45, 0.55], [0, 1]),
+          y: useTransform(scrollYProgress, [0.45, 0.6], ["50px", "0px"])
+        }}
+      >
+        <div className="container mx-auto px-6 max-w-6xl relative z-10">
+          <motion.div
+            className="text-center mb-16"
+            style={{
+              opacity: useTransform(scrollYProgress, [0.48, 0.53], [0, 1]),
+              y: useTransform(scrollYProgress, [0.48, 0.53], ["30px", "0px"])
+            }}
+          >
+            <h2 className="text-5xl font-bold text-gray-900 mb-4">
+              Join your campus community
+            </h2>
+            <p className="text-xl text-gray-600 mx-auto max-w-3xl leading-relaxed">
+              Share your experiences, discover new trends, and support your friends on their beauty and grooming journeys
             </p>
-          </AnimatedElement>
+          </motion.div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-            <div className="space-y-6">
-              <AnimatedElement animation="fade-in-up" delay={0.2}>
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                  <h3 className="text-xl font-bold text-aro-navy mb-3">Campus Convos</h3>
-                  <p className="text-gray-600">
-                    Join conversations about trends, share tips, and ask for recommendations from your campus community.
-                  </p>
-                </div>
-              </AnimatedElement>
-              
-              <AnimatedElement animation="fade-in-up" delay={0.4}>
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                  <h3 className="text-xl font-bold text-aro-navy mb-3">Share Your Look</h3>
-                  <p className="text-gray-600">
-                    Post photos of your service and showcase your new look
-                  </p>
-                </div>
-              </AnimatedElement>
-              
-              <AnimatedElement animation="fade-in-up" delay={0.6}>
-                <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all">
-                  <h3 className="text-xl font-bold text-aro-navy mb-3">Trending Styles</h3>
-                  <p className="text-gray-600">
-                    Stay up-to-date with the latest trends popular at your university
-                  </p>
-                </div>
-              </AnimatedElement>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
+            <div className="space-y-8">
+              {[
+                { title: "Campus Convos", desc: "Join conversations about trends, share tips, and ask for recommendations from your campus community." },
+                { title: "Share Your Look", desc: "Post photos of your service and showcase your new look" },
+                { title: "Trending Styles", desc: "Stay up-to-date with the latest trends popular at your university" }
+              ].map((item, index) => (
+                <motion.div
+                  key={item.title}
+                  className="group bg-white p-8 rounded-3xl border border-gray-200 shadow-lg hover:shadow-xl hover:border-blue-300 transition-all duration-500"
+                  style={{
+                    opacity: useTransform(scrollYProgress, [0.5 + index * 0.01, 0.55 + index * 0.01], [0, 1]),
+                    x: useTransform(scrollYProgress, [0.5 + index * 0.01, 0.55 + index * 0.01], ["-30px", "0px"])
+                  }}
+                  whileHover={{ scale: 1.02, x: 10 }}
+                >
+                  <h3 className="text-xl font-bold text-gray-800 mb-4 group-hover:text-blue-600 transition-colors duration-300">
+                    {item.title}
+                  </h3>
+                  <p className="text-gray-600 leading-relaxed">{item.desc}</p>
+                </motion.div>
+              ))}
             </div>
             
-            <AnimatedElement animation="fade-in" delay={0.6}>
-              <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-lg">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-aro-navy">Campus Highlights</h3>
+            <motion.div
+              className="bg-white rounded-3xl border border-gray-200 p-8 shadow-2xl"
+              style={{
+                opacity: useTransform(scrollYProgress, [0.52, 0.57], [0, 1]),
+                x: useTransform(scrollYProgress, [0.52, 0.57], ["30px", "0px"]),
+                scale: useTransform(scrollYProgress, [0.52, 0.57], [0.95, 1])
+              }}
+              whileHover={{ scale: 1.02, y: -5 }}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-bold text-gray-800 text-lg">Campus Highlights</h3>
+              </div>
+              <div className="mb-6">
+                <div className="flex items-center mb-4">
+                  <div className="h-10 w-10 rounded-full bg-blue-100 mr-3"></div>
+                  <div>
+                    <p className="font-medium text-gray-800">@jessica_styles</p>
+                    <p className="text-sm text-gray-500">New set! ✨</p>
+                  </div>
                 </div>
-                <div className="mb-4">
-                  <div className="flex items-center mb-2">
-                    <div className="h-8 w-8 rounded-full bg-blue-100 mr-2"></div>
-                    <div>
-                      <p className="text-sm font-medium">@jessica_styles</p>
-                      <p className="text-xs text-gray-500">New set! ✨</p>
-                    </div>
-                  </div>
-                  <div className="rounded-xl overflow-hidden mb-3">
-                    {/* This would be an image of nails */}
-                    <div className="h-64 bg-gray-100 rounded-xl"></div>
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Heart className="h-4 w-4 mr-1 text-red-500" /> 206
-                    <MessageSquare className="h-4 w-4 ml-4 mr-1 text-gray-400" /> 14
-                  </div>
+                <div className="rounded-2xl overflow-hidden mb-4 h-64 bg-gray-100"></div>
+                <div className="flex items-center text-gray-500">
+                  <Heart className="h-5 w-5 mr-2 text-blue-500" /> 206
+                  <MessageSquare className="h-5 w-5 ml-6 mr-2" /> 14
                 </div>
               </div>
-            </AnimatedElement>
+            </motion.div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-aro-navy to-aro-blue text-white">
-        <div className="container mx-auto px-6 max-w-4xl text-center">
-          <AnimatedElement animation="fade-in" delay={0.1}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to connect with your campus beauty network?</h2>
-            <p className="text-xl mb-10 opacity-90">Join Aro today and discover the beauty professionals your campus loves.</p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Link to="/signup" className="px-8 py-3 bg-white text-aro-navy rounded-full hover:bg-opacity-90 transition-all text-lg font-medium">
-                Sign Up Now
-              </Link>
-              <Link to="/login" className="px-8 py-3 bg-transparent border-2 border-white text-white rounded-full hover:bg-white hover:bg-opacity-10 transition-all text-lg font-medium">
-                Log In
-              </Link>
-            </div>
-          </AnimatedElement>
-        </div>
-      </section>
-      
-      {/* Simplified Footer */}
-      <footer className="bg-white py-10 border-t border-gray-200">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col items-center">
-            <AnimatedElement animation="fade-in" delay={0.1}>
-              <Link to="/">
-                <img src={AroLogo} alt="ARO Logo" className="h-12 mb-4" />
-              </Link>
-            </AnimatedElement>
-            
-            <AnimatedElement animation="fade-in" delay={0.2}>
-              <a 
-                href="mailto:info@aro.com" 
-                className="text-aro-accent hover:text-aro-navy transition-all text-lg font-medium my-3"
+      <motion.section 
+        className="py-24 bg-blue-600 text-white relative overflow-hidden"
+        style={{
+          opacity: useTransform(scrollYProgress, [0.6, 0.7], [0, 1]),
+          y: useTransform(scrollYProgress, [0.6, 0.75], ["50px", "0px"])
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-800"></div>
+        <motion.div 
+          className="absolute top-10 left-10 w-72 h-72 bg-white/10 rounded-full filter blur-3xl"
+          style={{
+            scale: useTransform(scrollYProgress, [0.6, 0.8], [1, 1.2]),
+            x: useTransform(scrollYProgress, [0.6, 0.8], ["0px", "25px"])
+          }}
+        />
+        <motion.div 
+          className="absolute bottom-10 right-10 w-64 h-64 bg-white/10 rounded-full filter blur-3xl"
+          style={{
+            scale: useTransform(scrollYProgress, [0.6, 0.8], [1.2, 1]),
+            x: useTransform(scrollYProgress, [0.6, 0.8], ["0px", "-15px"])
+          }}
+        />
+        
+        <div className="container mx-auto px-6 max-w-4xl text-center relative z-10">
+          <motion.div
+            style={{
+              opacity: useTransform(scrollYProgress, [0.65, 0.7], [0, 1]),
+              y: useTransform(scrollYProgress, [0.65, 0.7], ["30px", "0px"])
+            }}
+          >
+            <h2 className="text-white text-4xl md:text-5xl font-bold mb-6 leading-tight">
+              Ready to connect with your campus beauty network?
+            </h2>
+            <p className="text-white text-xl mb-12 opacity-90 leading-relaxed">
+              Join Aro today and discover the beauty professionals your campus loves.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-6">
+              <motion.div
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.95 }}
               >
-                info@aro.com
-              </a>
-            </AnimatedElement>
-            
-            <AnimatedElement animation="fade-in" delay={0.3}>
+                <ModernButton 
+                  variant="white"
+                  size="lg"
+                  icon={<ArrowRight className="h-5 w-5" />}
+                  iconPosition="right"
+                  className="rounded-full text-lg px-10 py-6 text-blue-600 hover:shadow-2xl"
+                  onClick={() => alert('Signup functionality would be implemented here')}
+                >
+                  Sign Up Now
+                </ModernButton>
+              </motion.div>
+              <motion.div
+                whileHover={{ scale: 1.05, y: -3 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ModernButton 
+                  variant="ghost"
+                  size="lg"
+                  className="rounded-full text-lg px-10 py-6 text-white border-2 border-white hover:bg-white/10"
+                  onClick={() => alert('Login functionality would be implemented here')}
+                >
+                  Log In
+                </ModernButton>
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+      </motion.section>
+      
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-12">
+        <div className="container mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between">
+            <motion.div
+              className="flex items-center space-x-8 mb-6 md:mb-0"
+              style={{
+                opacity: useTransform(scrollYProgress, [0.7, 0.75], [0, 1]),
+                y: useTransform(scrollYProgress, [0.7, 0.75], ["20px", "0px"])
+              }}
+            >
+              <button onClick={() => window.scrollTo(0, 0)} className="text-2xl font-bold text-blue-600">
+                ARO
+              </button>
+              <div className="h-6 w-px bg-gray-300"></div>
               <p className="text-gray-600 text-sm">
                 &copy; {new Date().getFullYear()} Aro. All rights reserved.
               </p>
-            </AnimatedElement>
+            </motion.div>
+            
+            <motion.div
+              className="flex items-center space-x-6"
+              style={{
+                opacity: useTransform(scrollYProgress, [0.72, 0.77], [0, 1]),
+                y: useTransform(scrollYProgress, [0.72, 0.77], ["20px", "0px"])
+              }}
+            >
+              <ModernButton 
+                as="a"
+                href="mailto:info@aro.com" 
+                variant="text"
+                size="sm"
+                className="text-sm font-medium"
+              >
+                info@aro.com
+              </ModernButton>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <ModernButton 
+                variant="text"
+                size="sm"
+                onClick={() => scrollToSection('whats-inside')}
+                className="text-sm font-medium"
+              >
+                Features
+              </ModernButton>
+              <ModernButton 
+                variant="text"
+                size="sm"
+                onClick={() => scrollToSection('how-it-works')}
+                className="text-sm font-medium"
+              >
+                How it works
+              </ModernButton>
+              <motion.div
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ModernButton 
+                  variant="primary"
+                  size="sm"
+                  onClick={() => alert('Signup functionality would be implemented here')}
+                  className="rounded-full"
+                >
+                  Get Started
+                </ModernButton>
+              </motion.div>
+            </motion.div>
           </div>
         </div>
       </footer>

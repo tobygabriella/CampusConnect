@@ -6,7 +6,9 @@ import AroLogo from "@/assets/aro.png";
 import GoogleLogo from "@/assets/google.png";
 import Loading from "@/Components/Loading/LoadingState";
 import AnimatedElement from "@/Components/Animation/AnimatedElement";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
+import { ArrowLeft, UserPlus, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 
 const SignupPage = () => {
   const [formData, setFormData] = useState({
@@ -18,6 +20,7 @@ const SignupPage = () => {
   const navigate = useNavigate();
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [email, setEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const handleChange = (e) => { setFormData({ ...formData, [e.target.name]: e.target.value });};
   const [loading, setLoading] = useState(false);
   const handleSignup = async (e) => {
@@ -65,19 +68,20 @@ const SignupPage = () => {
               transition={{ duration: 0.2 }}
             >
               <Link to="/">
-                <img src={AroLogo} alt="ARO Logo" className="h-8" />
+                <img src={AroLogo} alt="ARO Logo" className="h-12" />
               </Link>
             </motion.div>
             
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ duration: 0.2 }}
+            <ModernButton 
+              variant="ghost"
+              size="sm"
+              icon={<ArrowLeft className="h-4 w-4" />}
+              iconPosition="left"
+              rounded="full"
+              href="/"
             >
-              <Link to="/" className="text-aro-navy font-medium hover:text-aro-accent transition-colors">
-                Back to home
-              </Link>
-            </motion.div>
+              Back to Home
+            </ModernButton>
           </div>
         </div>
       </motion.header>
@@ -126,24 +130,28 @@ const SignupPage = () => {
           </AnimatedElement>
           
           <AnimatedElement animation="fade-in" delay={0.5} className="mb-8 text-center">
-            <h2 className="text-3xl font-bold text-aro-navy">Create an account</h2>
-            <p className="text-aro-gray mt-2">Join Aro to connect with service providers</p>
+            <h2 className="text-3xl font-bold text-gray-900">Create an account</h2>
+            <p className="text-gray-600 mt-2">Join Aro to connect with service providers</p>
           </AnimatedElement>
           
           {/* Google Signup Button */}
           <AnimatedElement animation="fade-in-up" delay={0.7} className="mb-6">
-            <a
+            <ModernButton
+              variant="secondary"
+              fullWidth
               href="http://localhost:5001/auth/google"
-              className="flex items-center justify-center w-full bg-white text-black py-3 px-4 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200"
+              icon={<img src={GoogleLogo} alt="Google Logo" className="h-5 w-5" />}
+              iconPosition="left"
+              rounded="xl"
+              className="bg-white py-3"
             >
-              <img src={GoogleLogo} alt="Google Logo" className="h-5 w-5 mr-3" />
-              <span className="font-medium">Continue with Google</span>
-            </a>
+              Continue with Google
+            </ModernButton>
             
             {/* Separator */}
             <div className="flex items-center my-6">
               <div className="flex-grow border-t border-gray-300"></div>
-              <span className="px-4 text-sm text-aro-gray">or continue with email</span>
+              <span className="px-4 text-sm text-gray-500">or continue with email</span>
               <div className="flex-grow border-t border-gray-300"></div>
             </div>
           </AnimatedElement>
@@ -152,85 +160,126 @@ const SignupPage = () => {
           <AnimatedElement animation="fade-in-up" delay={0.9}>
             <form onSubmit={handleSignup} className="flex flex-col gap-4">
               <div>
-                <label className="text-sm font-medium text-aro-navy block mb-2">Full Name</label>
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Enter your full name"
-                  className="w-full p-3 border border-gray-200 rounded-lg text-black text-base focus:outline-none focus:ring-2 focus:ring-aro-accent focus:border-transparent transition-all"
-                  onChange={handleChange}
-                />
-                {errors.name && (
-                  <motion.p 
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-500 text-xs mt-1"
-                  >
-                    {errors.name}
-                  </motion.p>
-                )}
+                <label className="text-sm font-medium text-gray-700 block mb-2">Full Name</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <User size={18} />
+                  </div>
+                  <input
+                    type="text"
+                    name="name"
+                    placeholder="Enter your full name"
+                    className={`w-full pl-10 p-3 border ${errors.name ? "border-red-500 focus:ring-red-300" : "border-gray-200 focus:ring-blue-400"} rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    onChange={handleChange}
+                  />
+                </div>
+                <AnimatePresence>
+                  {errors.name && (
+                    <motion.p 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-red-500 text-xs mt-1"
+                    >
+                      {errors.name}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-aro-navy block mb-2">Email Address</label>
-                <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter your email address"
-                  className="w-full p-3 border border-gray-200 rounded-lg text-black text-base focus:outline-none focus:ring-2 focus:ring-aro-accent focus:border-transparent transition-all"
-                  onChange={handleChange}
-                />
-                {errors.email && (
-                  <motion.p 
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-500 text-xs mt-1"
-                  >
-                    {errors.email}
-                  </motion.p>
-                )}
+                <label className="text-sm font-medium text-gray-700 block mb-2">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Mail size={18} />
+                  </div>
+                  <input
+                    type="email"
+                    name="email"
+                    placeholder="Enter your email address"
+                    className={`w-full pl-10 p-3 border ${errors.email ? "border-red-500 focus:ring-red-300" : "border-gray-200 focus:ring-blue-400"} rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    onChange={handleChange}
+                  />
+                </div>
+                <AnimatePresence>
+                  {errors.email && (
+                    <motion.p 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-red-500 text-xs mt-1"
+                    >
+                      {errors.email}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-aro-navy block mb-2">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Create a password"
-                  className="w-full p-3 border border-gray-200 rounded-lg text-black text-base focus:outline-none focus:ring-2 focus:ring-aro-accent focus:border-transparent transition-all"
-                  onChange={handleChange}
-                />
-                {errors.password && (
-                  <motion.p 
-                    initial={{ opacity: 0, y: -5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-red-500 text-xs mt-1"
+                <label className="text-sm font-medium text-gray-700 block mb-2">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                    <Lock size={18} />
+                  </div>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Create a password"
+                    className={`w-full pl-10 p-3 border ${errors.password ? "border-red-500 focus:ring-red-300" : "border-gray-200 focus:ring-blue-400"} rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
+                    onChange={handleChange}
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                    onClick={() => setShowPassword(!showPassword)}
                   >
-                    {errors.password}
-                  </motion.p>
-                )}
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <AnimatePresence>
+                  {errors.password && (
+                    <motion.p 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="text-red-500 text-xs mt-1"
+                    >
+                      {errors.password}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
               </div>
 
-              {errors.form && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm"
-                >
-                  {errors.form}
-                </motion.div>
-              )}
+              <AnimatePresence>
+                {errors.form && (
+                  <motion.div 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-red-50 border border-red-200 text-red-600 p-3 rounded-lg overflow-hidden text-sm"
+                  >
+                    {errors.form}
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              <button
+              <ModernButton
                 type="submit"
-                className="w-full bg-aro-navy text-white py-3 px-4 rounded-xl shadow-sm hover:bg-aro-blue transition-all duration-300 mt-4 font-medium"
+                variant="primary"
+                size="lg"
+                fullWidth
+                rounded="xl"
+                icon={<UserPlus size={18} />}
+                iconPosition="left"
+                disabled={loading}
+                className="mt-4"
               >
                 {loading ? <Loading inline={true} /> : "Create Account"}
-              </button>
+              </ModernButton>
               
-              <p className="text-center text-sm text-aro-gray mt-4">
+              <p className="text-center text-sm text-gray-600 mt-4">
                 Already have an account? 
-                <Link to="/login" className="text-aro-accent font-medium hover:text-aro-navy ml-1 transition-colors">Sign in</Link>
+                <Link to="/login" className="text-blue-600 font-medium hover:text-blue-800 ml-1 transition-colors">Sign in</Link>
               </p>
             </form>
           </AnimatedElement>
@@ -244,8 +293,10 @@ const SignupPage = () => {
                   <p className="font-medium">Signup successful!</p>
                 </div>
                 <p>Please check your email to verify your account. The link expires in 24 hours.</p>
-                <button
-                  className="mt-3 text-aro-accent hover:text-aro-blue transition-colors text-sm font-medium"
+                <ModernButton
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 text-blue-600"
                   onClick={async () => {
                     try {
                       await api.post("http://localhost:5001/auth/resend-verification", { email });
@@ -256,7 +307,7 @@ const SignupPage = () => {
                   }}
                 >
                   Resend verification email
-                </button>
+                </ModernButton>
               </div>
             </AnimatedElement>
           )}
