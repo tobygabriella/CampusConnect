@@ -9,8 +9,7 @@ import { useAuth } from "@/Components/context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
 import ModernButton from "@/Components/UI/ModernButton";
 
-// Import style overrides
-import "@/styles/component-overrides.css";
+// Styles are now in main.css
 
 const CreatePostModal = ({ isOpen, onClose, onPostCreated, selectedCollegeId, userCollegeId }) => {
   const { user } = useAuth();

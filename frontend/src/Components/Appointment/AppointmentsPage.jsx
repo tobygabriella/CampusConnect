@@ -11,8 +11,7 @@ import ModernButton from "@/Components/UI/ModernButton";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, AlertCircle, CheckCircle, X, Calendar as CalendarIcon, MessageSquare, Ban, Pencil, User } from "lucide-react";
 
-// Import custom styles for tabs
-import "@/styles/modern-tabs.css";
+// Styles are now in main.css
 
 const AppointmentsPage = () => {
   const navigate = useNavigate();

@@ -3,8 +3,9 @@ export default {
     darkMode: ["class"],
     content: [
       "./index.html",
-      "./src/**/*.{js,ts,jsx,tsx}",
+      "./src/**/*.{js,ts,jsx,tsx,css}",
       "./src/Components/**/*.{js,ts,jsx,tsx}",
+      "./src/styles/**/*.css",
       "./src/SignUp/**/*.{js,ts,jsx,tsx}"
     ],
     theme: {
@@ -106,6 +107,16 @@ export default {
       }
     },
     plugins: [require("tailwindcss-animate")],
+    safelist: [
+      'modern-button',
+      'variant-primary',
+      'variant-secondary',
+      'variant-outline',
+      'variant-ghost',
+      'variant-danger',
+      'variant-success',
+      'variant-white',
+    ],
   };
   
   

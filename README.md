@@ -76,12 +76,14 @@ cp .env.example .env
 ```
 
 ##### Core Configuration
+
 - `PORT`: Server port number (default: 5001)
 - `NODE_ENV`: Environment (development/production/test)
 - `DATABASE_URL`: PostgreSQL connection string
 - `FRONTEND_URL`: URL for the frontend application (CORS)
 
 ##### Authentication & Security
+
 - `JWT_SECRET`: Secret key for JWT token generation
 - `JWT_EXPIRATION`: Token expiration time (e.g., "24h")
 - `JWT_REFRESH_SECRET`: Secret for refresh tokens
@@ -90,6 +92,7 @@ cp .env.example .env
 - `BCRYPT_SALT_ROUNDS`: Password hashing strength (10-12 recommended)
 
 ##### External Services
+
 - `STRIPE_SECRET_KEY`: Stripe API secret key for payments
 - `STRIPE_WEBHOOK_SECRET`: Secret for Stripe webhook validation
 - `AWS_S3_BUCKET_NAME`: S3 bucket for file uploads
@@ -98,11 +101,13 @@ cp .env.example .env
 - `AWS_SECRET_ACCESS_KEY`: AWS secret key
 
 ##### Email Configuration
+
 - `EMAIL_SERVICE`: Email provider (e.g., "Gmail", "SendGrid")
 - `EMAIL_USER`: Sender email address
 - `EMAIL_PASSWORD`: Email account password or API key
 
 ##### Feature Flags
+
 - `ENABLE_SOCIAL_FEATURES`: Enable/disable social interaction features (true/false)
 - `ENABLE_EMAIL_NOTIFICATIONS`: Enable/disable email notifications (true/false)
 - `ENABLE_SMS_NOTIFICATIONS`: Enable/disable SMS notifications (true/false)
@@ -116,23 +121,27 @@ cd frontend
 cp .env.example .env
 ```
 
-##### Core Configuration
+##### Core Configuration2
+
 - `VITE_API_URL`: URL for the backend API
 - `VITE_API_TIMEOUT`: API request timeout in milliseconds
 - `VITE_SOCKET_URL`: URL for real-time socket connection
 
 ##### Third-party Integration Keys
+
 - `VITE_STRIPE_PUBLISHABLE_KEY`: Stripe publishable key for payment UI
 - `VITE_GOOGLE_CLIENT_ID`: Google OAuth client ID
 - `VITE_ANALYTICS_ID`: Web analytics ID (if used)
 
-##### Feature Flags
+##### Feature Flags2
+
 - `VITE_ENABLE_MOCK_API`: Use mock API data for development (true/false)
 - `VITE_ENABLE_ANALYTICS`: Enable usage analytics tracking (true/false)
 - `VITE_ENABLE_SOCIAL_FEATURES`: Enable social interaction features (true/false)
 - `VITE_ENABLE_NOTIFICATIONS`: Enable in-app notifications (true/false)
 
 ##### UI Configuration
+
 - `VITE_DEFAULT_THEME`: Default theme (light/dark)
 - `VITE_ENABLE_ANIMATIONS`: Enable UI animations (true/false)
 - `VITE_DEBUG_UI`: Show UI debug information in development (true/false)
@@ -178,6 +187,105 @@ However, full functionality (authentication, data persistence, real-time feature
 3. Install dependencies for both frontend and backend
 4. Start both servers in development mode
 5. Make changes and see them reflected in real-time
+
+## Recent Updates
+
+### Frontend Enhancements
+
+1. **Landing Page Redesign**:
+   - Modern parallax scrolling effects
+   - Improved responsive design
+   - Feature showcase sections
+   - Step-by-step service explanation
+
+2. **Authentication Flow**:
+   - Streamlined login and signup processes
+   - Improved navigation between auth pages
+   - Consistent styling and animations
+
+3. **Legal Documentation**:
+   - Added Privacy Policy page
+   - Added Terms & Conditions page
+   - Accessible through footer links
+
+### Backend Integration Guide
+
+To integrate new frontend features with the backend:
+
+#### 1. API Client Setup
+
+```javascript
+// /frontend/src/utils/axiosInstance.js
+import axios from 'axios';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+
+const instance = axios.create({
+  baseURL: API_URL,
+  timeout: 30000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
+// Add auth token to requests
+instance.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+export default instance;
+```
+
+#### 2. API Service Pattern
+
+Organize API calls into service modules:
+
+```javascript
+// /frontend/src/services/searchService.js
+import api from '../utils/axiosInstance';
+
+export const searchProviders = async ({ query, filters = {} }) => {
+  try {
+    const response = await api.get('/search', { 
+      params: { 
+        query,
+        filter: filters.providerType || 'all',
+        styles: filters.styles,
+        lat: filters.latitude,
+        lng: filters.longitude,
+        radius: filters.radius 
+      } 
+    });
+    return response.data;
+  } catch (error) {
+    throw error.response?.data || error;
+  }
+};
+```
+
+#### 3. React Query Integration
+
+Use React Query to manage server state:
+
+```jsx
+import { useQuery } from 'react-query';
+import { searchProviders } from '../services/searchService';
+
+const useProviderSearch = (searchParams) => {
+  return useQuery(
+    ['providers', searchParams],
+    () => searchProviders(searchParams),
+    { enabled: !!searchParams.query }
+  );
+};
+```
 
 ## Managing Feature Flags
 

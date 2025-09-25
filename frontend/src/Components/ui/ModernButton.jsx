@@ -22,45 +22,44 @@ const ModernButton = ({
   type = 'button',
   ...props
 }) => {
-  // Variants
+  // Variants - Using only the variant class names from CSS
   const variants = {
-    primary: `bg-blue-600 text-white border border-blue-600 hover:bg-blue-700 shadow-sm`,
-    secondary: `bg-white text-gray-700 border border-gray-300 hover:border-blue-600 hover:text-blue-600 shadow-sm`,
-    outline: `bg-transparent text-blue-600 border border-blue-600 hover:bg-blue-50`,
-    ghost: `bg-transparent text-blue-600 hover:bg-blue-50 border-none`,
-    danger: `bg-red-600 text-white hover:bg-red-700 shadow-sm`,
-    success: `bg-green-600 text-white hover:bg-green-700 shadow-sm`,
-    white: `bg-white text-blue-600 hover:bg-gray-50 shadow-sm`,
+    primary: `variant-primary`,
+    secondary: `variant-secondary`,
+    outline: `variant-outline`,
+    ghost: `variant-ghost`,
+    danger: `variant-danger`,
+    success: `variant-success`,
+    white: `variant-white`,
   };
 
-  // Sizes
+  // Sizes - Using CSS classes instead of Tailwind
   const sizes = {
-    sm: 'text-sm py-1 px-3',
-    md: 'text-base py-2 px-4',
-    lg: 'text-lg py-3 px-6',
-    xl: 'text-xl py-4 px-8',
+    sm: 'size-sm',
+    md: 'size-md',
+    lg: 'size-lg',
+    xl: 'size-xl',
   };
   
-  // Rounded options
+  // We won't use these rounded options directly
+  // as the .modern-button class already has border-radius defined
   const roundedOptions = {
-    none: 'rounded-none',
-    sm: 'rounded-sm',
-    md: 'rounded-md',
-    lg: 'rounded-lg',
-    xl: 'rounded-xl',
-    full: 'rounded-full',
+    none: '',
+    sm: '',
+    md: '',
+    lg: '',
+    xl: '',
+    full: '',
   };
 
   const buttonClasses = `
+    modern-button
     ${variants[variant]}
     ${sizes[size]}
-    ${roundedOptions[rounded]}
     ${fullWidth ? 'w-full' : ''}
-    font-medium transition-all duration-200
-    flex items-center justify-center gap-2
-    ${disabled ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}
+    ${disabled ? 'disabled' : ''}
     ${className}
-  `;
+  `.trim();
 
   const content = (
     <>

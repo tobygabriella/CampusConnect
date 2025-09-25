@@ -11,8 +11,7 @@ import { formatRoleName } from "@/utils/formatters";
 import { motion, AnimatePresence } from "framer-motion";
 import ModernButton from "@/Components/UI/ModernButton";
 
-// Import style overrides
-import "@/styles/component-overrides.css";
+// Styles are now in main.css
 
 const SidebarNav = () => {
   const navigate = useNavigate();

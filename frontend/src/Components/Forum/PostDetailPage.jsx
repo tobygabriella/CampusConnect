@@ -1,18 +1,18 @@
-import { useState, useEffect, useRef} from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { ArrowLeft, Flag, MessageSquare, Send } from "lucide-react";
+import { motion } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
+import api from "@/utils/axiosInstance";
+import { formatDistanceToNow } from "date-fns";
 import { useAuth } from "@/Components/context/AuthContext";
-import { Button } from "@/Components/ui/button";
-import PostCard from "@/Components/forum/PostCard";
-import { ArrowLeft } from "lucide-react";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
-import api from "@/utils/axiosInstance";
-import { handleVote } from "@/utils/handleVote";
-import { toast } from "react-toastify";
-import { useUserColleges } from "@/hooks/useUserColleges";
+import PostCard from "./PostCard";
+import Loading from "@/Components/Loading/LoadingState";
+import CommentCard from "./CommentCard";
 import defaultProfile from "@/assets/default-profile.jpg";
 import NestedCommentThread from "@/Components/forum/NestedCommentThread";
-import Loading from "@/Components/Loading/LoadingState";
 
 const PostDetailPage = () => {
   const { postId } = useParams();
@@ -236,12 +236,14 @@ const PostDetailPage = () => {
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold">Post not found</h2>
         <p className="text-gray-500 mt-2">The requested post could not be loaded</p>
-        <Button
+        <ModernButton
           onClick={() => navigate(-1)}
-          className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+          variant="outline"
+          size="md"
+          className="mt-4"
         >
           Go Back
-        </Button>
+        </ModernButton>
       </div>
     );
   }
@@ -253,15 +255,15 @@ const PostDetailPage = () => {
       <div className="flex-1 flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64">
         <TopNavbar />
         <div className="max-w-4xl mx-auto p-4 w-full">
-          <Button
+          <ModernButton
             variant="ghost"
+            size="md"
             onClick={() => navigate(-1)}
-            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-            style={{ color: "#062970"}}
+            icon={<ArrowLeft className="h-4 w-4" />}
+            iconPosition="left"
           >
-            <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Community
-          </Button>
+          </ModernButton>
 
           <PostCard 
             post={post} 
@@ -296,14 +298,16 @@ const PostDetailPage = () => {
                       className="w-full px-4 py-2 rounded-full border border-[#d8b4fe] text-sm text-black placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-[#6b46c1] bg-white"
                     />
                     <div className="flex justify-end mt-2">
-                      <Button
+                      <ModernButton
                         type="submit"
+                        variant="primary"
+                        size="sm"
                         disabled={commentLoading}
-                        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                        style={{ color: "#062970"}}
+                        icon={<Send className="h-3.5 w-3.5" />}
+                        iconPosition="left"
                       >
-                        {commentLoading ? "Posting..." : "Post"}
-                      </Button>
+                        {commentLoading ? "Posting..." : "Post Comment"}
+                      </ModernButton>
                     </div>
                   </div>
                 </div>

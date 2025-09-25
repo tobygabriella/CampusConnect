@@ -21,7 +21,7 @@ To generate the favicon files referenced in index.html, follow these steps:
 
 These files are referenced in the HTML and will ensure proper display of the Aro logo across all devices and platforms.
 
-## For production deployment:
+## For production deployment
 
 - Update the domain URLs in `index.html` to match your actual domain
 - Generate a `sitemap.xml` file and update its reference in `robots.txt`

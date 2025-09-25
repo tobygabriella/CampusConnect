@@ -5,6 +5,7 @@ This is the frontend application for Aro, a comprehensive platform connecting co
 ## Features
 
 ### Authentication & User Management
+
 - **Multi-role User System**: Support for students, service providers, and administrators
 - **Email/Password Authentication**: Secure login with email verification
 - **OAuth Integration**: Simple sign-up and login via Google
@@ -12,34 +13,40 @@ This is the frontend application for Aro, a comprehensive platform connecting co
 - **Role-based Access Control**: Different views and permissions based on user roles
 
 ### Service Provider Platform
+
 - **Service Provider Profiles**: Detailed profiles with portfolios, service listings, and reviews
 - **Service Management**: Add, edit, and remove service offerings with pricing and duration
 - **Availability Calendar**: Set working hours and manage availability
 - **Portfolio Showcase**: Upload and display work samples and client transformations
 
 ### Booking System
+
 - **Interactive Booking**: User-friendly interface for selecting services, dates, and times
 - **Availability Checking**: Real-time availability verification
 - **Appointment Management**: View, reschedule, or cancel upcoming appointments
 - **Reminder System**: Email and in-app notifications for upcoming appointments
 
 ### Community Forum
+
 - **College-specific Forums**: Discussions organized by college community
 - **Post Creation**: Rich text posts with image attachments
 - **Categorization**: Tags and topics for organized discussions
 - **Social Interactions**: Comments, upvotes, and downvotes
 
 ### Social Features
+
 - **Follow System**: Follow service providers and other users
 - **Activity Feed**: Personalized feed showing posts from followed users
 - **Notification Center**: Alerts for mentions, comments, and interactions
 
 ### Payment Processing
+
 - **Secure Payments**: Integration with Stripe for payment processing
 - **Deposit System**: Optional deposits for service booking
 - **Payment History**: Track past payments and upcoming charges
 
 ### Real-time Features
+
 - **Live Notifications**: Instant updates for social interactions
 - **Appointment Updates**: Real-time status changes for bookings
 - **Message Indicators**: Notification badges and counters
@@ -47,34 +54,41 @@ This is the frontend application for Aro, a comprehensive platform connecting co
 ## Tech Stack
 
 ### Core Framework
+
 - **React 18**: Modern UI library for building component-based interfaces
 - **Vite**: Next-generation frontend tooling for faster development and optimized builds
 - **TypeScript**: Type safety for improved developer experience and code quality
 
 ### Routing & State Management
+
 - **React Router v6**: Declarative routing with nested routes and route-based code splitting
 - **React Context API**: State management for authentication, theming, and global UI state
 - **React Query**: Data fetching, caching, and synchronization with automatic refetching
 
 ### UI Components & Styling
+
 - **Tailwind CSS**: Utility-first CSS framework for rapid UI development
 - **Shadcn UI**: High-quality, accessible, and customizable component library
 - **Framer Motion**: Animation library for creating fluid motion interfaces
 - **Lucide Icons**: Consistent, customizable icon set
 
 ### Form Handling
+
 - **React Hook Form**: Performant form validation with minimal re-renders
 - **Zod**: Schema validation library for type-safe form handling
 
 ### API Communication
+
 - **Axios**: Promise-based HTTP client for API requests
 - **Socket.IO Client**: Real-time bidirectional event-based communication
 
-### Payment Processing
+### Payment Processing1
+
 - **Stripe Elements**: Pre-built UI components for secure payment forms
 - **Stripe.js**: Client-side library for secure payment handling
 
 ### Development & Testing
+
 - **ESLint**: Static code analysis for identifying problematic patterns
 - **Prettier**: Code formatter for consistent code style
 - **Vitest**: Unit testing framework compatible with Vite
@@ -148,9 +162,108 @@ The frontend application is designed to work with the Aro backend API. However, 
 
 Note that full functionality (authentication, data persistence, real-time features) requires the backend to be running.
 
+## Recent UI Enhancements
+
+### Landing Page Updates
+
+The landing page has been completely redesigned with a modern, parallax-based interface that includes:
+
+- Smooth animations using Framer Motion
+- Mobile-responsive design
+- Clear navigation with hover effects
+- Feature showcase section
+- Step-by-step explanation of the service
+- Updated styling with proper CSS structure
+
+### Auth Flow Integration
+
+Improved the authentication flow to connect with backend services:
+
+- Login and signup buttons now properly navigate to their respective pages
+- Clean transitions between authentication steps
+- Consistent styling across authentication components
+
+### Policy Pages
+
+Added legal documentation pages with a clean, professional design:
+
+- Privacy Policy page (`/privacy`)
+- Terms & Conditions page (`/terms`)
+- Both accessible via the footer links
+- Responsive layout with animations
+
+### Contact Information
+
+Added contact email ([info@aro.com](mailto:info@aro.com)) in the footer for user inquiries.
+
+## Frontend-Backend Integration
+
+### API Integration
+
+The frontend interfaces with the backend through a set of RESTful API endpoints. Here's how to integrate with key backend services:
+
+#### Authentication Flow
+
+1. **Login/Signup**: The frontend makes POST requests to `/api/auth/login` and `/api/auth/signup` endpoints
+2. **Token Management**: JWT tokens are stored in local storage and included in the Authorization header
+3. **Protected Routes**: The `ProtectedRoute` component handles redirect logic for unauthenticated users
+
+#### Service Provider Search
+
+1. **Search API**: Use the `/api/search` endpoint with query parameters:
+   - `query`: The search term
+   - `filter`: Optional filter ("users", "service_providers", "services", or "all")
+2. **Filtering Results**: Filter results client-side based on the returned data
+
+#### Service Provider Profile
+
+1. **Fetch Provider**: Get provider details via `/api/serviceProvider/details`
+2. **Update Profile**: Post updates to `/api/serviceProvider/details`
+3. **Services Management**: Services are created/updated as part of the provider profile
+
+#### Appointment Booking
+
+1. **Availability Check**: Query `/api/availability` with provider ID and date range
+2. **Book Appointment**: POST to `/api/appointments` with service, provider, and time details
+3. **Payment Processing**: Integrate with Stripe via `/api/payments`
+
+### Upcoming Features Integration
+
+#### Location Radius Search
+
+To implement location-based searching with radius filtering:
+
+1. **Backend Requirements:**
+   - Extend the `ServiceProvider` model to include geolocation data (latitude/longitude)
+   - Add geocoding functionality to convert addresses to coordinates
+   - Implement a spatial query endpoint at `/api/search/nearby` that accepts:
+     - `lat` and `lng` parameters for the center point
+     - `radius` parameter (in miles or kilometers)
+
+2. **Frontend Implementation:**
+   - Add Google Places Autocomplete for location selection
+   - Implement a radius slider in the search filters component
+   - Pass coordinates and radius to the search API
+   - Display results on a map view using coordinates returned from the API
+
+#### Service Style Filtering
+
+To implement style-based filtering for beauty services:
+
+1. **Backend Requirements:**
+   - Extend the `Service` model to include a `styleTypes` array field
+   - Create a `StyleType` enum or reference table for consistent categorization
+   - Update the search API to accept a `styles` parameter for filtering
+
+2. **Frontend Implementation:**
+   - Add style chips/filters to the search interface
+   - Implement multi-select functionality for choosing multiple styles
+   - Pass selected styles as an array parameter to search queries
+   - Display style tags on service provider cards in search results
+
 ## Folder Structure
 
-```
+```bash
 /frontend
 ├── public/                  # Static assets served as-is
 │   ├── favicon.ico         # Site favicon
@@ -204,7 +317,7 @@ Note that full functionality (authentication, data persistence, real-time featur
 
 The application uses several environment variables to control its behavior. Create a `.env` file in the root directory with the following options:
 
-```
+```bash
 # API Configuration
 VITE_API_URL=http://localhost:5001    # Backend API URL
 VITE_API_TIMEOUT=30000                # API request timeout in milliseconds

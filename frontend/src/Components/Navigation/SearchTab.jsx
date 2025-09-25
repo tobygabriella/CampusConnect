@@ -105,7 +105,7 @@ const SearchBarWithDropdown = () => {
               setShowFilters(!showFilters);
               if (!showFilters) setVisible(false);
             }}
-            className={`p-2 rounded-r-full flex items-center justify-center transition-colors ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-500 hover:text-blue-600 hover:bg-blue-50"}`}
+            className={`p-2 rounded-r-full flex items-center justify-center transition-colors ${showFilters ? "bg-blue-50 text-blue-600" : "text-gray-200 hover:text-blue-600 hover:bg-blue-50"}`}
           >
             <Filter className="h-4 w-4" />
           </motion.button>

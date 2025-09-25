@@ -164,14 +164,14 @@ const HomeFeedPage = () => {
                   <div className="bg-gray-100 rounded-lg p-1 flex items-center">
                     <button 
                       onClick={() => setViewMode('list')} 
-                      className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-gray-300 shadow-sm' : 'text-gray-200 hover:text-gray-700'}`}
                       title="List view"
                     >
                       <Layout className="h-4 w-4" />
                     </button>
                     <button 
                       onClick={() => setViewMode('grid')} 
-                      className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-white shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                      className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-gray-300 shadow-sm' : 'text-gray-200 hover:text-gray-700'}`}
                       title="Grid view"
                     >
                       <LayoutGrid className="h-4 w-4" />

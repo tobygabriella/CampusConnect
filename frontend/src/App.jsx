@@ -1,10 +1,8 @@
 import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
-// Import modern UI styles
-import "@/styles/aro-ui-styles.css";
-import "@/styles/modern-tabs.css";
-import "@/styles/component-overrides.css"; // Style overrides to prevent conflicts
+// Import unified styling system
+import "./styles/main.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Elements } from "@stripe/react-stripe-js";
@@ -18,6 +16,8 @@ import { AuthProvider } from "./Components/context/AuthContext.jsx";
 import RedirectIfAuthenticated from "./Components/Auth/RedirectIfAuthenticated.jsx";
 import ProfilePage from "./Components/Profile/ProfilePage.jsx";
 import LandingPage from "./Components/LandingPage/LandingPage.jsx";
+import PrivacyPolicy from "./Components/Policy/PrivacyPolicy.jsx";
+import TermsConditions from "./Components/Policy/TermsConditions.jsx";
 import BookingPage from "./Components/Appointment/BookingPage.jsx";
 import AppointmentsPage from "./Components/Appointment/AppointmentsPage.jsx";
 import EditProfilePage from "./Components/Profile/EditProfilePage.jsx";
@@ -45,6 +45,8 @@ function App() {
       <Router>
         <Routes>
         <Route path = "/" element = {<LandingPage/>} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsConditions />} />
         <Route path="/getting-started" element={<RedirectIfAuthenticated />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />

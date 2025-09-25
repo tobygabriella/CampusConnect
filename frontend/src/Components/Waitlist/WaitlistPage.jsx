@@ -6,8 +6,9 @@ import AroLogo from "@/assets/aro.png";
 import api from "@/utils/axiosInstance";
 import { toast } from "react-toastify";
 import { motion } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
 import AnimatedElement from "@/Components/Animation/AnimatedElement";
-import { MessageSquare, Calendar, Heart, Search, ArrowRight, User, Mail, Map, School } from "lucide-react";
+import { MessageSquare, Calendar, Heart, Search, ArrowRight, User, Mail, Map, School, Send, CheckCircle } from "lucide-react";
 
 const WaitlistPage = () => {
   const formRef = useRef(null);
@@ -65,12 +66,16 @@ const WaitlistPage = () => {
               className="h-12" 
             />
             <div className="flex space-x-4">
-              <button 
+              <ModernButton 
                 onClick={scrollToForm}
-                className="px-6 py-2 bg-aro-navy text-white rounded-full hover:bg-aro-blue transition-all"
+                variant="primary"
+                size="md"
+                rounded="full"
+                icon={<ArrowRight className="h-4 w-4" />}
+                iconPosition="right"
               >
                 Join Waitlist
-              </button>
+              </ModernButton>
             </div>
           </div>
         </motion.nav>
@@ -84,13 +89,17 @@ const WaitlistPage = () => {
                 <p className="text-xl md:text-2xl text-gray-700 mb-8">
                   Find the right beauty and grooming providers from your campus community.  
                 </p>
-                <button
+                <ModernButton
                   onClick={scrollToForm}
-                  className="flex items-center px-8 py-3 bg-aro-navy text-white rounded-full hover:bg-aro-blue transition-all text-lg font-medium"
+                  variant="primary"
+                  size="lg"
+                  rounded="full"
+                  icon={<ArrowRight className="h-5 w-5" />}
+                  iconPosition="right"
+                  className="shadow-lg"
                 >
                   Join the waitlist
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </button>
+                </ModernButton>
               </AnimatedElement>
             </div>
             
@@ -266,14 +275,16 @@ const WaitlistPage = () => {
                 <option value="provider">Provider</option>
               </select>
 
-              <motion.button
+              <ModernButton
                 type="submit"
-                className="mt-4 bg-aro-navy text-white py-3 px-6 rounded-lg hover:bg-aro-blue transition-all font-medium text-lg"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                variant="primary"
+                size="lg"
+                className="mt-6 w-full shadow-md"
+                icon={<Send className="h-5 w-5" />}
+                iconPosition="right"
               >
                 Join Waitlist
-              </motion.button>
+              </ModernButton>
             </form>
           </div>
         </AnimatedElement>
@@ -309,14 +320,17 @@ const WaitlistPage = () => {
           <AnimatedElement animation="fade-in" delay={0.1}>
             <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to transform your campus beauty experience?</h2>
             <p className="text-xl mb-10 opacity-90">Join the Aro waitlist today and be the first to know when we launch at your campus.</p>
-            <motion.button
+            <ModernButton
               onClick={scrollToForm}
-              className="px-8 py-3 bg-white text-aro-navy rounded-full hover:bg-opacity-90 transition-all text-lg font-medium"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              variant="white"
+              size="lg"
+              rounded="full"
+              className="shadow-lg"
+              icon={<CheckCircle className="h-5 w-5" />}
+              iconPosition="right"
             >
               Join Waitlist Now
-            </motion.button>
+            </ModernButton>
           </AnimatedElement>
         </div>
       </section>

@@ -68,7 +68,7 @@ const SignupPage = () => {
               transition={{ duration: 0.2 }}
             >
               <Link to="/">
-                <img src={AroLogo} alt="ARO Logo" className="h-12" />
+                <img src={AroLogo} alt="ARO Logo" className="h-14" />
               </Link>
             </motion.div>
             
@@ -102,7 +102,7 @@ const SignupPage = () => {
           className="z-10 text-white max-w-lg px-8"
         >
           <h1 className="text-4xl font-bold mb-6">Join your campus community</h1>
-          <p className="text-xl mb-4">Share experiences, discover new trends, and support your friends</p>
+          <p className="text-xl mb-4 text-blue-600">Share experiences, discover new trends, and support your friends</p>
           
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -112,11 +112,11 @@ const SignupPage = () => {
           >
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
               <h3 className="font-bold text-lg mb-2">Direct Communication</h3>
-              <p>Chat with providers to discuss your needs and book appointments</p>
+              <p className="text-gray-500">Chat with providers to discuss your needs and book appointments</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
               <h3 className="font-bold text-lg mb-2">Campus Community</h3>
-              <p>Connect with other students about beauty trends and recommendations</p>
+              <p className="text-gray-500">Connect with other students about beauty trends and recommendations</p>
             </div>
           </motion.div>
         </motion.div>

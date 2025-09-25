@@ -73,7 +73,7 @@ const CollegeFilter = ({
             variant="outline"
             onClick={() => setIsOpen(!isOpen)}
             className="hover:bg-[#f3e8ff] truncate border-[#062970]"
-            style={{ color: "#062970"}}
+            style={{ color: "white"}}
             >
             <span className="truncate">{getCurrentCollegeName()}</span>
             <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0" />

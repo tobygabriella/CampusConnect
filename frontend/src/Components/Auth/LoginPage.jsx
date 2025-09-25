@@ -73,7 +73,7 @@ const LoginPage = () => {
               transition={{ duration: 0.2 }}
             >
               <Link to="/">
-                <img src={AroLogo} alt="ARO Logo" className="h-8" />
+                <img src={AroLogo} alt="ARO Logo" className="h-14" />
               </Link>
             </motion.div>
             
@@ -107,7 +107,7 @@ const LoginPage = () => {
           className="z-10 text-white max-w-lg px-8"
         >
           <h1 className="text-4xl font-bold mb-6">Welcome back to Aro</h1>
-          <p className="text-xl mb-4">Discover and book quality personal care services for you</p>
+          <p className="text-xl mb-4 text-blue-600">Discover and book quality personal care services for you</p>
           
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
@@ -117,11 +117,11 @@ const LoginPage = () => {
           >
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
               <h3 className="font-bold text-lg mb-2">Peer-Vetted Providers</h3>
-              <p>Find trusted service providers recommended by your campus community</p>
+              <p className="text-gray-500">Find trusted service providers recommended by your campus community</p>
             </div>
             <div className="bg-white/10 backdrop-blur-sm p-4 rounded-xl">
               <h3 className="font-bold text-lg mb-2">Easy Scheduling</h3>
-              <p>Book appointments that fit your busy student schedule</p>
+              <p className="text-gray-500">Book appointments that fit your busy student schedule</p>
             </div>
           </motion.div>
         </motion.div>

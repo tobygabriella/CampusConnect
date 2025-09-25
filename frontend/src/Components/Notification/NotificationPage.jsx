@@ -12,8 +12,7 @@ import PropTypes from 'prop-types';
 import { motion, AnimatePresence } from "framer-motion";
 import ModernButton from "@/Components/UI/ModernButton";
 
-// Import our custom styles
-import "@/styles/modern-tabs.css";
+// Custom styles are now in main.css
 
 const NotificationsPage = () => {
   const [notifications, setNotifications] = useState([]);

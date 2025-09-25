@@ -1,13 +1,11 @@
-import { useEffect, useState } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { useEffect, useState, useRef } from "react";
+import { X, ChevronLeft, ChevronRight, Heart, MessageSquare, Send } from "lucide-react";
 import CommentCard from "@/Components/Forum/CommentCard";
 import api from "@/utils/axiosInstance";
 import { useAuth } from "@/Components/context/AuthContext";
-import { Button } from "@/components/ui/button";
+import ModernButton from "@/Components/UI/ModernButton";
 import { formatRoleName } from "@/utils/formatters";
 import defaultProfile from "@/assets/default-profile.jpg";
-import { Heart, MessageSquare } from "lucide-react";
-import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import Loading from "@/Components/Loading/LoadingState";
 import PropTypes from 'prop-types';
@@ -162,13 +160,15 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
       {/* Left Post Navigation (outside modal) */}
       {enableNav && currentIndex > 0 && (
-        <Button
+        <ModernButton
           onClick={prevPost}
-          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 rounded-full p-2 shadow-lg  bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-          style={{ color: "#062970"}}
+          variant="white"
+          size="sm"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-50 shadow-lg p-2"
+          rounded="full"
         >
           <ChevronLeft className="w-6 h-6" />
-        </Button>
+        </ModernButton>
       )}
   
       {/* Modal Content */}
@@ -177,24 +177,28 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
         <div className="relative w-full md:w-2/3 flex items-center justify-center">
           {/* Inner Image Navigation - Left */}
           {currentImgIndex > 0 && (
-            <Button 
+            <ModernButton 
               onClick={prevImage} 
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 rounded-full p-2 shadow-lg  bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-              style={{ color: "#062970"}}
+              variant="white"
+              size="sm"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 shadow-lg opacity-80 p-2"
+              rounded="full"
             >
-              <ChevronLeft />
-            </Button>
+              <ChevronLeft className="h-5 w-5" />
+            </ModernButton>
           )}
           
           {/* Inner Image Navigation - Right */}
           {images.length > 0 && currentImgIndex < images.length - 1 && (
-            <Button 
+            <ModernButton 
               onClick={nextImage} 
-              className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] shadow"
-              style={{ color: "#062970"}}
+              variant="white"
+              size="sm"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 shadow-lg opacity-80 p-2"
+              rounded="full"
             >
-              <ChevronRight />
-            </Button>
+              <ChevronRight className="h-5 w-5" />
+            </ModernButton>
           )}
           
           {images?.length > 1 && (
@@ -207,9 +211,15 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
   
         {/* Comments + Info - Below on mobile, Right side on desktop */}
         <div className="w-full md:w-1/3 flex flex-col p-4 relative">
-          <Button onClick={onClose} className="absolute top-2 right-2 bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" style={{ color: "#062970" }}>
-            <X />
-          </Button>
+          <ModernButton 
+            onClick={onClose} 
+            variant="ghost"
+            size="sm"
+            className="absolute top-2 right-2 !p-1.5"
+            rounded="full"
+          >
+            <X className="h-4 w-4" />
+          </ModernButton>
   
           <div className="flex items-center gap-2 mb-4">
             <img src={post.author.profilePicture || defaultProfile} alt="Author" className="w-10 h-10 rounded-full" />
@@ -238,9 +248,9 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                 {(post.service || post.appointment.service)?.name}
               </div>
               {post.author?.username && (
-                <Button
-                  className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                  style={{ color: "#062970" }}
+                <ModernButton
+                  variant="primary"
+                  size="sm"
                   onClick={() =>
                     navigate(
                       `/book/${post.author.username}?service=${
@@ -250,7 +260,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                   }
                 >
                   Book Now
-                </Button>
+                </ModernButton>
               )}
             </div>
           )}
@@ -258,9 +268,9 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
           <div className="flex-1 overflow-hidden flex flex-col">
             {/* Post-level Like & Comment Count */}
             <div className="flex items-center gap-4 mb-2 shrink-0">
-              <Button
+              <ModernButton
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={async () => {
                 try {
                   const res = await api.post(`/work-posts/${post.id}/upvote`);
@@ -280,7 +290,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                     console.error("Failed to toggle post like", err);
                   }
                   }}
-                  className={`hover:bg-[#f3e8ff] !bg-transparent text-[#062970]`}
+                  className="!p-1"
                 >
                 <Heart
                   className="w-5 h-5"
@@ -289,7 +299,7 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                   strokeWidth={post.isUpvotedByCurrentUser ? "0" : "1.5"}
                 />
                 <span className="text-sm ml-1 text-[#062970]">{post._count?.upvotes || 0}</span>
-              </Button>
+              </ModernButton>
 
               <div className="text-sm text-[#062970] flex items-center gap-1">
                 <MessageSquare className="w-4 h-4 text-[#062970]" />
@@ -350,14 +360,16 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
                 placeholder="Add a comment..."
                 className="flex-1 border border-gray-300 rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6b46c1] text-black placeholder:text-gray-500 bg-white"
               />
-              <Button
+              <ModernButton
                 type="submit"
+                variant="primary"
+                size="sm"
                 disabled={commentSubmitting || !commentInput.trim()}
-                className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                style={{ color: "#062970" }}
+                icon={<Send className="h-3.5 w-3.5" />}
+                iconPosition="left"
               >
                 {commentSubmitting ? <Loading fullScreen={false} className="inline" /> : "Post"}
-              </Button>
+              </ModernButton>
             </form>
           </div>
         </div>
@@ -365,12 +377,15 @@ const WorkPostModal = ({ postId, post: initialPost, posts = [], initialIndex = 0
   
       {/* Right Post Navigation (outside modal) */}
       {enableNav && currentIndex < posts.length - 1 && (
-        <Button
+        <ModernButton
           onClick={nextPost}
-          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 bg-white/80 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] rounded-full p-2 shadow-lg"
+          variant="white"
+          size="sm"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-50 shadow-lg p-2"
+          rounded="full"
         >
-          <ChevronRight className="w-6 h-6" style={{ color: "#062970"}}/>
-        </Button>
+          <ChevronRight className="w-6 h-6" />
+        </ModernButton>
       )}
     </div>
   );
