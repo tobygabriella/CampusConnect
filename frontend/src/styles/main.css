@@ -9,8 +9,8 @@
 /* === VARIABLES === */
 :root {
   /* Color scheme */
-  --aro-light-blue: #2563eb; /* Updated to match modern design */
-  --aro-dark-blue: #1d4ed8;  /* Updated to match modern design */
+  --aro-light-blue: #c5dfff; /* Updated to light blue */
+  --aro-dark-blue: #010a4f;  /* Dark blue */
   --aro-gray: #555555;
   --aro-light-gray: #999999;
   
@@ -23,7 +23,7 @@
   --popover-foreground: 240 10% 3.9%;
   
   /* UI colors */
-  --primary: 221 83% 53%;    /* blue-600: #2563eb */
+  --primary: 228 88% 15%;    /* dark blue: #010a4f */
   --primary-foreground: 0 0% 100%;
   --secondary: 0 0% 100%;    /* white */
   --secondary-foreground: 220 9% 46%; /* gray-600: #475569 */
@@ -43,7 +43,7 @@
   /* UI elements */
   --border: 240 6% 90%;
   --input: 240 6% 90%;
-  --ring: 221 83% 53%;       /* blue-600: #2563eb */
+  --ring: 228 88% 15%;       /* dark blue: #010a4f */
   --radius: 0.5rem;
 }
 
@@ -76,12 +76,12 @@
   
   a {
     font-weight: 500;
-    color: #2563eb; /* blue-600 */
+    color: #010a4f; /* dark blue */
     text-decoration: inherit;
   }
   
   a:hover {
-    color: #1d4ed8; /* blue-700 */
+    color: #010a4f; /* dark blue */
   }
 
   /* Button reset for regular buttons (non-ModernButton) */
@@ -191,16 +191,16 @@
   
   /* Button variants */
   .modern-button.variant-primary {
-    background-color: #2563eb; /* blue-600 */
+    background-color: #010a4f; /* dark blue */
     color: #ffffff;
-    border: 1px solid #2563eb;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25);
+    border: 1px solid #010a4f;
+    box-shadow: 0 4px 6px -1px rgba(1, 10, 79, 0.25);
   }
   
   .modern-button.variant-primary:hover {
-    background-color: #1d4ed8; /* blue-700 */
+    background-color: #010a4f; /* dark blue */
     transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 10px 15px -3px rgba(1, 10, 79, 0.3);
   }
   
   .modern-button.variant-secondary {
@@ -224,20 +224,20 @@
   
   .modern-button.variant-ghost:hover {
     background-color: #f1f5f9; /* gray-100 */
-    color: #2563eb; /* blue-600 */
+    color: #010a4f; /* dark blue */
   }
   
   .modern-button.variant-outline {
     background-color: transparent;
-    color: #2563eb; /* blue-600 */
-    border: 2px solid #2563eb; /* blue-600 */
+    color: #010a4f; /* dark blue */
+    border: 2px solid #010a4f; /* dark blue */
   }
   
   .modern-button.variant-outline:hover {
-    background-color: #2563eb; /* blue-600 */
+    background-color: #010a4f; /* dark blue */
     color: #ffffff;
     transform: translateY(-2px);
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 4px 6px -1px rgba(1, 10, 79, 0.25);
   }
   
   .modern-button.variant-danger {
@@ -266,7 +266,7 @@
   
   .modern-button.variant-white {
     background-color: white;
-    color: #2563eb; /* blue-600 */
+    color: #010a4f; /* dark blue */
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(0, 0, 0, 0.1);
   }
@@ -308,8 +308,8 @@
   
   .input-modern:focus {
     outline: none;
-    border-color: #2563eb; /* blue-600 */
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); /* blue-600 with opacity */
+    border-color: #010a4f; /* dark blue */
+    box-shadow: 0 0 0 3px rgba(1, 10, 79, 0.1); /* dark blue with opacity */
   }
 
   /* --- Card Styles --- */
@@ -357,9 +357,9 @@
   }
   
   .status-info {
-    background-color: rgba(37, 99, 235, 0.1); /* blue-600 with opacity */
-    color: #2563eb; /* blue-600 */
-    border: 1px solid rgba(37, 99, 235, 0.2); /* blue-600 with opacity */
+    background-color: rgba(1, 10, 79, 0.1); /* dark blue with opacity */
+    color: #010a4f; /* dark blue */
+    border: 1px solid rgba(1, 10, 79, 0.2); /* dark blue with opacity */
   }
 
   /* --- Modern Tabs --- */
@@ -374,16 +374,16 @@
   }
   
   .modern-tabs .ant-tabs-tab:hover {
-    color: #2563eb; /* blue-600 */
+    color: #010a4f; /* dark blue */
   }
   
   .modern-tabs .ant-tabs-tab-active {
     font-weight: 600;
-    color: #2563eb !important; /* blue-600 */
+    color: #010a4f !important; /* dark blue */
   }
   
   .modern-tabs .ant-tabs-ink-bar {
-    background-color: #2563eb; /* blue-600 */
+    background-color: #010a4f; /* dark blue */
     height: 2px;
     border-radius: 2px;
   }
@@ -455,11 +455,11 @@
   
   /* Gradient backgrounds */
   .bg-gradient-to-b.from-blue-50 {
-    background: linear-gradient(to bottom, #eff6ff 0%, #ffffff 50%, #f9fafb 100%);
+    background: linear-gradient(to bottom, #c5dfff 0%, #ffffff 50%, #f9fafb 100%);
   }
   
   .bg-blue-600 {
-    background-color: var(--aro-light-blue);
+    background-color: var(--aro-light-blue); /* Will use the new dark blue */
   }
 
   /* Header effects and navigation */
@@ -487,7 +487,7 @@
     bottom: -2px;
     left: 0;
     height: 2px;
-    background-color: var(--aro-light-blue);
+    background-color: var(--aro-light-blue); /* Will use the new dark blue */
     transform-origin: left;
   }
 
@@ -506,11 +506,11 @@
   }
 
   .gradient-cta {
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    background: linear-gradient(135deg, #010a4f 0%, #010a4f 100%);
   }
 
   .gradient-footer {
-    background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #1e3a8a 100%);
+    background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #010a4f 100%);
   }
 
   /* Component-specific overrides */
@@ -595,7 +595,7 @@
     color: var(--aro-dark-blue) !important;
     font-weight: 600;
     font-size: 0.9rem;
-    background-color: #f9f9ff;
+    background-color: #e8f4ff;
   }
   
   .rbc-time-gutter .rbc-timeslot-group {

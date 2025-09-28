@@ -21,8 +21,8 @@ export default {
         colors: {
           // Updated Aro color scheme based on screenshots
           'aro-navy': '#010a4f',       // Dark blue/navy text
-          'aro-blue': '#1e3a8a',       // Main blue
-          'aro-light-blue': '#e8f1ff', // Light blue background
+          'aro-blue': '#010a4f',       // Main blue updated to match navy
+          'aro-light-blue': '#c5dfff', // Light blue background
           'aro-bg': '#f8faff',         // Very light blue background
           'aro-accent': '#5a67d8',     // Purple accent
           'aro-gray': '#64748b',       // Text gray

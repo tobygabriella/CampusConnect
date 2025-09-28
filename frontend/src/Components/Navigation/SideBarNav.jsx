@@ -1,15 +1,15 @@
-import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Home, Bell, User, Calendar, Users, LogOut, Plus, Settings, ChevronLeft, ChevronRight } from "lucide-react";
-import { useAuth } from "@/Components/context/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Home, Users, Calendar, MessageSquare, Bell, Menu, X, Plus, LogOut, Settings, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import ModernButton from '../ui/ModernButton';
+import { useAuth } from '../context/AuthContext';
 import defaultProfile from "@/assets/default-profile.jpg";
 import { useSocket } from "@/hooks/useSocket";
 import AroLogo from "@/assets/aro.png";
 import PropTypes from 'prop-types';
 import api from "@/utils/axiosInstance";
 import { formatRoleName } from "@/utils/formatters";
-import { motion, AnimatePresence } from "framer-motion";
-import ModernButton from "@/Components/UI/ModernButton";
 
 // Styles are now in main.css
 
@@ -280,27 +280,26 @@ const SidebarNav = () => {
         </motion.div>
 
         <div className={`space-y-2 ${isCompact ? 'flex flex-col items-center' : ''}`}>
-          <SidebarButton
-            icon={<LogOut size={20} />}
-            label="Logout"
-            onClick={handleLogout}
-            isCompact={isCompact}
-            variant="danger"
-          />
+        <LogoutButton 
+          onClick={handleLogout} 
+          isCompact={isCompact} 
+        />
         </div>
       </div>
     </motion.div>
   );
 };
 
-const SidebarButton = ({ icon, label, onClick, isCompact, isActive, variant }) => {
+const SidebarButton = ({ icon, label, onClick, isCompact, isActive, variant, className, style }) => {
   // Determine the style based on active state and variant
   const buttonVariant = variant === 'danger' ? 'danger' : 
                         isActive ? 'primary-subtle' : 'ghost';
   
-  const classes = isCompact ? 
+  const baseClasses = isCompact ? 
     'w-12 h-12 !p-0 rounded-xl' : 
     'w-full justify-start text-left rounded-xl';
+    
+  const classes = className ? `${baseClasses} ${className}` : baseClasses;
   
   return (
     <motion.div
@@ -315,6 +314,7 @@ const SidebarButton = ({ icon, label, onClick, isCompact, isActive, variant }) =
         title={isCompact ? label : undefined}
         icon={icon}
         iconPosition="left"
+        style={style}
       >
         <AnimatePresence>
           {!isCompact && (
@@ -322,7 +322,7 @@ const SidebarButton = ({ icon, label, onClick, isCompact, isActive, variant }) =
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
-              className="truncate"
+              className="truncate ml-3"
             >
               {label}
             </motion.span>
@@ -350,6 +350,53 @@ SidebarButton.propTypes = {
 SidebarButton.defaultProps = {
   isActive: false,
   variant: 'default',
+};
+
+// Custom logout button with hover effect
+const LogoutButton = ({ onClick, isCompact }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const buttonStyle = {
+    backgroundColor: isHovered ? '#b3d1ff' : '#c5dfff',
+    transition: 'background-color 0.2s ease'
+  };
+
+  const classes = isCompact ? 
+    'w-12 h-12 !p-0 rounded-xl' : 
+    'w-full justify-start text-left rounded-xl';
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <ModernButton
+        variant="ghost"
+        size="md"
+        onClick={onClick}
+        className={classes}
+        title={isCompact ? "Logout" : undefined}
+        icon={<LogOut size={20} />}
+        iconPosition="left"
+        style={buttonStyle}
+      >
+        <AnimatePresence>
+          {!isCompact && (
+            <motion.span 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="truncate ml-3"
+            >
+              Logout
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </ModernButton>
+    </motion.div>
+  );
 };
 
 export default SidebarNav;

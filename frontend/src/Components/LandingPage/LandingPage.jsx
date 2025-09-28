@@ -239,17 +239,9 @@ const LandingPage = () => {
                 y: useTransform(scrollYProgress, [0, 0.3], [0, -50])
               }}
             >
-              <motion.p 
-                className="text-blue-600 font-semibold mb-2"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                Welcome to ARO
-              </motion.p>
               
-              <motion.h1 
-                className="text-5xl md:text-6xl font-bold text-gray-900 mb-6"
+              <motion.h1
+                className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 font-['Playfair_Display']"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
@@ -344,7 +336,7 @@ const LandingPage = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <span className="text-blue-600 font-semibold">Why choose ARO</span>
+            <span className="text-blue-600 font-semibold">Why choose aro</span>
             <h2 className="text-4xl md:text-5xl font-bold mt-2 mb-6">Everything you need in one place</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">Find, connect, and book with beauty professionals from your campus community</p>
           </motion.div>
@@ -397,8 +389,7 @@ const LandingPage = () => {
             viewport={{ once: true }}
             transition={{ duration: 0.6 }}
           >
-            <span className="text-blue-600 font-semibold">Simple Process</span>
-            <h2 className="text-4xl md:text-5xl font-bold mt-2 mb-6">How ARO Works</h2>
+            <h2 className="text-4xl md:text-5xl font-bold mt-2 mb-6">How aro Works</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">Find, connect, and book beauty services in just a few simple steps</p>
           </motion.div>
           
@@ -518,7 +509,7 @@ const LandingPage = () => {
       <section id="contact" className="landing-section py-20 bg-blue-600 text-white">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-white text-3xl font-bold mb-8">Ready to get started?</h2>
-          <p className="text-xl mb-10 max-w-2xl mx-auto">Join ARO today and connect with beauty professionals your campus community recommends.</p>
+          <p className="text-xl mb-10 max-w-2xl mx-auto">Join aro today and connect with beauty professionals your campus community recommends.</p>
           <div className="inline-block">
             <ModernButton
               variant="white"
@@ -573,7 +564,7 @@ const LandingPage = () => {
           </nav>
 
           <p className="text-gray-500 text-sm">
-            © {new Date().getFullYear()} ARO. All rights reserved.
+            © {new Date().getFullYear()} aro. All rights reserved.
           </p>
         </div>
       </div>

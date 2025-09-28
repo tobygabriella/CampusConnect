@@ -25,7 +25,7 @@ export const ServiceProviderSection = ({
   mode = "editable",
 }) => {
   return (
-    <div className="space-y-6 text-[#062970]">
+    <div className="space-y-6 text-[#010a4f]">
       {ProfessionInput}
       
       <EditableField

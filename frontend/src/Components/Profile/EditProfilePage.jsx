@@ -233,7 +233,7 @@ export const EditProfileForm = () => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64 p-4 lg-custom:p-8 transition-all duration-300">
+      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] flex flex-col pt-20 min-h-screen overflow-y-auto ml-20 min-[850px]:ml-72 p-4 lg-custom:p-8 transition-all duration-300 pb-20 sm:pb-8">
         <TopNavbar />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Profile Picture Section */}
@@ -252,7 +252,7 @@ export const EditProfileForm = () => {
               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
                 <label 
                   htmlFor="profileUpload" 
-                  className="opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-full"
+                  className="opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer bg-[#010a4f] hover:bg-[#010a4f]/90 text-white p-2.5 rounded-full"
                 >
                   <CameraIcon size={20} />
                 </label>

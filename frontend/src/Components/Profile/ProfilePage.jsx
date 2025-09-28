@@ -94,7 +94,7 @@ const ProfilePage = () => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav onSearchToggle={() => setSearchVisible(!searchVisible)} />
-      <div className="flex-1 bg-gradient-to-b from-gray-50 to-white ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto">
+      <div className="flex-1 bg-gradient-to-b from-gray-50 to-white ml-20 min-[850px]:ml-72 flex flex-col pt-20 min-h-screen overflow-y-auto pb-20 sm:pb-0">
       <TopNavbar />
 
         {/* Profile Header */}
@@ -122,7 +122,7 @@ const ProfilePage = () => {
                   <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
-                    className="absolute bottom-0 right-0 bg-blue-600 text-white p-2 rounded-full shadow-lg"
+                    className="absolute bottom-0 right-0 bg-[#010a4f] text-white p-2 rounded-full shadow-lg"
                     title="Change profile picture"
                   >
                     <Camera className="h-5 w-5" />
@@ -137,7 +137,7 @@ const ProfilePage = () => {
                     <div className="flex items-center gap-3 flex-wrap justify-center lg:justify-start">
                       <h2 className="text-2xl font-bold text-gray-900">{profile.username}</h2>
                       
-                      <div className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-sm font-medium">
+                      <div className="flex items-center gap-1 px-3 py-1 bg-[#c5dfff] text-[#010a4f] rounded-full text-sm font-medium">
                         <User className="h-3.5 w-3.5" />
                         {formatRoleName(profile.role)}
                       </div>
@@ -215,7 +215,7 @@ const ProfilePage = () => {
                     whileHover={{ y: -2, transition: { duration: 0.2 } }}
                     className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100"
                   >
-                    <p className="font-bold text-blue-600 text-xl">{profile.followersCount || 0}</p>
+                    <p className="font-bold text-[#010a4f] text-xl">{profile.followersCount || 0}</p>
                     <p className="text-gray-600 text-sm">Followers</p>
                   </motion.div>
                   
@@ -223,7 +223,7 @@ const ProfilePage = () => {
                     whileHover={{ y: -2, transition: { duration: 0.2 } }}
                     className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100"
                   >
-                    <p className="font-bold text-blue-600 text-xl">{profile.followingCount || 0}</p>
+                    <p className="font-bold text-[#010a4f] text-xl">{profile.followingCount || 0}</p>
                     <p className="text-gray-600 text-sm">Following</p>
                   </motion.div>
                   
@@ -231,7 +231,7 @@ const ProfilePage = () => {
                     whileHover={{ y: -2, transition: { duration: 0.2 } }}
                     className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100"
                   >
-                    <p className="font-bold text-blue-600 text-xl">
+                    <p className="font-bold text-[#010a4f] text-xl">
                       {isServiceProvider ? profile.services?.length || 0 : profile.posts?.length || 0}
                     </p>
                     <p className="text-gray-600 text-sm">
@@ -276,7 +276,7 @@ const ProfilePage = () => {
                     className={`flex items-center gap-2 py-4 px-6 font-medium text-sm relative whitespace-nowrap
                       ${
                         activeTab === tab.key
-                          ? "text-blue-600"
+                          ? "text-[#010a4f]"
                           : "text-gray-500 hover:text-gray-800"
                       }`}
                     whileHover={{ backgroundColor: 'rgba(243, 244, 246, 0.5)' }}
@@ -287,7 +287,7 @@ const ProfilePage = () => {
                     {activeTab === tab.key && (
                       <motion.div 
                         layoutId="activeTabIndicator"
-                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#010a4f]"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ duration: 0.3 }}
@@ -434,14 +434,14 @@ const ProfilePage = () => {
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, height: 0 }}
-                    className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 flex items-start gap-3"
+                    className="bg-[#c5dfff] border border-[#a3c2e8] rounded-xl p-4 mb-4 flex items-start gap-3"
                   >
-                    <div className="p-2 bg-blue-100 rounded-full">
-                      <ExternalLink className="h-5 w-5 text-blue-600" />
+                    <div className="p-2 bg-[#a3c2e8] rounded-full">
+                      <ExternalLink className="h-5 w-5 text-[#010a4f]" />
                     </div>
                     <div>
-                      <p className="font-medium text-blue-800">Complete Your Payout Setup</p>
-                      <p className="text-sm text-blue-700 mt-1 mb-2">
+                      <p className="font-medium text-[#010a4f]">Complete Your Payout Setup</p>
+                      <p className="text-sm text-[#010a4f] mt-1 mb-2">
                         Stripe requires more information to enable payments for your services.
                       </p>
                       <ModernButton
@@ -504,7 +504,7 @@ const ProfilePage = () => {
                                 <Clock className="h-4 w-4 text-gray-400" />
                                 <span className="text-sm">{service.duration / 60} hrs</span>
                               </div>
-                              <p className="font-medium text-blue-600">${service.price}</p>
+                              <p className="font-medium text-[#010a4f]">${service.price}</p>
                             </div>
                             {service.description && (
                               <p className="text-sm text-gray-600 mt-2">{service.description}</p>
