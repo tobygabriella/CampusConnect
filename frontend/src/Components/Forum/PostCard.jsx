@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { MessageSquare, ThumbsUp, ThumbsDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import ModernButton from "@/Components/UI/ModernButton";
 import { formatTimeAgo } from "@/utils/timeAgo";
 import defaultProfile from "@/assets/default-profile.jpg";
 
@@ -48,21 +48,38 @@ const PostCard = ({ post, onVote, onPostClick }) => {
             </div>
           )}
           <div
-            className="mt-3 flex items-center space-x-4 text-gray-500"
+            className="mt-3 flex items-center space-x-3 text-gray-500"
             onClick={(e) => e.stopPropagation()}
           >
-            <Button variant="ghost" size="sm" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={() => onVote?.("upvote")}>
-              <ThumbsUp className="h-4 w-4  text-[#062970] " />
-              <span className="text-[#062970]" >{upvotesCount}</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={() => onVote?.("downvote")}>
-              <ThumbsDown className="h-4 w-4  text-[#062970] " />
-              <span className="text-[#062970]">{downvotesCount}</span>
-            </Button>
-            <Button variant="ghost" size="sm" className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]" onClick={onPostClick}>
-              <MessageSquare className="h-4 w-4 text-[#062970]" />
-              <span className="text-[#062970]">{commentsCount}</span>
-            </Button>
+            <ModernButton 
+              variant="ghost"
+              size="sm"
+              onClick={() => onVote?.("upvote")}
+              className="text-blue-700 !p-1"
+            >
+              <ThumbsUp className="h-4 w-4 mr-1" />
+              <span>{upvotesCount}</span>
+            </ModernButton>
+            
+            <ModernButton 
+              variant="ghost"
+              size="sm"
+              onClick={() => onVote?.("downvote")}
+              className="text-blue-700 !p-1"
+            >
+              <ThumbsDown className="h-4 w-4 mr-1" />
+              <span>{downvotesCount}</span>
+            </ModernButton>
+            
+            <ModernButton 
+              variant="ghost"
+              size="sm"
+              onClick={onPostClick}
+              className="text-blue-700 !p-1"
+            >
+              <MessageSquare className="h-4 w-4 mr-1" />
+              <span>{commentsCount}</span>
+            </ModernButton>
           </div>
         </div>
       </div>

@@ -4,12 +4,55 @@ import { clearAuthCookiesAndRedirect } from "@/utils/authUtils.js";
 const AuthContext = createContext(null);
 import Loading from '../Loading/LoadingState';
 
+// DEVELOPMENT MODE - Using environment variable
+// Control this via the VITE_DEV_MODE in .env file
+const DEV_MODE = import.meta.env.VITE_DEV_MODE === "true";
+
+// Mock user for development - change role as needed
+const DEV_USER = {
+  id: "dev-user-123",
+  name: "Development User",
+  email: "dev@example.com",
+  role: "student", // Change this to test different roles: "student" or "service_provider"
+  username: "dev_user",
+  avatar: null,
+  // Properties for student role
+  collegeId: "college-123",
+  collegeName: "Dev University",
+  verified: true,
+  createdAt: new Date().toISOString(),
+  // Properties for service provider role
+  serviceProvider: {
+    id: "sp-123",
+    profession: "Stylist",
+    professionId: "profession-123",
+    bio: "Development bio for testing",
+    services: [{
+      id: "service-123",
+      name: "Haircut",
+      description: "Development service description",
+      duration: 60,
+      price: 50.00
+    }],
+    isAcceptingClients: true
+  },
+  // Add any other properties needed for specific features
+};
+
 export const AuthProvider = ({ children }) =>  {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false); 
-  const [isLoading, setIsLoading] = useState(true);
+  // In development mode, we start with the mock user and authenticated state
+  const [user, setUser] = useState(DEV_MODE ? DEV_USER : null);
+  const [isAuthenticated, setIsAuthenticated] = useState(DEV_MODE ? true : false); 
+  const [isLoading, setIsLoading] = useState(!DEV_MODE); // Not loading in dev mode
 
   const verifyAuth = async () => {
+    // Skip API calls in development mode
+    if (DEV_MODE) {
+      console.log("⚠️ DEVELOPMENT MODE: Using mock user, skipping authentication verification");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await api.get("/auth/verify-token", { withCredentials: true });
       
@@ -62,6 +105,14 @@ export const AuthProvider = ({ children }) =>  {
   }, []);
 
   const login = async (formData, navigate) => {
+    // In development mode, use mock user
+    if (DEV_MODE) {
+      console.log("⚠️ DEVELOPMENT MODE: Logged in with mock user", formData.email);
+      setUser(DEV_USER);
+      setIsAuthenticated(true);
+      return;
+    }
+    
     try {
       const response = await api.post("/auth/login", formData, { withCredentials: true });
   
@@ -82,6 +133,30 @@ export const AuthProvider = ({ children }) =>  {
   };
 
   const logout = async () => {
+    if (DEV_MODE) {
+      console.log("⚠️ DEVELOPMENT MODE: Logged out mock user");
+      
+      // In development mode, simulate logout and redirect but maintain dev mode
+      // This simulates logout UI behavior but keeps the dev mode enabled
+      console.log("Redirecting to landing page");
+      
+      // Optional: Toggle this to test different logout behaviors
+      const simulateFullLogout = false;
+      
+      if (simulateFullLogout) {
+        // Simulate complete logout (will require clicking login again)
+        setUser(null);
+        setIsAuthenticated(false);
+      } else {
+        // Just redirect but keep mock user active (faster for testing)
+        // The mock user will still be active when you navigate back to protected pages
+      }
+      
+      // Always redirect to home
+      window.location.href = '/';
+      return;
+    }
+    
     try {
       await api.post('/auth/logout');
     } catch (error) {
@@ -97,6 +172,21 @@ export const AuthProvider = ({ children }) =>  {
   const updateUser = (newUserData) => {
     setUser(prev => ({ ...prev, ...newUserData }));
   };
+  
+  // Development-only function to switch roles
+  const switchDevRole = (newRole) => {
+    if (DEV_MODE && (newRole === "student" || newRole === "service_provider")) {
+      console.log(`⚠️ DEV MODE: Switching user role to ${newRole}`);
+      setUser(prev => ({
+        ...prev,
+        role: newRole,
+        // If switching to service_provider, ensure serviceProvider data is available
+        // If switching to student, keep the existing serviceProvider data
+      }));
+      return true;
+    }
+    return false;
+  };
 
   if (isLoading) {
     return <Loading />;
@@ -111,7 +201,9 @@ export const AuthProvider = ({ children }) =>  {
         login,
         logout,
         updateUser,
-        verifyAuth
+        verifyAuth,
+        // Development-only function
+        switchDevRole: DEV_MODE ? switchDevRole : undefined
       }}
     >
       {children}

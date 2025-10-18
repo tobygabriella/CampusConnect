@@ -12,8 +12,8 @@ export const ImageUploadSection = ({
 }) => {
   return (
     <div className="space-y-4">
-      <Label className="text-lg font-semibold text-[#062970]">{title}</Label>
-      <div className="p-6 border-2 border-[#062970] rounded-lg bg-white">
+      <Label className="text-lg font-semibold text-[#010a4f]">{title}</Label>
+      <div className="p-6 border-2 border-[#010a4f] rounded-lg bg-white">
         {/* Images Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-4">
           {/* Existing Images */}
@@ -54,10 +54,10 @@ export const ImageUploadSection = ({
         </div>
         
         {/* Upload Area */}
-        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[#062970] border-dashed rounded-lg cursor-pointer bg-[#f3e8ff] hover:bg-[#e0d7f5] transition-colors">
+        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-[#010a4f] border-dashed rounded-lg cursor-pointer bg-[#c5dfff] hover:bg-[#b3d1ff] transition-colors">
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
-            <PlusCircleIcon className="w-8 h-8 mb-4 text-[#062970]" />
-            <p className="mb-2 text-sm text-[#062970] text-center">
+            <PlusCircleIcon className="w-8 h-8 mb-4 text-[#010a4f]" />
+            <p className="mb-2 text-sm text-[#010a4f] text-center">
               <span className="font-semibold">Click to upload</span> or drag and drop<br />
               <span className="text-xs">(Multiple files allowed)</span>
             </p>

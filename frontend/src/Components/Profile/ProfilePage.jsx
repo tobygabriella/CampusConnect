@@ -4,9 +4,9 @@ import { useAuth } from "@/Components/context/AuthContext";
 import { toast } from "react-toastify";
 import api from "@/utils/axiosInstance";
 import defaultProfile from "@/assets/default-profile.jpg";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "lucide-react";
-import { FaTh, FaBookmark, FaTags, FaThumbsUp } from "react-icons/fa";
+import ModernButton from "@/Components/UI/ModernButton";
+import { motion, AnimatePresence } from "framer-motion";
+import { Calendar, Grid, Bookmark, Tag, ThumbsUp, MapPin, Clock, User, UserPlus, UserMinus, ExternalLink, Camera, Star, Settings } from "lucide-react";
 import SearchTab from "@/Components/Navigation/SearchTab";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
@@ -87,211 +87,395 @@ const ProfilePage = () => {
 
   if (loading) return <Loading />;
 
-  if (!profile) return <div className="text-red-500 text-center mt-10">Profile not found</div>;
+  if (!profile) return <div className="flex items-center justify-center h-screen text-red-600 font-medium">Profile not found</div>;
 
   const isServiceProvider = profile.role === "service_provider";
 
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav onSearchToggle={() => setSearchVisible(!searchVisible)} />
-      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] ml-16 min-[850px]:ml-64 flex flex-col pt-16 min-h-screen overflow-y-auto">
+      <div className="flex-1 bg-gradient-to-b from-gray-50 to-white ml-20 min-[850px]:ml-72 flex flex-col pt-20 min-h-screen overflow-y-auto pb-20 sm:pb-0">
       <TopNavbar />
 
-        {/* Profile Header with right shift */}
-        <div className="px-4 md:px-8">
-          <div className="p-2 md:p-4">
-            <div className="flex flex-col lg-custom:flex-row items-center gap-4 lg-custom:gap-20">
-              <div className="w-20 h-20 lg-custom:w-40 lg-custom:h-40 rounded-full overflow-hidden border-2 lg-custom:border-4 border-white shadow-lg">
-                <img src={profile.profilePicture || defaultProfile} alt="Profile" className="w-full h-full object-cover" />
-              </div>
+        {/* Profile Header */}
+        <div className="px-4 md:px-8 pt-6 pb-6">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
+          >
+            <div className="flex flex-col lg:flex-row items-center lg:items-start gap-8">
+              {/* Profile Image with Animation */}
+              <motion.div 
+                whileHover={{ scale: 1.03 }}
+                className="relative"
+              >
+                <div className="w-28 h-28 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-white shadow-md bg-white">
+                  <img 
+                    src={profile.profilePicture || defaultProfile} 
+                    alt="Profile" 
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {isOwnProfile && (
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    className="absolute bottom-0 right-0 bg-[#010a4f] text-white p-2 rounded-full shadow-lg"
+                    title="Change profile picture"
+                  >
+                    <Camera className="h-5 w-5" />
+                  </motion.button>
+                )}
+              </motion.div>
 
-              <div className="flex-1 lg-custom:ml-4 text-center">
-                <div className="flex flex-col lg-custom:flex-row items-center gap-2 lg-custom:gap-4 justify-center">
-                  <h2 className="text-lg lg-custom:text-2xl font-bold text-[#010a4f] capitalize">{profile.username}</h2>
-                  <span className="text-sm bg-[#f3e8ff] text-[#6b46c1] px-2 py-1 rounded-full">
-                    {formatRoleName(profile.role)}
-                  </span>
-                  {!isOwnProfile && (
-                    <div className="flex flex-row gap-2">
-                      <Button
-                        className={`bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]${
-                          profile.isFollowing ? "bg-red-500" : "bg-[#062970]"
-                        } hover:opacity-75`}
-                        onClick={handleFollowToggle}
-                        style={{ color: "#062970" }}
-                      >
-                        {profile.isFollowing
-                          ? "Unfollow"
-                          : profile.followsYou
-                            ? "Follow Back"
-                            : "Follow"}
-                      </Button>
-
-                      {isServiceProvider && (
-                        <Button
-                          className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                          onClick={() => navigate(`/book/${profile.username}`)}
-                          style={{ color: "#062970" }}
+              {/* User Info */}
+              <div className="flex-1 space-y-4 w-full text-center lg:text-left">
+                <div className="flex flex-col lg:flex-row items-center lg:items-start lg:justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-3 flex-wrap justify-center lg:justify-start">
+                      <h2 className="text-2xl font-bold text-gray-900">{profile.username}</h2>
+                      
+                      <div className="flex items-center gap-1 px-3 py-1 bg-[#c5dfff] text-[#010a4f] rounded-full text-sm font-medium">
+                        <User className="h-3.5 w-3.5" />
+                        {formatRoleName(profile.role)}
+                      </div>
+                    </div>
+                    
+                    {isServiceProvider && (
+                      <div className="flex items-center gap-1.5 text-gray-600 text-sm justify-center lg:justify-start">
+                        <MapPin className="h-4 w-4 text-gray-400" />
+                        <span>{profile.profession || "Professional"}</span>
+                        
+                        {profile.rating && (
+                          <div className="flex items-center ml-2">
+                            <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+                            <span className="ml-1 font-medium">{profile.rating}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    {!isOwnProfile ? (
+                      <>
+                        <ModernButton
+                          variant={profile.isFollowing ? "outline" : "primary"}
+                          size="sm"
+                          icon={profile.isFollowing ? <UserMinus className="h-4 w-4" /> : <UserPlus className="h-4 w-4" />}
+                          iconPosition="left"
+                          onClick={handleFollowToggle}
                         >
-                          Book Now
-                        </Button>
+                          {profile.isFollowing
+                            ? "Unfollow"
+                            : profile.followsYou
+                              ? "Follow Back"
+                              : "Follow"}
+                        </ModernButton>
+                        
+                        {isServiceProvider && (
+                          <ModernButton
+                            variant="primary"
+                            size="sm"
+                            icon={<Calendar className="h-4 w-4" />}
+                            iconPosition="left"
+                            onClick={() => navigate(`/book/${profile.username}`)}
+                          >
+                            Book Now
+                          </ModernButton>
+                        )}
+                      </>
+                    ) : (
+                      <ModernButton
+                        variant="outline"
+                        size="sm"
+                        icon={<Settings className="h-4 w-4" />}
+                        iconPosition="left"
+                        onClick={() => navigate('/edit-profile')}
+                      >
+                        Edit Profile
+                      </ModernButton>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="text-gray-700 max-w-2xl">
+                  {profile.biography ? (
+                    <p className="text-sm lg:text-base">{profile.biography}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No bio available</p>
+                  )}
+                </div>
+                
+                {/* Stats Cards */}
+                <div className="grid grid-cols-3 gap-3 max-w-md">
+                  <motion.div 
+                    whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                    className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100"
+                  >
+                    <p className="font-bold text-[#010a4f] text-xl">{profile.followersCount || 0}</p>
+                    <p className="text-gray-600 text-sm">Followers</p>
+                  </motion.div>
+                  
+                  <motion.div 
+                    whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                    className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100"
+                  >
+                    <p className="font-bold text-[#010a4f] text-xl">{profile.followingCount || 0}</p>
+                    <p className="text-gray-600 text-sm">Following</p>
+                  </motion.div>
+                  
+                  <motion.div 
+                    whileHover={{ y: -2, transition: { duration: 0.2 } }}
+                    className="bg-gray-50 rounded-lg p-4 text-center border border-gray-100"
+                  >
+                    <p className="font-bold text-[#010a4f] text-xl">
+                      {isServiceProvider ? profile.services?.length || 0 : profile.posts?.length || 0}
+                    </p>
+                    <p className="text-gray-600 text-sm">
+                      {isServiceProvider ? "Services" : "Posts"}
+                    </p>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Tabs Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}
+          className="px-4 md:px-8 mb-6"
+        >
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="flex overflow-x-auto scrollbar-hide">
+              {[
+                { key: "posts", label: "Posts", icon: <Grid className="h-4 w-4" /> },
+                { key: "myWork", label: "My Work", icon: <Camera className="h-4 w-4" /> },
+                { key: "upvoted", label: "Upvoted", icon: <ThumbsUp className="h-4 w-4" /> },
+                { key: "services", label: "Services", icon: <Bookmark className="h-4 w-4" /> },
+                { key: "policies", label: "Policies", icon: <Tag className="h-4 w-4" /> },
+                ...(isOwnProfile && isServiceProvider
+                  ? [{ key: "availability", label: "Availability", icon: <Calendar className="h-4 w-4" /> }]
+                  : []),
+              ]
+                .filter((tab) => {
+                  if (!isOwnProfile && tab.key === "upvoted") return false;
+                  return (isServiceProvider && tab.key !== "posts") ||
+                        (!isServiceProvider && tab.key === "posts") ||
+                        tab.key === "upvoted";
+                })
+                .map((tab) => (
+                  <motion.button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
+                    className={`flex items-center gap-2 py-4 px-6 font-medium text-sm relative whitespace-nowrap
+                      ${
+                        activeTab === tab.key
+                          ? "text-[#010a4f]"
+                          : "text-gray-500 hover:text-gray-800"
+                      }`}
+                    whileHover={{ backgroundColor: 'rgba(243, 244, 246, 0.5)' }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {tab.icon}
+                    {tab.label}
+                    {activeTab === tab.key && (
+                      <motion.div 
+                        layoutId="activeTabIndicator"
+                        className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#010a4f]"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.3 }}
+                      />
+                    )}
+                  </motion.button>
+                ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Tab Content */}
+        <div className="px-4 md:px-8 pb-8">
+          {searchVisible && <SearchTab onClose={() => setSearchVisible(false)} />}
+          
+          {activeTab === "posts" && !isServiceProvider && (
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-900">Posts</h3>
+                {isOwnProfile && (
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<Camera className="h-4 w-4" />}
+                    iconPosition="left"
+                  >
+                    New Post
+                  </ModernButton>
+                )}
+              </div>
+              
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {profile.posts && profile.posts.length > 0 ? (
+                    profile.posts.map((post, index) => (
+                      <motion.div 
+                        key={index} 
+                        className="aspect-square bg-gray-100 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all"
+                        whileHover={{ y: -5, scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <img 
+                          src={post.image} 
+                          alt={`Post ${index + 1}`} 
+                          className="w-full h-full object-cover"
+                        />
+                      </motion.div>
+                    ))
+                  ) : (
+                    <div className="col-span-3 py-10 flex flex-col items-center justify-center text-center">
+                      <div className="bg-gray-50 p-6 rounded-full mb-4">
+                        <Camera className="h-8 w-8 text-gray-400" />
+                      </div>
+                      <p className="text-gray-500 mb-2">No posts available</p>
+                      {isOwnProfile && (
+                        <ModernButton
+                          variant="outline"
+                          size="sm"
+                          icon={<Camera className="h-4 w-4" />}
+                          iconPosition="left"
+                        >
+                          Create Your First Post
+                        </ModernButton>
                       )}
                     </div>
                   )}
                 </div>
-
-                <div className="flex justify-center gap-6 lg-custom:gap-10 mt-2 lg-custom:mt-4">
-                  <div className="text-center">
-                    <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">{profile.followersCount || 0}</p>
-                    <p className="text-[#010a4f] text-xs lg-custom:text-sm">Followers</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">{profile.followingCount || 0}</p>
-                    <p className="text-[#010a4f] text-xs lg-custom:text-sm">Following</p>
-                  </div>
-                  <div className="text-center">
-                    <p className="font-bold text-[#010a4f] text-sm lg-custom:text-base">
-                      {isServiceProvider ? profile.services?.length || 0 : profile.posts?.length || 0}
-                    </p>
-                    <p className="text-[#010a4f] text-xs lg-custom:text-sm">
-                      {isServiceProvider ? "Services" : "Posts"}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-2 lg-custom:mt-4 text-center">
-                  {isServiceProvider && (
-                    <p className="font-semibold text-[#010a4f] text-sm lg-custom:text-base">
-                      {profile.profession || "No profession listed"}
-                    </p>
-                  )}
-                  <p className="text-[#010a4f] text-sm lg-custom:text-base line-clamp-2 lg-custom:line-clamp-none">{profile.biography || "No bio available"}</p>
-                </div>
               </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Centered Tabs Section */}
-        <div className="w-full border-t border-gray-300 mt-4">
-          <div className="flex justify-center max-w-4xl mx-auto">
-            {[
-              { key: "posts", label: "Posts", icon: <FaTh /> },
-              { key: "myWork", label: "My Work", icon: <FaTh /> },
-              { key: "upvoted", label: "Upvoted", icon: <FaThumbsUp /> },
-              { key: "services", label: "Services", icon: <FaBookmark /> },
-              { key: "policies", label: "Policies", icon: <FaTags /> },
-              ...(isOwnProfile && isServiceProvider
-                ? [{ key: "availability", label: "Availability", icon: <Calendar /> }]
-                : []),
-            ]
-              .filter((tab) => {
-                if (!isOwnProfile && tab.key === "upvoted") return false;
-                return (isServiceProvider && tab.key !== "posts") ||
-                      (!isServiceProvider && tab.key === "posts") ||
-                      tab.key === "upvoted";
-              })
-              .map((tab) => (
-                <Button
-                  key={tab.key}
-                  variant="ghost"
-                  onClick={() => setActiveTab(tab.key)}
-                  className={`rounded-none border-t-2 px-3 lg-custom:px-6 py-4 flex items-center justify-center gap-2 text-sm font-semibold uppercase tracking-wider !bg-transparent hover:!bg-[#023e8a] hover:!text-white
-                    ${
-                      activeTab === tab.key
-                        ? "border-[#062970] bg-white"
-                        : "border-transparent"
-                    }`}
-                  style={{
-                    color: '#062970'
-                  }}
-                  title={tab.label}
-                >
-                  <span className="text-lg" style={{ color: '#062970' }}>{tab.icon}</span>
-                  <span className="hidden lg-custom:inline">{tab.label}</span>
-                </Button>
-              ))}
-          </div>
-        </div>
-
-        {/* Centered Tab Content */}
-        <div className="py-4 px-4">
-          {searchVisible && <SearchTab onClose={() => setSearchVisible(false)} />}
-          
-          {activeTab === "posts" && !isServiceProvider && (
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#010a4f]">Posts</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mt-2">
-                {profile.posts && profile.posts.length > 0 ? (
-                  profile.posts.map((post, index) => (
-                    <div key={index} className="w-full h-24 md:h-32 bg-gray-200 rounded-lg">
-                      <img src={post.image} alt={`Post ${index + 1}`} className="w-full h-full object-cover rounded-lg" />
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-gray-500 col-span-3 text-center">No posts available</p>
-                )}
-              </div>
-            </div>
+            </motion.div>
           )}
 
           {activeTab === "myWork" && isServiceProvider && (
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#010a4f]">My Work</h3>
-              <WorkPostGrid isOwnProfile={isOwnProfile} />
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-900">My Work</h3>
+                {isOwnProfile && (
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<Camera className="h-4 w-4" />}
+                    iconPosition="left"
+                  >
+                    Add Work
+                  </ModernButton>
+                )}
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <WorkPostGrid isOwnProfile={isOwnProfile} />
+              </div>
+            </motion.div>
           )}
           
           {activeTab === "upvoted" && isOwnProfile && (
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#010a4f]">Upvoted Posts</h3>
-              {console.log("Rendering upvoted posts section - user:", user?.username)}
-              <WorkPostGrid showUpvoted={true} isOwnProfile={true} />
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-900">Upvoted Posts</h3>
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <WorkPostGrid showUpvoted={true} isOwnProfile={true} />
+              </div>
+            </motion.div>
           )}
           {activeTab === "services" && isServiceProvider && (
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#010a4f]">Services Offered</h3>
-              {isOwnProfile && stripeStatus && (!stripeStatus.payoutsEnabled || !stripeStatus.detailsSubmitted) && (
-                <div className="bg-yellow-100 text-yellow-800 border-l-4 border-yellow-400 p-4 mb-4 rounded-md">
-                  <p className="font-semibold">🔔 Payout Setup Incomplete</p>
-                  <p className="text-sm">
-                    Stripe requires more information to enable payouts.{" "}
-                    <span
-                      className="text-blue-600 underline cursor-pointer"
-                      onClick={async () => {
-                        try {
-                          const { data } = await api.post("/payments/create-onboarding-link");
-                          window.location.href = data.url;
-                        } catch (err) {
-                          toast.error("Could not resume onboarding");
-                          console.error(err);
-                        }
-                      }}
-                    >
-                      Click here to resume onboarding
-                    </span>{" "}
-                    or check your email for instructions from Stripe.
-                  </p>
-                </div>
-              )}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-900">Services Offered</h3>
+                {isOwnProfile && (
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<Bookmark className="h-4 w-4" />}
+                    iconPosition="left"
+                    onClick={() => navigate('/add-service')}
+                  >
+                    Add Service
+                  </ModernButton>
+                )}
+              </div>
+              
+              {/* Stripe Payment Setup Alert */}
+              <AnimatePresence>
+                {isOwnProfile && stripeStatus && (!stripeStatus.payoutsEnabled || !stripeStatus.detailsSubmitted) && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-[#c5dfff] border border-[#a3c2e8] rounded-xl p-4 mb-4 flex items-start gap-3"
+                  >
+                    <div className="p-2 bg-[#a3c2e8] rounded-full">
+                      <ExternalLink className="h-5 w-5 text-[#010a4f]" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-[#010a4f]">Complete Your Payout Setup</p>
+                      <p className="text-sm text-[#010a4f] mt-1 mb-2">
+                        Stripe requires more information to enable payments for your services.
+                      </p>
+                      <ModernButton
+                        variant="outline"
+                        size="sm"
+                        onClick={async () => {
+                          try {
+                            const { data } = await api.post("/payments/create-onboarding-link");
+                            window.location.href = data.url;
+                          } catch (err) {
+                            toast.error("Could not resume onboarding");
+                            console.error(err);
+                          }
+                        }}
+                      >
+                        Complete Setup
+                      </ModernButton>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Onboarding Button (only show if it's their own profile and they haven't onboarded) */}
+              {/* Onboarding Button */}
               {isOwnProfile && !profile.stripeAccountId && (
                 <div className="mb-4">
-                  <Button
-                    className="bg-purple-600 text-white hover:bg-purple-700"
+                  <ModernButton
+                    variant="primary"
+                    size="md"
+                    icon={<ExternalLink className="h-4 w-4" />}
+                    iconPosition="left"
                     onClick={async () => {
                       try {
                         const { data } = await api.post("/payments/create-onboarding-link");
-                        setTimeout(() => {
-                          const link = document.createElement("a");
-                          link.href = data.url;
-                          link.target = "_self";
-                          document.body.appendChild(link);
-                          link.click();
-                        }, 100);
-                        
+                        window.location.href = data.url;
                       } catch (err) {
                         toast.error("Failed to start Stripe onboarding");
                         console.error(err);
@@ -299,54 +483,145 @@ const ProfilePage = () => {
                     }}
                   >
                     Set up Payouts
-                  </Button>
+                  </ModernButton>
                 </div>
               )}
 
-              <div className="mt-2">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                 {profile.services && profile.services.length > 0 ? (
-                  profile.services.map((service) => (
-                    <div
-                      key={service.id}
-                      className="p-3 border rounded-lg bg-gray-50 mb-2 flex justify-between items-center"
-                    >
-                      <div>
-                        <p className="font-semibold text-[#062970]">{service.name}</p>
-                        <p className="text-gray-600">${service.price}</p>
-                      </div>
-                      <Button
-                        className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                        onClick={() => navigate(`/book/${profile.username}?service=${service.id}`)}
-                        style={{ color: "#062970" }}
+                  <div className="space-y-3">
+                    {profile.services.map((service) => (
+                      <motion.div
+                        key={service.id}
+                        className="p-4 border border-gray-100 rounded-xl bg-white hover:border-blue-200 hover:bg-blue-50 transition-colors"
+                        whileHover={{ y: -2 }}
                       >
-                        Book Now
-                      </Button>
-                    </div>
-                  ))
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h4 className="font-semibold text-gray-900">{service.name}</h4>
+                            <div className="mt-1 flex items-center gap-3">
+                              <div className="flex items-center gap-1 text-gray-600">
+                                <Clock className="h-4 w-4 text-gray-400" />
+                                <span className="text-sm">{service.duration / 60} hrs</span>
+                              </div>
+                              <p className="font-medium text-[#010a4f]">${service.price}</p>
+                            </div>
+                            {service.description && (
+                              <p className="text-sm text-gray-600 mt-2">{service.description}</p>
+                            )}
+                          </div>
+                          
+                          {!isOwnProfile && (
+                            <ModernButton
+                              variant="primary"
+                              size="sm"
+                              icon={<Calendar className="h-4 w-4" />}
+                              iconPosition="left"
+                              onClick={() => navigate(`/book/${profile.username}?service=${service.id}`)}
+                            >
+                              Book Now
+                            </ModernButton>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 ) : (
-                  <p className="text-gray-500">No services provided</p>
+                  <div className="py-12 flex flex-col items-center justify-center text-center">
+                    <div className="bg-gray-50 p-6 rounded-full mb-4">
+                      <Bookmark className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 mb-2">No services available yet</p>
+                    {isOwnProfile && (
+                      <ModernButton
+                        variant="outline"
+                        size="sm"
+                        icon={<Bookmark className="h-4 w-4" />}
+                        iconPosition="left"
+                        onClick={() => navigate('/add-service')}
+                      >
+                        Add Your First Service
+                      </ModernButton>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
           {activeTab === "availability" && isServiceProvider && (
-            <div className="max-w-7xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#010a4f] mb-2">My Availability</h3>
-              <AvailabilityCalendar />
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-7xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-900">My Availability</h3>
+                {isOwnProfile && (
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<Calendar className="h-4 w-4" />}
+                    iconPosition="left"
+                  >
+                    Manage Schedule
+                  </ModernButton>
+                )}
+              </div>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <AvailabilityCalendar />
+              </div>
+            </motion.div>
           )}
 
           {activeTab === "policies" && isServiceProvider && (
-            <div className="max-w-4xl mx-auto">
-              <h3 className="font-semibold text-lg text-[#010a4f]">My Policies</h3>
-              <div className="p-3 mt-2 border rounded-lg bg-gray-50">
-                {profile.policy ? (
-                  <p className="text-gray-700">{profile.policy}</p>
-                ) : (
-                  <p className="text-gray-500">No policies listed</p>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.4 }}
+              className="max-w-4xl mx-auto"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-lg text-gray-900">My Policies</h3>
+                {isOwnProfile && (
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<Tag className="h-4 w-4" />}
+                    iconPosition="left"
+                    onClick={() => navigate('/edit-policies')}
+                  >
+                    Edit Policies
+                  </ModernButton>
                 )}
               </div>
-            </div>
+              
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                {profile.policy ? (
+                  <div className="prose max-w-none text-gray-700">
+                    <p>{profile.policy}</p>
+                  </div>
+                ) : (
+                  <div className="py-12 flex flex-col items-center justify-center text-center">
+                    <div className="bg-gray-50 p-6 rounded-full mb-4">
+                      <Tag className="h-8 w-8 text-gray-400" />
+                    </div>
+                    <p className="text-gray-500 mb-2">No policies listed yet</p>
+                    {isOwnProfile && (
+                      <ModernButton
+                        variant="outline"
+                        size="sm"
+                        icon={<Tag className="h-4 w-4" />}
+                        iconPosition="left"
+                        onClick={() => navigate('/edit-policies')}
+                      >
+                        Add Policies
+                      </ModernButton>
+                    )}
+                  </div>
+                )}
+              </div>
+            </motion.div>
           )}
         </div>
       </div>

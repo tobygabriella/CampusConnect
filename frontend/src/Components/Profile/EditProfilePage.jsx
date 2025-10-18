@@ -5,8 +5,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
 import api from "@/utils/axiosInstance";
 import defaultProfile from "@/assets/default-profile.jpg";
-import { Button } from "@/components/ui/button";
-import { CameraIcon } from "lucide-react";
+import { CameraIcon, User, Edit, Save, X, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
 import { BasicInfoSection } from "./BasicInfoSection";
 import { CollegeInfoSection } from "./CollegeInfoSection";
 import { ServiceProviderSection } from "./ServiceProviderSection";
@@ -232,23 +233,30 @@ export const EditProfileForm = () => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64 p-4 lg-custom:p-8 transition-all duration-300">
+      <div className="flex-1 bg-gradient-to-b from-white to-[#f5f5f5] flex flex-col pt-20 min-h-screen overflow-y-auto ml-20 min-[850px]:ml-72 p-4 lg-custom:p-8 transition-all duration-300 pb-20 sm:pb-8">
         <TopNavbar />
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           {/* Profile Picture Section */}
-          <div className="flex flex-col items-center">
-            <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg">
+          <motion.div 
+            className="flex flex-col items-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <div className="relative w-36 h-36 rounded-full overflow-hidden border-4 border-white shadow-xl mb-3 group">
               <img 
                 src={imagePreview} 
                 alt="Profile Preview" 
                 className="w-full h-full object-cover"
               />
-              <label 
-                htmlFor="profileUpload" 
-                className="absolute bottom-0 w-full h-1/3 bg-black bg-opacity-50 flex justify-center items-center cursor-pointer"
-              >
-                <CameraIcon size={18} className="text-white" />
-              </label>
+              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                <label 
+                  htmlFor="profileUpload" 
+                  className="opacity-0 group-hover:opacity-100 transition-all duration-200 cursor-pointer bg-[#010a4f] hover:bg-[#010a4f]/90 text-white p-2.5 rounded-full"
+                >
+                  <CameraIcon size={20} />
+                </label>
+              </div>
             </div>
             <input 
               id="profileUpload" 
@@ -257,42 +265,57 @@ export const EditProfileForm = () => {
               className="hidden" 
               onChange={(e) => handleFileChange(e, 'profile')}
             />
-            <Button 
+            <ModernButton 
               type="button" 
-              variant="outline" 
+              variant="outline"
               size="sm" 
-              className="mt-2"
+              icon={<CameraIcon className="h-4 w-4" />}
+              iconPosition="left"
               onClick={() => document.getElementById('profileUpload').click()}
+              rounded="full"
             >
               Change Photo
-            </Button>
-          </div>
+            </ModernButton>
+          </motion.div>
 
           {/* Role Switch */}
-          <div className="flex justify-between items-center p-4 bg-white rounded-lg shadow border border-gray-200">
-            <div>
-              <h3 className="font-semibold text-[#062970]">
-                Current Role: <span>{formatRoleName(role)}</span>
-              </h3>
-              {user?.role === "student" && !isPreparingSwitch && (
-                <p className="text-sm text-[#010a4f] mt-1">
-                  Switch to {formatRoleName("service_provider")} to offer services
-                </p>
-              )}
-              {user?.role === "student" && !isPreparingSwitch && (
-                <Button
-                  className="mt-2 bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                  onClick={() => {
-                    setIsPreparingSwitch(true);
-                    setValue("role", "service_provider", { shouldDirty: true }); // Temporary UI update
-                  }}
-                  style={{ color: "#062970"}}
-                >
-                  Switch to {formatRoleName("service_provider")}
-                </Button>
-              )}
+          <motion.div 
+            className="flex justify-between items-center p-6 bg-white rounded-xl shadow-sm border border-gray-100"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
+          >
+            <div className="flex items-center gap-4">
+              <div className="bg-blue-100 p-3 rounded-full">
+                <User className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-gray-900 text-lg">
+                  Current Role: <span className="text-blue-600">{formatRoleName(role)}</span>
+                </h3>
+                {user?.role === "student" && !isPreparingSwitch && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Switch to {formatRoleName("service_provider")} to offer services to students
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+            
+            {user?.role === "student" && !isPreparingSwitch && (
+              <ModernButton
+                variant="outline"
+                size="md"
+                onClick={() => {
+                  setIsPreparingSwitch(true);
+                  setValue("role", "service_provider", { shouldDirty: true }); // Temporary UI update
+                }}
+                icon={<Edit className="h-4 w-4" />}
+                iconPosition="left"
+              >
+                Switch Role
+              </ModernButton>
+            )}
+          </motion.div>
 
 
           <BasicInfoSection
@@ -340,35 +363,53 @@ export const EditProfileForm = () => {
             />
           )}
           {isPreparingSwitch && (
-            <div className="text-red-600 text-sm font-semibold">
-              ⚠️ Switching to a service provider is permanent and cannot be undone.
-            </div>
+            <motion.div 
+              className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-start gap-3 mb-6"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <AlertTriangle className="text-red-500 h-5 w-5 mt-0.5" />
+              <div>
+                <p className="text-red-600 font-medium">Role Change Warning</p>
+                <p className="text-sm text-red-600">Switching to a service provider is permanent and cannot be undone. You will be able to create listings and offer services.</p>
+              </div>
+            </motion.div>
           )}
 
           {/* Submit Button */}
-          <div className="flex justify-end gap-4">
-            <Button
+          <motion.div 
+            className="flex justify-end gap-4 pt-6 mt-8 border-t border-gray-100"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <ModernButton
               type="button"
-              variant="outline"
-              className="text-[#062970] !bg-transparent hover:!bg-[#f3e8ff] border border-[#062970]"
+              variant="ghost"
+              size="md"
+              icon={<X className="h-4 w-4" />}
+              iconPosition="left"
               onClick={() => navigate(-1)}
-              style={{ color: "#062970"}}
             >
               Cancel
-            </Button>
-            <Button
+            </ModernButton>
+            
+            <ModernButton
               type="submit"
-              className="text-[#062970] !bg-transparent hover:!bg-[#f3e8ff] border border-[#062970]"
+              variant="primary"
+              size="md"
+              icon={<Save className="h-4 w-4" />}
+              iconPosition="left"
               disabled={
                 isUploading || 
                 (watchedUsername && isAvailable === false && watchedUsername !== initialUsername) || 
                 (!isDirty && !fileChangesExist)
               }
-              style={{ color: "#062970"}}
             >
               {isUploading ? "Saving..." : "Save Changes"}
-            </Button>
-          </div>
+            </ModernButton>
+          </motion.div>
         </form>
       </div>
     </div>

@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/Components/context/AuthContext";
-import { Button } from "@/Components/ui/button";
 import PostCard from "@/Components/forum/PostCard";
 import CreatePostModal from "@/Components/Forum/CreatePostModal";
 import CollegeFilter from "@/Components/Forum/CollegeFilter";
-import { Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Loader2, PlusCircle, BookOpen, MessageSquare, Info, ChevronLeft, ChevronRight } from "lucide-react";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import api from "@/utils/axiosInstance";
@@ -13,6 +13,7 @@ import { handleVote } from "@/utils/handleVote";
 import { useUserColleges } from "@/hooks/useUserColleges";
 import TagFilter from './TagFilter';
 import Loading from "@/Components/Loading/LoadingState";
+import ModernButton from "@/Components/UI/ModernButton";
 
 const CommunityPage = () => {
   const [posts, setPosts] = useState([]);
@@ -184,99 +185,216 @@ const handleCollegeSelect = (collegeId) => {
   return (
     <div className="flex w-screen overflow-x-hidden">
       <SidebarNav />
-      <div className="flex-1 flex flex-col pt-16 min-h-screen bg-gradient-to-b from-white to-[#f5f5f5] overflow-y-auto ml-16 min-[850px]:ml-64">
+      <div className="flex-1 flex flex-col pt-16 min-h-screen bg-gradient-to-b from-gray-50 to-white overflow-y-auto ml-16 min-[850px]:ml-64">
         <TopNavbar />
-        <div className="max-w-4xl mx-auto p-4 w-full">
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-4">
-            <h2 className="text-base sm:text-lg font-semibold text-[#062970] leading-snug">
-              {(collegeMap[selectedCollege] || collegeMap[user?.college])?.name || "Community"} Forum
-            </h2>
-            <CollegeFilter
-              userCollegeId={user?.college?.id}
-              userColleges={userColleges}
-              availableColleges={availableColleges}
-              selectedCollegeId={selectedCollege}
-              onSelectCollege={handleCollegeSelect}
-            />
-            <TagFilter
-              selectedTag={selectedTag}
-              onSelectTag={(tag) => {
-                setSelectedTag(tag);
-                fetchPosts(1, selectedCollege, tag);
-              }}
-            />
-
+        <div className="max-w-5xl mx-auto px-4 py-6 w-full">
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6"
+          >
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="bg-blue-100 p-2 rounded-lg">
+                  <BookOpen className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {(collegeMap[selectedCollege] || collegeMap[user?.college])?.name || "Community"} Forum
+                  </h2>
+                  <p className="text-sm text-gray-500">Connect and share with your campus community</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap gap-3">
+                <CollegeFilter
+                  userCollegeId={user?.college?.id}
+                  userColleges={userColleges}
+                  availableColleges={availableColleges}
+                  selectedCollegeId={selectedCollege}
+                  onSelectCollege={handleCollegeSelect}
+                />
+                <TagFilter
+                  selectedTag={selectedTag}
+                  onSelectTag={(tag) => {
+                    setSelectedTag(tag);
+                    fetchPosts(1, selectedCollege, tag);
+                  }}
+                />
+              </div>
             </div>
-            <Button
-              onClick={() => setShowCreateModal(true)}
-              className="text-[#062970] !bg-transparent hover:!bg-[#f3e8ff]"
-              disabled={!canPostToCurrentCollege()}
-              title={
-                !canPostToCurrentCollege()
-                  ? "You can only post in communities you attend or service"
-                  : ""
-              }
-              style={{ color: "#062970"}}
-            >
-              New Post
-            </Button>
-          </div>
-
-          {selectedCollege && !userPostableColleges.includes(selectedCollege) && (
-            <div className="mb-4 p-3 bg-blue-50 text-blue-800 rounded-md">
-              Viewing {(collegeMap[selectedCollege]?.name || "this")} community. You can only post in communities you attend or service.
+            
+            <div className="flex justify-between items-center">
+              {/* Stats */}
+              <div className="hidden md:flex gap-6">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">{pagination.total || 0} posts</span>
+                </div>
+                {selectedTag && (
+                  <div className="flex items-center gap-1">
+                    <span className="px-2 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-medium">
+                      #{selectedTag}
+                    </span>
+                  </div>
+                )}
+              </div>
+              
+              <ModernButton
+                variant="primary"
+                size="sm"
+                icon={<PlusCircle className="h-4 w-4" />}
+                iconPosition="left"
+                onClick={() => setShowCreateModal(true)}
+                disabled={!canPostToCurrentCollege()}
+                title={
+                  !canPostToCurrentCollege()
+                    ? "You can only post in communities you attend or service"
+                    : ""
+                }
+              >
+                New Post
+              </ModernButton>
             </div>
-          )}
+          </motion.div>
+          
+          <AnimatePresence>
+            {selectedCollege && !userPostableColleges.includes(selectedCollege) && (
+              <motion.div 
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mb-4 p-4 bg-blue-50 text-blue-700 rounded-xl flex items-start gap-3 border border-blue-100"
+              >
+                <Info className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
+                <p>Viewing {(collegeMap[selectedCollege]?.name || "this")} community. You can only post in communities you attend or service.</p>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <Loader2 className="h-8 w-8 animate-spin text-[#062970]" />
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 flex justify-center items-center h-64">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
             </div>
           ) : posts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-500">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center py-16 px-4 text-center"
+            >
+              <div className="bg-blue-50 p-4 rounded-full mb-4">
+                <MessageSquare className="h-8 w-8 text-blue-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Posts Yet
+              </h3>
+              <p className="text-gray-500 max-w-md mb-6">
                 {selectedCollege
-                  ? `No posts yet in ${collegeMap[selectedCollege]?.name || "this"} community`
-                  : "No posts yet in your community"}
+                  ? `Be the first to post in the ${collegeMap[selectedCollege]?.name || "this"} community!`
+                  : "No posts yet in your community. Start the conversation!"}
               </p>
               {canPostToCurrentCollege() && (
-                <Button
+                <ModernButton
+                  variant="primary"
+                  size="md"
+                  icon={<PlusCircle className="h-4 w-4" />}
+                  iconPosition="left"
                   onClick={() => setShowCreateModal(true)}
-                  className="mt-4 text-[#062970] !bg-transparent hover:!bg-[#f3e8ff] border border-[#062970]"
-                  style={{ color: "#062970"}}
                 >
                   Create First Post
-                </Button>
+                </ModernButton>
               )}
-            </div>
+            </motion.div>
           ) : (
-            <div className="space-y-4">
-              {posts.map((post) => (
-                <PostCard
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="space-y-4"
+            >
+              {posts.map((post, index) => (
+                <motion.div
                   key={post.id}
-                  post={post}
-                  onPostClick={() => navigate(`/community/posts/${post.id}`)}
-                  onVote={(type) => onVote(type, post.id)}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  whileHover={{ y: -2 }}
+                >
+                  <PostCard
+                    post={post}
+                    onPostClick={() => navigate(`/community/posts/${post.id}`)}
+                    onVote={(type) => onVote(type, post.id)}
+                  />
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {pagination.total > pagination.limit && (
-            <div className="flex justify-center mt-6 space-x-2">
-              {Array.from({ length: Math.ceil(pagination.total / pagination.limit) }, (_, i) => (
-                <Button
-                  key={i + 1}
-                  variant="outline"
-                  className={pagination.page === i + 1 ? "text-[#062970] font-semibold border-[#062970]" : ""}
-                  onClick={() => handlePageChange(i + 1)}
-                  style={{ color: "#062970"}}
-                >
-                  {i + 1}
-                </Button>
-              ))}
-            </div>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="flex justify-center mt-8 mb-4 items-center gap-2"
+            >
+              <ModernButton
+                variant="ghost"
+                size="sm"
+                icon={<ChevronLeft className="h-4 w-4" />}
+                iconPosition="left"
+                disabled={pagination.page === 1}
+                onClick={() => handlePageChange(pagination.page - 1)}
+                className="!p-2"
+              />
+              
+              <div className="flex gap-1">
+                {Array.from({ length: Math.ceil(pagination.total / pagination.limit) }, (_, i) => {
+                  // Show limited page numbers with ellipsis for better UX
+                  const pageNum = i + 1;
+                  const currentPage = pagination.page;
+                  const totalPages = Math.ceil(pagination.total / pagination.limit);
+                  
+                  // Always show first, last, current, and pages around current
+                  if (
+                    pageNum === 1 || 
+                    pageNum === totalPages ||
+                    (pageNum >= currentPage - 1 && pageNum <= currentPage + 1)
+                  ) {
+                    return (
+                      <ModernButton
+                        key={pageNum}
+                        variant={pagination.page === pageNum ? "primary" : "ghost"}
+                        size="sm"
+                        onClick={() => handlePageChange(pageNum)}
+                        className={`w-8 h-8 !p-0 ${pagination.page === pageNum ? 'font-semibold' : ''}`}
+                      >
+                        {pageNum}
+                      </ModernButton>
+                    );
+                  }
+                  
+                  // Show ellipsis at logical breaks
+                  if (pageNum === 2 && currentPage > 3) {
+                    return <span key="ellipsis-start" className="w-8 text-center">...</span>;
+                  }
+                  
+                  if (pageNum === totalPages - 1 && currentPage < totalPages - 2) {
+                    return <span key="ellipsis-end" className="w-8 text-center">...</span>;
+                  }
+                  
+                  return null;
+                })}
+              </div>
+              
+              <ModernButton
+                variant="ghost"
+                size="sm"
+                icon={<ChevronRight className="h-4 w-4" />}
+                iconPosition="left"
+                disabled={pagination.page === Math.ceil(pagination.total / pagination.limit)}
+                onClick={() => handlePageChange(pagination.page + 1)}
+                className="!p-2"
+              />
+            </motion.div>
           )}
         <CreatePostModal
         isOpen={showCreateModal}

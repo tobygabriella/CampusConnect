@@ -22,7 +22,7 @@ export const EditableField = ({
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <Label className="text-lg font-semibold text-[#062970]">
+        <Label className="text-lg font-semibold text-[#010a4f]">
           {label} {required && <span className="text-red-500">*</span>}
         </Label>
         {isEditMode && !isEditing && (
@@ -31,9 +31,9 @@ export const EditableField = ({
             variant="ghost"
             size="icon"
             onClick={onEdit}
-            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+            className="!bg-transparent text-[#010a4f] hover:!bg-[#c5dfff]"
           >
-            <Edit2 size={16} style={{ color: "#062970"}}/>
+            <Edit2 size={16} style={{ color: "#010a4f"}}/>
           </Button>
         )}
         {isEditMode && isEditing && (
@@ -42,9 +42,9 @@ export const EditableField = ({
             variant="ghost"
             size="icon"
             onClick={onSave}
-            className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+            className="!bg-transparent text-[#010a4f] hover:!bg-[#c5dfff]"
           >
-            <Save size={16} style={{ color: "#062970" }} />
+            <Save size={16} style={{ color: "#010a4f" }} />
           </Button>
         )}
       </div>
@@ -56,12 +56,12 @@ export const EditableField = ({
       ) : isTextarea ? (
         <Textarea
           {...register(name)}
-          className="h-32 bg-white text-[#062970] border-2 border-[#062970]"
+          className="h-32 bg-white text-[#010a4f] border-2 border-[#010a4f]"
         />
       ) : (
         <Input
           {...register(name)}
-          className="bg-white text-[#062970] border-2 border-[#062970]"
+          className="bg-white text-[#010a4f] border-2 border-[#010a4f]"
         />
       )}
 

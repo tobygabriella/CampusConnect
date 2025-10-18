@@ -35,21 +35,21 @@ export const ServiceList = ({
 
   return (
     <div className="space-y-4">
-      <Label className="text-lg font-semibold text-[#062970]">Services Offered</Label>
+      <Label className="text-lg font-semibold text-[#010a4f]">Services Offered</Label>
       <div className="space-y-4">
         {fields.map((field, index) => {
           const currentPrice = parseFloat(services?.[index]?.price) || 0;
           const maxDeposit = (currentPrice * 0.5).toFixed(2);
 
           return (
-            <div key={field.id} className="p-4 border-2 border-[#062970] rounded-lg bg-white">
+            <div key={field.id} className="p-4 border-2 border-[#010a4f] rounded-lg bg-white">
               <div className="flex flex-col md:flex-row gap-4 items-start">
                 <div className="w-full md:flex-1">
-                  <Label className="text-[#062970]">Service Name</Label>
+                  <Label className="text-[#010a4f]">Service Name</Label>
                   <Input
                     {...register(`services.${index}.name`)}
                     placeholder="e.g., Haircut, Styling"
-                    className="mt-1 border-2 border-[#062970] text-[#062970]"
+                    className="mt-1 border-2 border-[#010a4f] text-[#010a4f]"
                   />
                   {errors.services?.[index]?.name && (
                     <p className="text-red-500 text-sm">{errors.services[index].name.message}</p>
@@ -57,13 +57,13 @@ export const ServiceList = ({
                 </div>
                 
                 <div className="w-full md:w-32">
-                  <Label className="text-[#062970]">Price</Label>
+                  <Label className="text-[#010a4f]">Price</Label>
                   <div className="relative mt-1">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
+                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#010a4f]" />
                     <Input
                       {...register(`services.${index}.price`)}
                       placeholder="0.00"
-                      className="pl-9 border-2 border-[#062970] text-[#062970]"
+                      className="pl-9 border-2 border-[#010a4f] text-[#010a4f]"
                     />
                   </div>
                   {errors.services?.[index]?.price && (
@@ -72,9 +72,9 @@ export const ServiceList = ({
                 </div>
                 
                 <div className="w-full md:w-32">
-                  <Label className="text-[#062970]">Deposit (≤50%)</Label>
+                  <Label className="text-[#010a4f]">Deposit (≤50%)</Label>
                   <div className="relative mt-1">
-                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
+                    <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-[#010a4f]" />
                     <Controller
                       name={`services.${index}.depositAmount`}
                       control={control}
@@ -82,7 +82,7 @@ export const ServiceList = ({
                         <Input
                           {...field}
                           placeholder={`Max ${maxDeposit}`}
-                          className="pl-9 border-2 border-[#062970] text-[#062970]"
+                          className="pl-9 border-2 border-[#010a4f] text-[#010a4f]"
                           onChange={(e) => {
                             const raw = e.target.value;
                             const deposit = parseFloat(raw) || 0;
@@ -100,14 +100,14 @@ export const ServiceList = ({
 
                 
                 <div className="w-full md:w-32">
-                  <Label className="text-[#062970]">Duration</Label>
+                  <Label className="text-[#010a4f]">Duration</Label>
                   <div className="relative mt-1">
-                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-[#062970]" />
+                    <Clock className="absolute left-3 top-2.5 h-4 w-4 text-[#010a4f]" />
                     <Input
                       {...register(`services.${index}.duration`)}
                       placeholder="mins"
                       type="number"
-                      className="pl-9 border-2 border-[#062970] text-[#062970]"
+                      className="pl-9 border-2 border-[#010a4f] text-[#010a4f]"
                     />
                   </div>
                   {errors.services?.[index]?.duration && (
@@ -122,7 +122,7 @@ export const ServiceList = ({
                     size="icon"
                     onClick={() => remove(index)}
                     className="md:mt-7 hover:bg-red-50"
-                    style={{ color: "#062970"}}
+                    style={{ color: "#010a4f"}}
                   >
                     <Trash2Icon className="h-5 w-5 text-red-500" />
                   </Button>
@@ -135,8 +135,8 @@ export const ServiceList = ({
           type="button"
           variant="outline"
           onClick={() => append({ name: "", price: "", duration: "", depositAmount: "" })}
-          className="w-full bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-          style={{ color: "#062970"}}
+          className="w-full !bg-transparent text-[#010a4f] hover:!bg-[#c5dfff]"
+          style={{ color: "#010a4f"}}
         >
           <PlusCircleIcon className="h-5 w-5 mr-2" />
           Add Another Service

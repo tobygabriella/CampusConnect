@@ -1,0 +1,637 @@
+/**
+ * Aro UI - Main Stylesheet
+ * A unified styling system for the Aro application
+ */
+
+/* === TAILWIND IMPORTS === */
+@import "tailwindcss";
+
+/* === VARIABLES === */
+:root {
+  /* Color scheme */
+  --aro-light-blue: #c5dfff; /* Updated to light blue */
+  --aro-dark-blue: #010a4f;  /* Dark blue */
+  --aro-gray: #555555;
+  --aro-light-gray: #999999;
+  
+  /* Neutral colors */
+  --background: 0 0% 100%;
+  --foreground: 240 10% 3.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 240 10% 3.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 240 10% 3.9%;
+  
+  /* UI colors */
+  --primary: 228 88% 15%;    /* dark blue: #010a4f */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 100%;    /* white */
+  --secondary-foreground: 220 9% 46%; /* gray-600: #475569 */
+  --accent: 220 14% 96%;     /* gray-100: #f1f5f9 */
+  --accent-foreground: 240 6% 10%;
+  
+  /* Functional colors */
+  --muted: 240 5% 96%;       /* gray-100 */
+  --muted-foreground: 240 4% 46%;
+  --destructive: 0 84% 60%;  /* red-600: #dc2626 */
+  --destructive-foreground: 0 0% 98%;
+  --success: 142 71% 45%;    /* green-600: #10b981 */
+  --success-foreground: 0 0% 98%;
+  --warning: 38 92% 50%;     /* amber-500: #f59e0b */
+  --warning-foreground: 0 0% 98%;
+  
+  /* UI elements */
+  --border: 240 6% 90%;
+  --input: 240 6% 90%;
+  --ring: 228 88% 15%;       /* dark blue: #010a4f */
+  --radius: 0.5rem;
+}
+
+@layer base {
+  /* Default border color */
+  * {
+    border-color: var(--aro-light-gray);
+  }
+  
+  html, body {
+    overflow-x: hidden;
+  }
+  
+  body {
+    background-color: #ffffff;
+    color: #111827; /* gray-900 */
+    font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    font-weight: 400;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #1f2937; /* gray-800 */
+    font-weight: 600;
+  }
+  
+  a {
+    font-weight: 500;
+    color: #010a4f; /* dark blue */
+    text-decoration: inherit;
+  }
+  
+  a:hover {
+    color: #010a4f; /* dark blue */
+  }
+
+  /* Button reset for regular buttons (non-ModernButton) */
+  button:not(.modern-button) {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 0.6em 1.2em;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    background-color: var(--aro-light-blue);
+    color: white;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+  
+  button:not(.modern-button):hover {
+    background-color: var(--aro-dark-blue);
+    border-color: var(--aro-light-blue);
+  }
+  
+  button:not(.modern-button):active {
+    background-color: var(--aro-gray);
+    transform: translateY(1px);
+  }
+  
+  button:not(.modern-button):focus,
+  button:not(.modern-button):focus-visible {
+    outline: 2px solid var(--aro-light-blue);
+    outline-offset: 2px;
+  }
+
+  /* Standard button styles (non-ModernButton) */
+  .btn-primary:not(.modern-button) {
+    background-color: var(--aro-light-blue);
+    color: white;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-primary:not(.modern-button):hover {
+    background-color: var(--aro-dark-blue);
+  }
+  
+  .btn-primary:not(.modern-button):active {
+    background-color: var(--aro-gray);
+    transform: translateY(1px);
+  }
+  
+  .btn-secondary:not(.modern-button) {
+    background-color: var(--aro-gray);
+    color: white;
+    transition: all 0.2s ease;
+  }
+  
+  .btn-secondary:not(.modern-button):hover {
+    background-color: var(--aro-light-gray);
+  }
+  
+  .btn-secondary:not(.modern-button):active {
+    background-color: var(--aro-dark-blue);
+    transform: translateY(1px);
+  }
+}
+
+@layer components {
+  /* --- ModernButton Styles --- */
+  /* Base reset for all ModernButton components */
+  .modern-button {
+    all: unset;
+    box-sizing: border-box;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    border-radius: 0.75rem; /* Updated for modern look */
+    font-weight: 600; /* Made bolder */
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Button size variants */
+  .modern-button.size-sm {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    border-radius: 0.5rem;
+  }
+  
+  .modern-button.size-md {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 0.75rem;
+  }
+  
+  .modern-button.size-lg {
+    padding: 1rem 2rem;
+    font-size: 1.125rem;
+    border-radius: 0.75rem;
+  }
+  
+  .modern-button.size-xl {
+    padding: 1.5rem 2.5rem;
+    font-size: 1.125rem;
+    border-radius: 9999px; /* Full rounded */
+  }
+  
+  /* Button variants */
+  .modern-button.variant-primary {
+    background-color: #010a4f; /* dark blue */
+    color: #ffffff;
+    border: 1px solid #010a4f;
+    box-shadow: 0 4px 6px -1px rgba(1, 10, 79, 0.25);
+  }
+  
+  .modern-button.variant-primary:hover {
+    background-color: #010a4f; /* dark blue */
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(1, 10, 79, 0.3);
+  }
+  
+  .modern-button.variant-secondary {
+    background-color: #f1f5f9; /* gray-100 */
+    color: #475569; /* gray-600 */
+    border: 1px solid #e2e8f0; /* gray-200 */
+  }
+  
+  .modern-button.variant-secondary:hover {
+    background-color: #e2e8f0; /* gray-200 */
+    color: #334155; /* gray-700 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  }
+  
+  .modern-button.variant-ghost {
+    background-color: transparent;
+    color: #475569; /* gray-600 */
+    border: none;
+  }
+  
+  .modern-button.variant-ghost:hover {
+    background-color: #f1f5f9; /* gray-100 */
+    color: #010a4f; /* dark blue */
+  }
+  
+  .modern-button.variant-outline {
+    background-color: transparent;
+    color: #010a4f; /* dark blue */
+    border: 2px solid #010a4f; /* dark blue */
+  }
+  
+  .modern-button.variant-outline:hover {
+    background-color: #010a4f; /* dark blue */
+    color: #ffffff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(1, 10, 79, 0.25);
+  }
+  
+  .modern-button.variant-danger {
+    background-color: #dc2626; /* red-600 */
+    color: #ffffff;
+    border: 1px solid #dc2626; /* red-600 */
+  }
+  
+  .modern-button.variant-danger:hover {
+    background-color: #b91c1c; /* red-700 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(220, 38, 38, 0.25);
+  }
+  
+  .modern-button.variant-success {
+    background-color: #10b981; /* green-600 */
+    color: #ffffff;
+    border: 1px solid #10b981; /* green-600 */
+  }
+  
+  .modern-button.variant-success:hover {
+    background-color: #059669; /* green-700 */
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.25);
+  }
+  
+  .modern-button.variant-white {
+    background-color: white;
+    color: #010a4f; /* dark blue */
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+  
+  .modern-button.variant-white:hover {
+    background-color: #f9fafb; /* gray-50 */
+    transform: translateY(-3px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25);
+  }
+
+  /* NEW: White outline variant for landing page */
+  .modern-button.variant-white-outline {
+    background-color: transparent;
+    color: white;
+    border: 2px solid white;
+  }
+  
+  .modern-button.variant-white-outline:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* Disabled state */
+  .modern-button.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* --- Form Elements --- */
+  .input-modern {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--aro-light-gray);
+    transition: all 0.2s;
+    background-color: white;
+  }
+  
+  .input-modern:focus {
+    outline: none;
+    border-color: #010a4f; /* dark blue */
+    box-shadow: 0 0 0 3px rgba(1, 10, 79, 0.1); /* dark blue with opacity */
+  }
+
+  /* --- Card Styles --- */
+  .card-modern {
+    background-color: #ffffff;
+    border-radius: 0.75rem;
+    border: 1px solid var(--aro-light-gray);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  
+  .card-modern:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  /* --- Status Indicators --- */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1rem;
+  }
+  
+  .status-success {
+    background-color: rgba(16, 185, 129, 0.1); /* green-600 with opacity */
+    color: #10b981; /* green-600 */
+    border: 1px solid rgba(16, 185, 129, 0.2); /* green-600 with opacity */
+  }
+  
+  .status-warning {
+    background-color: rgba(245, 158, 11, 0.1); /* amber-500 with opacity */
+    color: #f59e0b; /* amber-500 */
+    border: 1px solid rgba(245, 158, 11, 0.2); /* amber-500 with opacity */
+  }
+  
+  .status-error {
+    background-color: rgba(220, 38, 38, 0.1); /* red-600 with opacity */
+    color: #dc2626; /* red-600 */
+    border: 1px solid rgba(220, 38, 38, 0.2); /* red-600 with opacity */
+  }
+  
+  .status-info {
+    background-color: rgba(1, 10, 79, 0.1); /* dark blue with opacity */
+    color: #010a4f; /* dark blue */
+    border: 1px solid rgba(1, 10, 79, 0.2); /* dark blue with opacity */
+  }
+
+  /* --- Modern Tabs --- */
+  .modern-tabs .ant-tabs-tab {
+    position: relative;
+    padding: 8px 0;
+    font-weight: 500;
+    font-size: 14px;
+    color: #64748b; /* gray-500 */
+    margin-right: 24px;
+    transition: all 0.3s;
+  }
+  
+  .modern-tabs .ant-tabs-tab:hover {
+    color: #010a4f; /* dark blue */
+  }
+  
+  .modern-tabs .ant-tabs-tab-active {
+    font-weight: 600;
+    color: #010a4f !important; /* dark blue */
+  }
+  
+  .modern-tabs .ant-tabs-ink-bar {
+    background-color: #010a4f; /* dark blue */
+    height: 2px;
+    border-radius: 2px;
+  }
+  
+  .modern-tabs .ant-tabs-nav::before {
+    border-bottom-color: var(--aro-light-gray) !important;
+  }
+  
+  /* Empty state styling */
+  .modern-tabs .ant-empty-description {
+    color: #64748b; /* gray-500 */
+    font-size: 14px;
+  }
+  
+  .modern-tabs .ant-empty-img-simple-ellipse {
+    fill: #f1f5f9; /* gray-100 */
+  }
+  
+  .modern-tabs .ant-empty-img-simple-path {
+    fill: #f8fafc; /* gray-50 */
+  }
+  
+  /* Card hover effect for lists */
+  .modern-tabs .appointment-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  
+  .modern-tabs .appointment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+  }
+}
+
+@layer utilities {
+  /* Animation utilities */
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.3s ease-in-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-in-out;
+  }
+  
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    0% { transform: translateY(20px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  
+  @keyframes scaleIn {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* --- LANDING PAGE SPECIFIC STYLES --- */
+  /* Core landing page container styles */
+  .landing-container {
+    overflow-x: hidden; /* Prevent horizontal scroll from parallax effects */
+    position: relative;
+  }
+  
+  /* Gradient backgrounds */
+  .bg-gradient-to-b.from-blue-50 {
+    background: linear-gradient(to bottom, #c5dfff 0%, #ffffff 50%, #f9fafb 100%);
+  }
+  
+  .bg-blue-600 {
+    background-color: var(--aro-light-blue); /* Will use the new dark blue */
+  }
+
+  /* Header effects and navigation */
+  .landing-header {
+    transition: background-color 0.3s, box-shadow 0.3s;
+    z-index: 50;
+  }
+
+  .landing-header.scrolled {
+    background-color: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+  }
+  
+  /* Navigation items */
+  .nav-item {
+    position: relative;
+    padding: 0.25rem 0;
+  }
+  
+  .nav-item .hover-indicator {
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    height: 2px;
+    background-color: var(--aro-light-blue); /* Will use the new dark blue */
+    transform-origin: left;
+  }
+
+  /* Smoother animations for parallax elements */
+  @media (prefers-reduced-motion: no-preference) {
+    .parallax-element {
+      transition: transform 0.05s linear;
+    }
+  }
+  
+  /* Prevent content shifting on mobile */
+  @media (max-width: 768px) {
+    .landing-section {
+      overflow: hidden; 
+    }
+  }
+
+  .gradient-cta {
+    background: linear-gradient(135deg, #010a4f 0%, #010a4f 100%);
+  }
+
+  .gradient-footer {
+    background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #010a4f 100%);
+  }
+
+  /* Component-specific overrides */
+  .create-post-modal button {
+    background-color: initial;
+    border: none;
+    color: inherit;
+    padding: 0;
+    margin: 0;
+    font: inherit;
+  }
+  
+  .create-post-modal .input-modern {
+    background-color: white;
+    border: 1px solid var(--aro-light-gray);
+  }
+
+  /* Responsive mobile navbar */
+  @media (max-width: 640px) {
+    .sidebar-nav {
+      width: 100% !important;
+      height: auto !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      top: auto !important;
+      left: 0 !important;
+      flex-direction: row !important;
+      z-index: 50 !important;
+      border-top: 1px solid var(--aro-light-gray) !important;
+      border-right: none !important;
+      padding: 0.75rem 1rem !important;
+      justify-content: space-around !important;
+    }
+  
+    .sidebar-toggle,
+    .sidebar-profile,
+    .sidebar-label {
+      display: none !important;
+    }
+    
+    .sidebar-nav .nav-buttons {
+      flex-direction: row !important;
+      justify-content: space-around !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    
+    .sidebar-create-button {
+      position: fixed !important;
+      bottom: 5rem !important;
+      right: 1rem !important;
+      z-index: 49 !important;
+      margin: 0 !important;
+      border-radius: 9999px !important;
+      width: 3.5rem !important;
+      height: 3.5rem !important;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    /* Landing page mobile optimizations */
+    .landing-container .modern-button.size-xl {
+      padding: 1rem 2rem;
+      font-size: 1rem;
+    }
+
+    .landing-hero h1 {
+      font-size: 3rem;
+      line-height: 1.1;
+    }
+  }
+
+  /* Calendar styles */
+  .rbc-month-view .rbc-date-cell {
+    font-size: 0.875rem;
+    color: var(--aro-dark-blue) !important;
+    font-weight: 600;
+    padding-right: 4px;
+    text-align: right;
+  }
+  
+  .rbc-time-view .rbc-header {
+    color: var(--aro-dark-blue) !important;
+    font-weight: 600;
+    font-size: 0.9rem;
+    background-color: #e8f4ff;
+  }
+  
+  .rbc-time-gutter .rbc-timeslot-group {
+    color: var(--aro-dark-blue) !important;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+  
+  .rbc-toolbar-label {
+    color: var(--aro-dark-blue);
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  /* Scroll behavior */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus styles for accessibility are defined in the components layer */
+}
+
+/* === THIRD-PARTY STYLES === */
+/* Add any other third-party library style overrides here */
+
+/* Framer Motion compatibility */
+[data-framer-component] {
+  transform-origin: center;
+}
+
+/* Ensure proper stacking for modals and overlays */
+.modal-overlay {
+  z-index: 1000;
+}
+
+.dropdown-menu {
+  z-index: 100;
+}

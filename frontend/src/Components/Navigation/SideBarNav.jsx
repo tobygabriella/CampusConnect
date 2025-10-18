@@ -1,14 +1,17 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Home, Bell, User, Calendar, Users, LogOut, Plus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/Components/context/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, Home, Users, Calendar, MessageSquare, Bell, Menu, X, Plus, LogOut, Settings, User, ChevronLeft, ChevronRight } from 'lucide-react';
+import ModernButton from '../ui/ModernButton';
+import { useAuth } from '../context/AuthContext';
 import defaultProfile from "@/assets/default-profile.jpg";
 import { useSocket } from "@/hooks/useSocket";
 import AroLogo from "@/assets/aro.png";
 import PropTypes from 'prop-types';
 import api from "@/utils/axiosInstance";
 import { formatRoleName } from "@/utils/formatters";
+
+// Styles are now in main.css
 
 const SidebarNav = () => {
   const navigate = useNavigate();
@@ -60,145 +63,340 @@ const SidebarNav = () => {
   };
 
   return (
-    <div className={`
-      ${isCompact ? 'w-16' : 'w-64'} h-screen bg-white border-r border-gray-200 flex flex-col justify-between
-      fixed left-0 top-0 z-40 transition-all duration-300 ease-in-out
-      ${isCompact ? 'p-2' : 'p-4'}
-    `}>
+    <motion.div 
+      className={`
+        sidebar-nav
+        ${isCompact ? 'w-20' : 'w-72'} h-screen bg-white border-r border-gray-200 flex flex-col justify-between
+        fixed left-0 top-0 z-40 shadow-lg
+        ${isCompact ? 'px-3 py-6' : 'px-5 py-6'}
+      `}
+      initial={{ x: -20, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
+    >
+      {/* Collapse/Expand toggle */}
+      <div className="sidebar-toggle absolute -right-3 top-12">
+        <motion.div
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ModernButton
+            variant="white"
+            size="sm"
+            className="!p-1.5 rounded-full shadow-md border border-gray-200"
+            onClick={() => setIsCompact(!isCompact)}
+          >
+            {isCompact ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          </ModernButton>
+        </motion.div>
+      </div>
+
       {/* Logo + Profile */}
       <div>
         {/* Logo */}
-        <div className={`mb-4 ${isCompact ? 'flex justify-center' : ''}`}>
-          {isCompact ? (
-            <div className="w-10 h-10 bg-[#062970] rounded-md flex items-center justify-center">
-              <span className="text-white font-bold text-lg">A</span>
-            </div>
-          ) : (
-            <img src={AroLogo} alt="ARO Logo" className="h-20" />
-          )}
-        </div>
+        <motion.div 
+          className={`mb-8 ${isCompact ? 'flex justify-center' : ''}`}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1 }}
+        >
+          <Link to="/home">
+            {isCompact ? (
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center shadow-md hover:bg-blue-700 transition-colors">
+                <span className="text-white font-bold text-xl">A</span>
+              </div>
+            ) : (
+              <img src={AroLogo} alt="ARO Logo" className="h-16" />
+            )}
+          </Link>
+        </motion.div>
 
         {/* Profile section */}
-        {!isCompact && (
-          <div className="flex items-center mb-8 gap-3">
-            <img
-              src={user?.profilePicture || defaultProfile}
-              alt="Profile"
-              className="w-10 h-10 rounded-full object-cover border border-gray-300"
-            />
-            <div>
-              <p className="font-medium text-[#062970]">{user?.username}</p>
-              <p className="text-sm text-gray-500">{formatRoleName(user?.role)}</p>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {!isCompact && (
+            <motion.div 
+              className="sidebar-profile flex items-center mb-10 p-3 bg-gray-50 rounded-xl hover:bg-blue-50 transition-colors cursor-pointer"
+              onClick={() => handleNavigation(`/profile/${user?.username}`)}
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="relative">
+                <img
+                  src={user?.profilePicture || defaultProfile}
+                  alt="Profile"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
+                />
+                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+              </div>
+              <div className="ml-3 flex-grow overflow-hidden">
+                <p className="font-medium text-gray-800 truncate">{user?.username || 'User'}</p>
+                <p className="text-sm text-blue-600">{formatRoleName(user?.role) || 'Student'}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Compact profile icon */}
-        {isCompact && (
-          <div className="flex justify-center mb-6">
-            <img
-              src={user?.profilePicture || defaultProfile}
-              alt="Profile"
-              className="w-8 h-8 rounded-full object-cover border border-gray-300"
-            />
-          </div>
-        )}
+        <AnimatePresence>
+          {isCompact && (
+            <motion.div 
+              className="flex justify-center mb-10"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div 
+                className="relative cursor-pointer"
+                onClick={() => handleNavigation(`/profile/${user?.username}`)}
+              >
+                <motion.img
+                  src={user?.profilePicture || defaultProfile}
+                  alt="Profile"
+                  className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-md"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Nav Links */}
-        <nav className={`space-y-1 ${isCompact ? 'flex flex-col items-center' : ''}`}>
-          <SidebarButton
-            icon={<Home size={20} className="text-[#062970]" />}
-            label="Home"
-            onClick={() => handleNavigation("/home")}
-            isCompact={isCompact}
-          />
-          <SidebarButton
-            icon={
-              <div className="relative">
-                <Bell size={20} className="text-[#062970]" />
-                {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] px-1 rounded-full">
-                    {unreadCount}
-                  </span>
-                )}
-              </div>
-            }
-            label="Notifications"
-            onClick={() => {
-              setUnreadCount(0);
-              handleNavigation("/notifications");
-            }}
-            isCompact={isCompact}
-          />
-          <SidebarButton
-            icon={<User size={20} className="text-[#062970]" />}
-            label="Profile"
-            onClick={() => handleNavigation(`/profile/${user?.username}`)}
-            isCompact={isCompact}
-          />
-          <SidebarButton
-            icon={<Calendar size={20} className="text-[#062970]" />}
-            label="Appointments"
-            onClick={() => handleNavigation("/appointments")}
-            isCompact={isCompact}
-          />
-          {user?.role !== "service_provider" && (
+        <div className="mb-6">
+          <AnimatePresence>
+            {!isCompact && (
+              <motion.h3 
+                className="sidebar-label text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Menu
+              </motion.h3>
+            )}
+          </AnimatePresence>
+          
+          <nav className={`nav-buttons space-y-2 ${isCompact ? 'flex flex-col items-center' : ''}`}>
             <SidebarButton
-              icon={<Users size={20} className="text-[#062970]" />}
-              label="Community"
-              onClick={() => handleNavigation("/community")}
+              icon={<Home size={20} />}
+              label="Home"
+              onClick={() => handleNavigation("/home")}
               isCompact={isCompact}
+              isActive={window.location.pathname === "/home"}
             />
-          )}
-        </nav>
+            <SidebarButton
+              icon={
+                <div className="relative">
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-4 h-4 flex items-center justify-center rounded-full text-[10px] font-bold">
+                      {unreadCount}
+                    </span>
+                  )}
+                </div>
+              }
+              label="Notifications"
+              onClick={() => {
+                setUnreadCount(0);
+                handleNavigation("/notifications");
+              }}
+              isCompact={isCompact}
+              isActive={window.location.pathname === "/notifications"}
+            />
+            <SidebarButton
+              icon={<Calendar size={20} />}
+              label="Appointments"
+              onClick={() => handleNavigation("/appointments")}
+              isCompact={isCompact}
+              isActive={window.location.pathname === "/appointments"}
+            />
+            {user?.role !== "service_provider" && (
+              <SidebarButton
+                icon={<Users size={20} />}
+                label="Community"
+                onClick={() => handleNavigation("/community")}
+                isCompact={isCompact}
+                isActive={window.location.pathname === "/community"}
+              />
+            )}
+          </nav>
+        </div>
+        
+        <div className="mb-6">
+          <AnimatePresence>
+            {!isCompact && (
+              <motion.h3 
+                className="sidebar-label text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-3"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Account
+              </motion.h3>
+            )}
+          </AnimatePresence>
+          
+          <nav className={`nav-buttons space-y-2 ${isCompact ? 'flex flex-col items-center' : ''}`}>
+            <SidebarButton
+              icon={<User size={20} />}
+              label="My Profile"
+              onClick={() => handleNavigation(`/profile/${user?.username}`)}
+              isCompact={isCompact}
+              isActive={window.location.pathname === `/profile/${user?.username}`}
+            />
+            <SidebarButton
+              icon={<Settings size={20} />}
+              label="Edit Profile"
+              onClick={() => handleNavigation("/edit-profile")}
+              isCompact={isCompact}
+              isActive={window.location.pathname === "/edit-profile"}
+            />
+          </nav>
+        </div>
       </div>
 
       {/* Bottom Buttons */}
-      <div className={`space-y-1 ${isCompact ? 'flex flex-col items-center' : ''}`}>
-        <SidebarButton
-          icon={<Plus size={20} className="text-[#062970]" />}
-          label="New Post"
-          onClick={() => handleNavigation("/create")}
-          isCompact={isCompact}
+      <div className="pb-4">
+        <motion.div
+          className={`sidebar-create-button mb-6 ${isCompact ? 'flex justify-center' : ''}`}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ModernButton
+            variant="primary"
+            size="md"
+            icon={<Plus size={20} />}
+            iconPosition="left"
+            onClick={() => handleNavigation("/create")}
+            className={isCompact ? 'w-12 h-12 !p-0 rounded-xl' : 'w-full rounded-xl'}
+          >
+            {!isCompact && 'Create Post'}
+          </ModernButton>
+        </motion.div>
+
+        <div className={`space-y-2 ${isCompact ? 'flex flex-col items-center' : ''}`}>
+        <LogoutButton 
+          onClick={handleLogout} 
+          isCompact={isCompact} 
         />
-        <SidebarButton
-          icon={<LogOut size={20} className="text-[#062970]" />}
-          label="Logout"
-          onClick={handleLogout}
-          isCompact={isCompact}
-        />
-        <SidebarButton
-          icon={<User size={20} className="text-[#062970]" />}
-          label="Edit Profile"
-          onClick={() => handleNavigation("/edit-profile")}
-          isCompact={isCompact}
-        />
+        </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
-const SidebarButton = ({ icon, label, onClick, isCompact }) => (
-  <Button
-    variant="ghost"
-    onClick={onClick}
-    className={`
-      ${isCompact ? 'w-10 h-10 p-0 justify-center' : 'w-full justify-start gap-3 px-3 py-2'}
-      !bg-transparent !shadow-none !text-[#062970] hover:!bg-[#f3e8ff] hover:!text-[#6b46c1]
-      ${isCompact ? 'mb-2' : ''}
-    `}
-    title={isCompact ? label : undefined}
-  >
-    {icon}
-    {!isCompact && <span>{label}</span>}
-  </Button>
-);
+const SidebarButton = ({ icon, label, onClick, isCompact, isActive, variant, className, style }) => {
+  // Determine the style based on active state and variant
+  const buttonVariant = variant === 'danger' ? 'danger' : 
+                        isActive ? 'primary-subtle' : 'ghost';
+  
+  const baseClasses = isCompact ? 
+    'w-12 h-12 !p-0 rounded-xl' : 
+    'w-full justify-start text-left rounded-xl';
+    
+  const classes = className ? `${baseClasses} ${className}` : baseClasses;
+  
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+    >
+      <ModernButton
+        variant={buttonVariant}
+        size="md"
+        onClick={onClick}
+        className={classes}
+        title={isCompact ? label : undefined}
+        icon={icon}
+        iconPosition="left"
+        style={style}
+      >
+        <AnimatePresence>
+          {!isCompact && (
+            <motion.span 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="truncate ml-3"
+            >
+              {label}
+            </motion.span>
+          )}
+        </AnimatePresence>
+        
+        {/* Active indicator */}
+        {isActive && !isCompact && variant !== 'danger' && (
+          <div className="ml-auto w-1.5 h-5 rounded-full bg-blue-600"></div>
+        )}
+      </ModernButton>
+    </motion.div>
+  );
+};
 
 SidebarButton.propTypes = {
   icon: PropTypes.node.isRequired,
   label: PropTypes.string.isRequired,
   onClick: PropTypes.func.isRequired,
   isCompact: PropTypes.bool.isRequired,
+  isActive: PropTypes.bool,
+  variant: PropTypes.oneOf(['default', 'danger']),
+};
+
+SidebarButton.defaultProps = {
+  isActive: false,
+  variant: 'default',
+};
+
+// Custom logout button with hover effect
+const LogoutButton = ({ onClick, isCompact }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  const buttonStyle = {
+    backgroundColor: isHovered ? '#b3d1ff' : '#c5dfff',
+    transition: 'background-color 0.2s ease'
+  };
+
+  const classes = isCompact ? 
+    'w-12 h-12 !p-0 rounded-xl' : 
+    'w-full justify-start text-left rounded-xl';
+
+  return (
+    <motion.div
+      whileHover={{ scale: 1.03 }}
+      whileTap={{ scale: 0.97 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <ModernButton
+        variant="ghost"
+        size="md"
+        onClick={onClick}
+        className={classes}
+        title={isCompact ? "Logout" : undefined}
+        icon={<LogOut size={20} />}
+        iconPosition="left"
+        style={buttonStyle}
+      >
+        <AnimatePresence>
+          {!isCompact && (
+            <motion.span 
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              className="truncate ml-3"
+            >
+              Logout
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </ModernButton>
+    </motion.div>
+  );
 };
 
 export default SidebarNav;

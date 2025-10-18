@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { ChevronDown } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ChevronDown, Tag } from "lucide-react";
+import ModernButton from "@/Components/UI/ModernButton";
 import api from "@/utils/axiosInstance";
 import Loading from "@/Components/Loading/LoadingState";
 
@@ -39,49 +39,43 @@ const TagFilter = ({ selectedTag, onSelectTag }) => {
 
   return (
     <div className="relative inline-block text-left">
-      <Button
+      <ModernButton
         variant="outline"
+        size="sm"
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff] border-[#062970] truncate"
+        className="truncate"
+        icon={<Tag className="h-4 w-4" />}
+        iconPosition="left"
+        rounded="md"
       >
         <span className="truncate">{currentTagLabel}</span>
-        <ChevronDown className="ml-2 h-4 w-4 flex-shrink-0" />
-      </Button>
+        <ChevronDown className="ml-1 h-3.5 w-3.5 flex-shrink-0" />
+      </ModernButton>
 
       {isOpen && (
         <div className="origin-top-right absolute right-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10">
           <div className="py-1 max-h-64 overflow-y-auto">
-          <Button
-            variant="ghost"
+          <div
+            className={`w-full text-left px-4 py-2 text-sm cursor-pointer ${selectedTag === null ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
             onClick={() => {
                 onSelectTag(null);
                 setIsOpen(false);
             }}
-            className={`w-full justify-start px-4 py-2 text-sm ${
-                selectedTag === null
-                ? "bg-[#f3e8ff] text-[#6b46c1]"
-                : "text-[#062970] hover:bg-gray-100"
-            }`}
-            >
+          >
             All Tags
-            </Button>
-            {tags.map((tag) => (
-                <Button
-                    key={tag}
-                    variant="ghost"
-                    onClick={() => {
-                        onSelectTag(tag);
-                        setIsOpen(false);
-                    }}
-                    className={`w-full justify-start px-4 py-2 text-sm ${
-                        selectedTag === tag
-                        ? "bg-[#f3e8ff] text-[#6b46c1]"
-                        : "text-gray-700 hover:bg-gray-100"
-                    }`}
-                    >
-                    {tag}
-                    </Button>
-            ))}
+          </div>
+          {tags.map((tag) => (
+            <div
+              key={tag}
+              className={`w-full text-left px-4 py-2 text-sm cursor-pointer ${selectedTag === tag ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50'}`}
+              onClick={() => {
+                onSelectTag(tag);
+                setIsOpen(false);
+              }}
+            >
+              {tag}
+            </div>
+          ))}
           </div>
         </div>
       )}

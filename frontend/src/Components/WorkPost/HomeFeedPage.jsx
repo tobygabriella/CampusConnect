@@ -4,13 +4,13 @@ import api from "@/utils/axiosInstance";
 import SidebarNav from "@/Components/Navigation/SideBarNav";
 import TopNavbar from "@/Components/Navigation/TopNavBar";
 import defaultProfile from "@/assets/default-profile.jpg";
-import { Heart, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Heart, MessageSquare, Calendar, ChevronLeft, ChevronRight, RefreshCcw, Layout, LayoutGrid } from "lucide-react";
 import { formatRoleName } from "@/utils/formatters";
 import WorkPostModal from "./WorkPostModal";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/Components/context/AuthContext";
 import Loading from "@/Components/Loading/LoadingState";
+import { motion, AnimatePresence } from "framer-motion";
+import ModernButton from "@/Components/UI/ModernButton";
 
 const HomeFeedPage = () => {
   const [posts, setPosts] = useState([]);
@@ -113,66 +113,180 @@ const HomeFeedPage = () => {
     }
   }, [user?.id]);  
 
+  // Add view mode state (grid or list)
+  const [viewMode, setViewMode] = useState('list'); // 'grid' or 'list'
+  
   if (loading) return <Loading />;
   
   return (
     <>
-      <div className="flex w-screen min-h-screen bg-gradient-to-b from-white to-[#f5f5f5] overflow-x-hidden">
+      <div className="flex w-screen min-h-screen bg-gradient-to-b from-gray-50 to-white overflow-x-hidden">
         <SidebarNav />
         <div className="flex-1 flex flex-col pt-16 min-h-screen overflow-y-auto ml-16 min-[850px]:ml-64">
           <TopNavbar />
-          <div className="max-w-xl mx-auto py-6 px-4 space-y-6">
-            {posts.length === 0 ? (
-              <p className="text-center text-gray-500">No posts available in your feed yet.</p>
-            ) : (
-              posts.map((post) => (
-                <div key={post.id} className="bg-white shadow-md rounded-lg overflow-hidden border border-gray-200">
-                  {/* Author header */}
-                  <div
-                    className="flex items-center gap-3 p-3 cursor-pointer"
-                    onClick={() => navigate(`/profile/${post.author.username}`)}
+          
+          {/* Header section */}
+          <div className="px-4 md:px-8 py-6">
+            <div className="max-w-4xl mx-auto">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+                <div className="mb-4 md:mb-0">
+                  <h1 className="text-2xl font-bold text-gray-900">Your Feed</h1>
+                  <p className="text-gray-600">See the latest from people you follow</p>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <ModernButton
+                    variant="outline"
+                    size="sm"
+                    icon={<RefreshCcw className="h-4 w-4" />}
+                    iconPosition="left"
+                    onClick={() => {
+                      setLoading(true);
+                      // Reload the posts
+                      api.get("/work-posts/feed")
+                        .then(({ data }) => {
+                          setPosts(data);
+                          const likedIds = new Set();
+                          data.forEach(post => {
+                            if (post.upvotes?.some(v => v.userId === user.id)) {
+                              likedIds.add(post.id);
+                            }
+                          });
+                          setLikedPostIds(likedIds);
+                        })
+                        .catch(err => console.error("Failed to refresh feed:", err))
+                        .finally(() => setLoading(false));
+                    }}
                   >
-                    <img
-                      src={post.author.profilePicture || defaultProfile}
-                      alt="Profile"
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div>
-                      <p className="text-[#062970] font-semibold">{post.author.username}</p>
-                      {post.author.role === "service_provider" && (
-                        <p className="text-xs text-gray-500">{formatRoleName(post.author.role)}</p>
-                      )}
+                    Refresh
+                  </ModernButton>
+                  
+                  <div className="bg-gray-100 rounded-lg p-1 flex items-center">
+                    <button 
+                      onClick={() => setViewMode('list')} 
+                      className={`p-1.5 rounded-md ${viewMode === 'list' ? 'bg-gray-300 shadow-sm' : 'text-gray-200 hover:text-gray-700'}`}
+                      title="List view"
+                    >
+                      <Layout className="h-4 w-4" />
+                    </button>
+                    <button 
+                      onClick={() => setViewMode('grid')} 
+                      className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-gray-300 shadow-sm' : 'text-gray-200 hover:text-gray-700'}`}
+                      title="Grid view"
+                    >
+                      <LayoutGrid className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Content section */}
+          <div className="px-4 md:px-8 pb-10">
+            <div className={`max-w-4xl mx-auto ${viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 gap-6' : 'space-y-6'}`}>
+            {posts.length === 0 ? (
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col items-center justify-center py-16 px-4 text-center"
+              >
+                <div className="bg-blue-50 p-5 rounded-full mb-4">
+                  <RefreshCcw className="h-7 w-7 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Your Feed is Empty
+                </h3>
+                <p className="text-gray-500 max-w-md mb-6">
+                  No posts available in your feed yet. Follow more service providers to see their work here.
+                </p>
+              </motion.div>
+            ) : (
+              posts.map((post, index) => (
+                <motion.div 
+                  key={post.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100"
+                >
+                  {/* Author header */}
+                  <div className="flex items-center justify-between p-4 border-b border-gray-50">
+                    <div
+                      className="flex items-center gap-3 cursor-pointer"
+                      onClick={() => navigate(`/profile/${post.author.username}`)}
+                    >
+                      <motion.img
+                        whileHover={{ scale: 1.05 }}
+                        src={post.author.profilePicture || defaultProfile}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full object-cover border border-gray-100"
+                      />
+                      <div>
+                        <p className="font-medium text-gray-900">{post.author.username}</p>
+                        {post.author.role === "service_provider" && (
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                              {formatRoleName(post.author.role)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
   
                   {/* Image */}
                   {post.images && post.images.length > 0 && (
-                    <div className="relative w-full max-h-[600px] flex justify-center items-center">
-                      {post.images.length > 1 && (imageIndexes[post.id] || 0) > 0 && (
-                        <Button
-                          className="absolute left-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                          onClick={() => prevImage(post.id, post.images.length)}
-                        >
-                          <ChevronLeft className="w-5 h-5 text-[#062970]" />
-                        </Button>
-                      )}
-                      {post.images.length > 1 && (imageIndexes[post.id] || 0) < post.images.length - 1 && (
-                        <Button
-                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-white rounded-full p-1 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                          onClick={() => nextImage(post.id, post.images.length)}
-                        >
-                          <ChevronRight className="w-5 h-5 text-[#062970]" />
-                        </Button>
+                    <div className="relative w-full aspect-square flex justify-center items-center overflow-hidden bg-gray-50">
+                      {post.images.length > 1 && (
+                        <div className="absolute inset-0 flex items-center justify-between px-2 z-10">
+                          <motion.div 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className={`${(imageIndexes[post.id] || 0) === 0 ? 'invisible' : ''}`}
+                          >
+                            <ModernButton
+                              variant="white"
+                              size="sm"
+                              className="rounded-full shadow-md !p-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                prevImage(post.id, post.images.length);
+                              }}
+                            >
+                              <ChevronLeft className="h-5 w-5" />
+                            </ModernButton>
+                          </motion.div>
+                          
+                          <motion.div 
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            className={`${(imageIndexes[post.id] || 0) === post.images.length - 1 ? 'invisible' : ''}`}
+                          >
+                            <ModernButton
+                              variant="white"
+                              size="sm"
+                              className="rounded-full shadow-md !p-2"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                nextImage(post.id, post.images.length);
+                              }}
+                            >
+                              <ChevronRight className="h-5 w-5" />
+                            </ModernButton>
+                          </motion.div>
+                        </div>
                       )}
 
                       <img
                         src={post.images[imageIndexes[post.id] || 0]}
                         alt="Work Post"
-                        className="w-full h-auto max-h-[600px] object-cover"
+                        className="w-full h-full object-cover cursor-pointer"
+                        onClick={() => setSelectedPostId(post.id)}
                       />
 
                       {post.images.length > 1 && (
-                        <div className="absolute bottom-4 text-white text-xs bg-black/60 rounded-full px-2 py-1">
+                        <div className="absolute bottom-4 text-white text-xs bg-black/60 rounded-full px-2.5 py-1.5 font-medium">
                           {(imageIndexes[post.id] || 0) + 1} / {post.images.length}
                         </div>
                       )}
@@ -180,95 +294,111 @@ const HomeFeedPage = () => {
                   )}
   
                   {/* Action Buttons */}
-                  <div className="flex items-center justify-between px-4 py-2">
+                  <div className="px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => toggleLike(post.id)}
-                      className="hover:bg-[#f3e8ff] !bg-transparent hover:!bg-[#f3e8ff] text-[#062970]"
-                    >
-                      <Heart
-                        className="w-5 h-5"
-                        fill={likedPostIds.has(post.id) ? "#062970" : "none"}
-                        stroke="#062970"
-                        strokeWidth={likedPostIds.has(post.id) ? "0" : "1.5"} // Remove stroke when filled
-                      />
-                      <span className="text-sm ml-1 text-[#062970]">{post._count?.upvotes || 0}</span>
-                    </Button>
-  
-                      <Button
-                        className="text-gray-600 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                      <ModernButton
+                        variant="ghost"
+                        size="sm"
+                        className="!p-2"
+                        onClick={() => toggleLike(post.id)}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <Heart
+                            className={`h-5 w-5 ${likedPostIds.has(post.id) ? 'text-red-500 fill-red-500' : 'text-gray-700'}`}
+                            strokeWidth={likedPostIds.has(post.id) ? "0" : "1.5"}
+                          />
+                          <span className="text-sm font-medium">{post._count?.upvotes || 0}</span>
+                        </div>
+                      </ModernButton>
+
+                      <ModernButton
+                        variant="ghost"
+                        size="sm"
+                        className="!p-2"
                         onClick={() => setSelectedPostId(post.id)}
                       >
-                        <MessageSquare className="w-5 h-5 text-[#062970]" />
-                        <span className="text-sm ml-1 text-[#062970]">{post._count?.comments || 0}</span>
-                      </Button>
+                        <div className="flex items-center gap-1.5">
+                          <MessageSquare className="h-5 w-5 text-gray-700" />
+                          <span className="text-sm font-medium">{post._count?.comments || 0}</span>
+                        </div>
+                      </ModernButton>
                     </div>
   
                     {(post.service || post.appointment?.service) && (
-                      <div className="px-4 py-2 bg-gray-50 border-t text-sm flex flex-col md:flex-row md:justify-between md:items-center gap-1">
-                        <div className="text-[#062970]">
-                          <p className="font-semibold">
+                      <ModernButton
+                        variant="primary"
+                        size="sm"
+                        icon={<Calendar className="h-4 w-4" />}
+                        iconPosition="left"
+                        onClick={() =>
+                          navigate(
+                            `/book/${post.author.username}?service=${
+                              post.service?.id || post.appointment?.service?.id
+                            }`
+                          )
+                        }
+                      >
+                        Book Now
+                      </ModernButton>
+                    )}
+                  </div>
+                  
+                  {/* Service info */}
+                  {(post.service || post.appointment?.service) && (
+                    <div className="px-4 py-2 bg-blue-50 border-t border-blue-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 bg-blue-100 rounded-full">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-blue-800">
                             {(post.service || post.appointment?.service)?.name}
                           </p>
                         </div>
-  
-                        {post.author?.username && (
-                          <Button
-                            className="bg-green-500 hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                            style={{ color: "#062970" }}
-                            onClick={() =>
-                              navigate(
-                                `/book/${post.author.username}?service=${
-                                  post.service?.id || post.appointment?.service?.id
-                                }`
-                              )
-                            }
-                          >
-                            Book Now
-                          </Button>
-                        )}
                       </div>
-                    )}
-                  </div>
-  
+                    </div>
+                  )}
+                  
                   {/* Caption */}
-                  <div className="px-4 pb-3">
-                    <p className="text-sm text-[#062970]">{post.caption}</p>
+                  <div className="px-4 py-3">
+                    <p className="text-gray-700 text-sm">{post.caption}</p>
                   </div>
-                </div>
+                </motion.div>
               ))
             )}
           </div>
         </div>
       </div>
-  
+    </div>
+
+    {/* Post Modal */}
+    <AnimatePresence>
       {selectedPostId && (
-       <WorkPostModal
-          postId={selectedPostId}
-          posts={posts}
-          post={posts.find(p => p.id === selectedPostId)} 
-          initialIndex={posts.findIndex((p) => p.id === selectedPostId)}
-          onClose={() => setSelectedPostId(null)}
-          disablePostNavigation={true}
-          onPostUpdate={(updatedPost) => {
-            setPosts((prevPosts) =>
-              prevPosts.map((p) => (p.id === updatedPost.id ? updatedPost : p))
-            );
-          
-            setLikedPostIds((prev) => {
-              const newSet = new Set(prev);
-              if (updatedPost.isUpvotedByCurrentUser) {
-                newSet.add(updatedPost.id);
-              } else {
-                newSet.delete(updatedPost.id);
-              }
-              return newSet;
-            });
-          }}          
-        />     
-      )}
+        <WorkPostModal
+            postId={selectedPostId}
+            posts={posts}
+            post={posts.find(p => p.id === selectedPostId)} 
+            initialIndex={posts.findIndex((p) => p.id === selectedPostId)}
+            onClose={() => setSelectedPostId(null)}
+            disablePostNavigation={true}
+            onPostUpdate={(updatedPost) => {
+              setPosts((prevPosts) =>
+                prevPosts.map((p) => (p.id === updatedPost.id ? updatedPost : p))
+              );
+              
+              setLikedPostIds((prev) => {
+                const newSet = new Set(prev);
+                if (updatedPost.isUpvotedByCurrentUser) {
+                  newSet.add(updatedPost.id);
+                } else {
+                  newSet.delete(updatedPost.id);
+                }
+                return newSet;
+              });
+            }}          
+          />     
+        )}
+      </AnimatePresence>
     </>
   );  
 };
