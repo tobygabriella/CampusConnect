@@ -16,7 +16,7 @@ const CheckoutPage = () => {
   const duration = searchParams.get("duration");
   const appointmentId = searchParams.get("appointmentId");
   const retryMode = searchParams.get("mode") === "retry";
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [cardError, setCardError] = useState("");
   const navigate = useNavigate();
   const stripe = useStripe();
@@ -46,6 +46,8 @@ const CheckoutPage = () => {
       } catch (err) {
         toast.error("Error loading appointment details for retry.");
         navigate("/appointments");
+      } finally {
+        setLoading(false);
       }
     };
   
@@ -57,6 +59,7 @@ const CheckoutPage = () => {
   useEffect(() => {
     if (!providerUsername || !serviceId || !date || !startTime || !duration) {
       toast.error("Invalid or missing booking information.");
+      setLoading(false);
       navigate("/");
     }
   }, [providerUsername, serviceId, date, startTime, duration, navigate]);
@@ -70,6 +73,8 @@ const CheckoutPage = () => {
         setServiceDetails(service);
       } catch (err) {
         toast.error("Error loading service details");
+      } finally{
+        setLoading(false);
       }
     };
     

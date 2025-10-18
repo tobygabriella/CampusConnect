@@ -110,207 +110,6 @@ router.get("/", requireAuth, async (req, res) => {
     }
   });
 
-  // POST /appointments/:id/confirm
-  router.post("/:id/confirm", requireAuth, async (req, res) => {
-    const { id } = req.params;
-    const userId = req.user.userId;
-  
-    try {
-      const appointment = await prisma.appointment.findUnique({
-        where: { id },
-        include: {
-          client: true,
-          serviceProvider: {
-            include: { user: true },
-          },
-          service: true,
-        },
-      });
-      
-  
-      if (!appointment) return res.status(404).json({ message: "Appointment not found" });
-  
-      let updateData = {};
-  
-      if (appointment.clientId === userId) {
-        if (!appointment.providerConfirmed) {
-          return res.status(400).json({
-            message: "You cannot confirm until the provider confirms first.",
-          });
-        }
-        updateData.clientConfirmed = true;
-        updateData.clientConfirmedAt = new Date();
-      } else if (appointment.serviceProvider.userId === userId) {
-        updateData.providerConfirmed = true;
-        updateData.providerConfirmedAt = new Date();
-      } else {
-        return res.status(403).json({ message: "Not authorized to confirm this appointment" });
-      }
-  
-      const updated = await prisma.appointment.update({
-        where: { id },
-        data: updateData,
-      });
-
-      if (updated.clientConfirmed && updated.providerConfirmed) {
-        try {
-          await chargeRemainingBalance(updated.id);
-      
-          await prisma.appointment.update({
-            where: { id },
-            data: { status: "completed" },
-          });
-
-          const serviceName = appointment.service.name;
-          const formattedDate = new Date(appointment.startTime).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-          const formattedTime = new Date(appointment.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-
-          // Notify client
-          await createNotification({
-            app: req.app,
-            recipientId: appointment.clientId,
-            senderId: appointment.serviceProvider.userId,
-            type: NotificationType.APPOINTMENT_COMPLETED,
-            title: "Appointment Completed",
-            message: `You and ${appointment.serviceProvider.user.name} confirmed that your "${serviceName}" appointment on ${formattedDate} at ${formattedTime} was completed.`,
-            metadata: { appointmentId: id },
-            postIds: {},
-            priority: Priority.HIGH
-          });
-
-          // Notify provider
-          await createNotification({
-            app: req.app,
-            recipientId: appointment.serviceProvider.userId,
-            senderId: appointment.clientId,
-            type: NotificationType.APPOINTMENT_COMPLETED,
-            title: "Appointment Completed",
-            message: `You and your client confirmed that the "${serviceName}" appointment on ${formattedDate} at ${formattedTime} was completed. You've been paid in full.`,
-            metadata: { appointmentId: id },
-            postIds: {},
-            priority: Priority.HIGH
-          });
-
-        } catch (error) {
-          console.error("Charge remaining error:", error);
-      
-          // Revert confirmation
-          await prisma.appointment.update({
-            where: { id },
-            data: {
-              ...(req.user.userId === appointment.clientId
-                ? { clientConfirmed: false, clientConfirmedAt: null }
-                : { providerConfirmed: false, providerConfirmedAt: null }
-              ),
-            },
-          });
-      
-          throw new Error("Payment failed - your confirmation has been reverted");
-        }
-      }      
-  
-      res.status(200).json({ message: "Confirmation saved" });
-    } catch (error) {
-      console.error("Confirmation error:", error);
-      return res.status(500).json({
-        message: error.message || "Failed to confirm appointment",
-        code: error.code || "unknown_error"
-      });
-    }
-  });  
-
-  router.patch("/:id/add-note", requireAuth, async (req, res) => {
-    const { id } = req.params;
-    const { note } = req.body;
-  
-    try {
-      await prisma.appointment.update({
-        where: { id },
-        data: { notes: note },
-      });
-  
-      res.status(200).json({ message: "Note saved" });
-    } catch (error) {
-      console.error("Add note error:", error);
-      res.status(500).json({ message: "Failed to save note" });
-    }
-  });
-
-  router.patch("/:id/report-no-show", requireAuth, async (req, res) => {
-    const { id } = req.params;
-    const { noShow } = req.body; // expected: 'client' or 'provider'
-    const userId = req.user.userId;
-  
-    if (!["client", "provider"].includes(noShow)) {
-      return res.status(400).json({ message: "Invalid no-show value" });
-    }
-  
-    try {
-      const appointment = await prisma.appointment.findUnique({
-        where: { id },
-        include: { client: true, serviceProvider: true },
-      });
-  
-      if (!appointment) {
-        return res.status(404).json({ message: "Appointment not found" });
-      }
-  
-      // Authorization check
-      if (
-        appointment.clientId !== userId &&
-        appointment.serviceProvider.userId !== userId
-      ) {
-        return res.status(403).json({ message: "Not authorized" });
-      }
-  
-      let status = noShow === "client" ? "no_show_client" : "no_show_provider";
-  
-      await prisma.appointment.update({
-        where: { id },
-        data: { status },
-      });
-
-      const serviceName = appointment.service.name;
-      const formattedDate = new Date(appointment.startTime).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-      const formattedTime = new Date(appointment.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-
-      const isClientNoShow = noShow === "client";
-      const reporter = await prisma.user.findUnique({ where: { id: userId } });
-      const otherPartyId = isClientNoShow ? appointment.clientId : appointment.serviceProvider.userId;
-
-      // Notify the reported party
-      await createNotification({
-        app: req.app,
-        recipientId: otherPartyId,
-        senderId: userId,
-        type: NotificationType.APPOINTMENT_NO_SHOW,
-        title: "No-Show Reported",
-        message: `You were reported as a no-show for your appointment "${serviceName}" on ${formattedDate} at ${formattedTime} by ${reporter.name}.`,
-        metadata: { appointmentId: id },
-        postIds: {},
-        priority: Priority.HIGH
-      });
-
-      // Confirm report to reporter
-      await createNotification({
-        app: req.app,
-        recipientId: userId,
-        senderId: otherPartyId,
-        type: NotificationType.APPOINTMENT_NO_SHOW,
-        title: "No-Show Logged",
-        message: `You reported ${isClientNoShow ? "your client" : "your provider"} as a no-show for "${serviceName}" on ${formattedDate} at ${formattedTime}.`,
-        metadata: { appointmentId: id },
-        postIds: {},
-        priority: Priority.HIGH
-      });
-
-  
-      res.status(200).json({ message: `Marked as ${status}` });
-    } catch (error) {
-      console.error("Report no-show error:", error);
-      res.status(500).json({ message: "Failed to report no-show" });
-    }
-  });
 
   // Cancel appointment
 router.patch("/:id/cancel", requireAuth, async (req, res) => {
@@ -613,5 +412,148 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 });
 
+
+// POST /appointments/:id/check-in
+router.post("/:id/check-in", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+
+  try {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        serviceProvider: {
+          include: { user: true },
+        },
+        service: true,
+      },
+    });
+
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+    // Only allow the client (receiver of the appointment) to check in
+    if (appointment.clientId !== userId) {
+      return res.status(403).json({ message: "Only the client can check in for this appointment" });
+    }
+
+    // Check if it's already checked in
+    if (appointment.status === "checked_in") {
+      return res.status(400).json({ message: "This appointment is already checked in" });
+    }
+
+    // Update the appointment
+    await prisma.appointment.update({
+      where: { id },
+      data: {
+        status: "checked_in",
+        checkedInAt: new Date()
+      },
+    });
+
+    const serviceName = appointment.service.name;
+    const formattedDate = new Date(appointment.startTime).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    const formattedTime = new Date(appointment.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+    // Notify provider only
+    await createNotification({
+      app: req.app,
+      recipientId: appointment.serviceProvider.userId,
+      senderId: appointment.clientId,
+      type: NotificationType.APPOINTMENT_CHECKED_IN,
+      title: "Appointment Check-In",
+      message: `Your "${serviceName}" appointment with ${appointment.client.name} on ${formattedDate} at ${formattedTime} has been checked in.`,
+      metadata: { appointmentId: id },
+      postIds: {},
+      priority: Priority.HIGH
+    });
+
+    res.status(200).json({ message: "Appointment checked in successfully" });
+  } catch (error) {
+    console.error("Check-in error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to check in appointment",
+      code: error.code || "unknown_error"
+    });
+  }
+});
+
+// POST /appointments/:id/check-out
+router.post("/:id/check-out", requireAuth, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+
+  try {
+    const appointment = await prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        client: true,
+        serviceProvider: {
+          include: { user: true },
+        },
+        service: true,
+      },
+    });
+
+    if (!appointment) return res.status(404).json({ message: "Appointment not found" });
+
+    // Only allow the client (receiver of the appointment) to check out
+    if (appointment.clientId !== userId) {
+      return res.status(403).json({ message: "Only the client can check out for this appointment" });
+    }
+
+    // Check if appointment is checked in (can only check out if checked in)
+    if (appointment.status !== "checked_in") {
+      return res.status(400).json({ message: "This appointment must be checked in before checking out" });
+    }
+
+    // Update the appointment
+    await prisma.appointment.update({
+      where: { id },
+      data: {
+        status: "checked_out",
+        checkedOutAt: new Date()
+      },
+    });
+
+    // Try to charge the remaining balance
+    try {
+      await chargeRemainingBalance(id);
+      
+      await prisma.appointment.update({
+        where: { id },
+        data: { status: "completed" },
+      });
+    } catch (error) {
+      console.error("Failed to charge remaining balance on checkout:", error);
+      // We still mark as checked out even if payment fails
+    }
+
+    const serviceName = appointment.service.name;
+    const formattedDate = new Date(appointment.startTime).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+    const formattedTime = new Date(appointment.startTime).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+
+    // Notify provider only
+    await createNotification({
+      app: req.app,
+      recipientId: appointment.serviceProvider.userId,
+      senderId: appointment.clientId,
+      type: NotificationType.APPOINTMENT_CHECKED_OUT,
+      title: "Appointment Check-Out",
+      message: `Your "${serviceName}" appointment with ${appointment.client.name} on ${formattedDate} at ${formattedTime} has been completed.`,
+      metadata: { appointmentId: id },
+      postIds: {},
+      priority: Priority.HIGH
+    });
+
+    res.status(200).json({ message: "Appointment checked out successfully" });
+  } catch (error) {
+    console.error("Check-out error:", error);
+    return res.status(500).json({
+      message: error.message || "Failed to check out appointment",
+      code: error.code || "unknown_error"
+    });
+  }
+});
 
 export default router;

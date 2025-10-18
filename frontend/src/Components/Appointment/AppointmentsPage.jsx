@@ -13,10 +13,8 @@ const AppointmentsPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [upcoming, setUpcoming] = useState([]);
-  const [awaiting, setAwaiting] = useState([]);
   const [past, setPast] = useState([]);
-  const [loading, setLoading] = useState(true); 
-  const [noteModal, setNoteModal] = useState({ open: false, apptId: null, note: "" });
+  const [loading, setLoading] = useState(true);
   const [cancelModal, setCancelModal] = useState({ open: false, appt: null });
   const [retryPaymentModal, setRetryPaymentModal] = useState({ open: false, apptId: null });
 
@@ -32,29 +30,9 @@ const AppointmentsPage = () => {
       try {
         const response = await api.get("/appointments", { withCredentials: true });
         const all = response.data;
-        const now = new Date(new Date().toISOString()); 
+        const now = new Date(new Date().toISOString());
   
-        // === Awaiting Confirmation First ===
-        const awaitingConfirmationAppointments = all.filter((appt) => {
-          const isUserInvolved =
-            appt.client.id === user.id || appt.serviceProvider.user.id === user.id;
-          const endTime = new Date(appt.endTime);
-          const tenMinutesBeforeEnd = new Date(endTime.getTime() - 10 * 60 * 1000);
-  
-          const isReadyToConfirm = now >= tenMinutesBeforeEnd;
-          const needsConfirmation =
-            appt.status === "confirmed" &&
-            (!appt.clientConfirmed || !appt.providerConfirmed);
-  
-          const shouldInclude =
-            isUserInvolved && isReadyToConfirm && needsConfirmation;
-  
-          return shouldInclude;
-        });
-  
-        const awaitingIds = new Set(awaitingConfirmationAppointments.map((a) => a.id));
-  
-        // === Upcoming (exclude awaiting) ===
+        // === Upcoming Appointments ===
         const upcomingAppointments = all.filter((appt) => {
           const isUserInvolved =
             appt.client.id === user.id || appt.serviceProvider.user.id === user.id;
@@ -63,10 +41,11 @@ const AppointmentsPage = () => {
           const tenMinutesBeforeEnd = new Date(endTime.getTime() - 10 * 60 * 1000);
   
           const isUpcoming =
-            (startTime > now || (startTime <= now && now < tenMinutesBeforeEnd)) &&
-            !awaitingIds.has(appt.id);
+            (startTime > now || (startTime <= now && now < tenMinutesBeforeEnd));
   
-          return isUserInvolved && isUpcoming && appt.status === "confirmed";
+          return isUserInvolved &&
+                 isUpcoming &&
+                 ["confirmed", "checked_in"].includes(appt.status);
         });
   
         // === Past ===
@@ -78,16 +57,16 @@ const AppointmentsPage = () => {
           const isCompleted = [
             "completed",
             "paid",
+            "checked_out",
             "no_show_client",
             "no_show_provider",
             "cancelled",
           ].includes(appt.status);
   
-          return isUserInvolved && isPast && isCompleted;
+          return isUserInvolved && (isPast || isCompleted);
         });
   
         setUpcoming(upcomingAppointments);
-        setAwaiting(awaitingConfirmationAppointments);
         setPast(pastAppointments);
       } catch (error) {
         console.error("Error fetching appointments:", error);
@@ -115,49 +94,38 @@ const AppointmentsPage = () => {
   
   if (loading) return <Loading />;
 
-  const handleConfirm = async (id) => {
+  const handleCheckIn = async (id) => {
     try {
-      await api.post(`/appointments/${id}/confirm`);
-      toast.success("Appointment confirmed");
+      await api.post(`/appointments/${id}/check-in`);
+      toast.success("Checked in successfully");
+      window.location.reload();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Error checking in");
+    }
+  };
+
+  const handleCheckOut = async (id) => {
+    try {
+      await api.post(`/appointments/${id}/check-out`);
+      toast.success("Checked out successfully");
       window.location.reload();
     } catch (err) {
       const code = err.response?.data?.code;
-      const message = err.response?.data?.message || "Error confirming appointment";
-  
+      const message = err.response?.data?.message || "Error checking out";
+      
       if (
         code === "missing_payment_method" ||
-        code === "stripe_payment_failed" ||        // e.g. card declined, insufficient funds
+        code === "stripe_payment_failed" ||
         code === "stripe_customer_retrieval_failed"
       ) {
         setRetryPaymentModal({ open: true, apptId: id });
       }
-  
+      
       toast.error(`${message}. Please contact your provider to resolve payment directly.`);
     }
-  };  
-
-  const handleReportNoShow = async (id, who) => {
-    try {
-      await api.patch(`/appointments/${id}/report-no-show`, { noShow: who });
-      toast.success("No-show reported");
-      window.location.reload();
-    } catch {
-      toast.error("Error reporting no-show");
-    }
   };
 
-  const submitNote = async () => {
-    try {
-      await api.patch(`/appointments/${noteModal.apptId}/add-note`, {
-        note: noteModal.note
-      });
-      toast.success("Note added");
-      setNoteModal({ open: false, apptId: null, note: "" });
-      window.location.reload();
-    } catch {
-      toast.error("Failed to save note");
-    }
-  };
+
 
 
   const getTimeStatusMessage = (appt, type) => {
@@ -188,26 +156,32 @@ const AppointmentsPage = () => {
   const renderCard = (appt) => {
     const now = new Date();
     const startTime = new Date(appt.startTime);
-    const isUserInvolved =
-      appt.client.id === user.id || appt.serviceProvider.user.id === user.id;
     const endTime = new Date(appt.endTime);
     const tenMinutesBeforeEnd = new Date(endTime.getTime() - 10 * 60 * 1000);
   
-    const isReadyToConfirm = now >= tenMinutesBeforeEnd;
-    const needsConfirmation =
-      appt.status === "confirmed" &&
-      (!appt.clientConfirmed || !appt.providerConfirmed);
-  
-    const isAwaiting =
-      isUserInvolved && isReadyToConfirm && needsConfirmation;
-  
     const isUpcoming =
       (startTime > now || (startTime <= now && now < tenMinutesBeforeEnd)) &&
-      appt.status === "confirmed";
+      ["confirmed", "checked_in"].includes(appt.status);
 
+    const isCheckedIn = appt.status === "checked_in";
+    
+    // Check if appointment start time is within 15 minutes (before or after) of current time
+    const CHECKIN_WINDOW_MIN = 60; // +/- 1 hour
+    const windowStart = new Date(startTime.getTime() - CHECKIN_WINDOW_MIN * 60 * 1000);
+    const windowEnd   = new Date(startTime.getTime() + CHECKIN_WINDOW_MIN * 60 * 1000);
+    const inCheckInWindow = now >= windowStart && now <= windowEnd;
+    
     const isProvider = user.role === "service_provider";
     const isOwnAppointment = isProvider && appt.serviceProvider.user.id === user.id;
     const appointmentType = isOwnAppointment ? "Providing" : "Receiving";
+    
+    
+    // Only clients (receivers) can check in, not providers
+    const isClient = appt.clientId === user.id;
+    const canCheckIn = isUpcoming && !isCheckedIn && inCheckInWindow && isClient;
+    
+    // Only clients (receivers) can check out
+    const canCheckOut = isUpcoming && isCheckedIn && isClient;
 
     return (
       <div 
@@ -265,28 +239,59 @@ const AppointmentsPage = () => {
           </div>
         </div>
         {isUpcoming && (
-          <div className="flex justify-between items-center mt-4">
-            <p className="text-sm text-gray-500">
-            {isOwnAppointment
-              ? "Canceling this appointment will refund the client in full."
-              : `Can cancel up to ${appt.serviceProvider.cancellationWindow} hours before appointment for full deposit refund.`}
-            </p>       
-            <div className="flex gap-4">
-              <Button variant="ghost" 
-                onClick={() => openCancelModal(appt)}
-                className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                style={{ color: "#062970"}}
-              >
-                Cancel
-              </Button>
-              {!isOwnAppointment && (
-                <Button variant="ghost" 
-                  onClick={() => openRescheduleModal(appt)}
+          <div className="flex flex-col gap-4 mt-4">
+            <div className="flex justify-between items-center">
+              <p className="text-sm text-gray-500">
+              {isOwnAppointment
+                ? "Canceling this appointment will refund the client in full."
+                : `Can cancel up to ${appt.serviceProvider.cancellationWindow} hours before appointment for full deposit refund.`}
+              </p>
+              <div className="flex gap-4">
+                <Button variant="ghost"
+                  onClick={() => openCancelModal(appt)}
                   className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
                   style={{ color: "#062970"}}
                 >
-                  Reschedule
+                  Cancel
                 </Button>
+                {!isOwnAppointment && (
+                  <Button variant="ghost"
+                    onClick={() => openRescheduleModal(appt)}
+                    className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                    style={{ color: "#062970"}}
+                  >
+                    Reschedule
+                  </Button>
+                )}
+              </div>
+            </div>
+            
+            {/* Check-in and Check-out Buttons */}
+            <div className="flex justify-end gap-4">
+              {canCheckIn && (
+                <Button variant="ghost"
+                  onClick={() => handleCheckIn(appt.id)}
+                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  style={{ color: "#062970"}}
+                >
+                  ✅ Check In
+                </Button>
+              )}
+              
+              {canCheckOut && (
+                <Button variant="ghost"
+                  onClick={() => handleCheckOut(appt.id)}
+                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
+                  style={{ color: "#062970"}}
+                >
+                  🏁 Check Out
+                </Button>
+              )}
+              
+              {isCheckedIn && (
+                <div className="text-sm text-green-600 font-semibold mt-2">
+                  ✓ Checked In
+                </div>
               )}
             </div>
           </div>
@@ -295,77 +300,6 @@ const AppointmentsPage = () => {
           <div className="mt-4">
             <p className="text-sm text-gray-500">Notes</p>
             <p className="font-medium">{appt.notes}</p>
-          </div>
-        )}
-        {isAwaiting && (
-          <div className="mt-6 border-t pt-4">
-            {(
-              (user.id === appt.client.id && appt.clientConfirmed) ||
-              (user.id === appt.serviceProvider.user.id && appt.providerConfirmed)
-            ) ? (
-              <p className="text-sm text-gray-600">
-                ✅ You have confirmed this appointment. Waiting for{" "}
-                <span className="font-semibold">
-                  {user.id === appt.client.id ? "the service provider" : "the client"}
-                </span>{" "}
-                to confirm.
-              </p>
-            ) : (
-              <>
-                <p className="text-sm text-gray-600 mb-2">
-                  Help us confirm whether this appointment occurred:
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <Button variant="ghost" 
-                    onClick={() => handleConfirm(appt.id)}
-                    className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                    disabled={user.id === appt.client.id && !appt.providerConfirmed}
-                    style={{ color: "#062970"}}
-                  >
-                    ✅ Confirm Appointment
-                  </Button>
-                  {user.id === appt.client.id && !appt.providerConfirmed && (
-                    <p className="text-sm text-yellow-600 mt-2">
-                      Waiting for the provider to confirm before you can confirm.
-                    </p>
-                  )}
-                  <Button variant="ghost" 
-                    onClick={() =>
-                      handleReportNoShow(
-                        appt.id,
-                        user.id === appt.client.id ? "client" : "provider"
-                      )
-                    }
-                    className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                    style={{ color: "#062970"}}
-                  >
-                    ❌ Report No-Show
-                  </Button>
-                </div>
-
-                <textarea
-                  className="w-full mt-4 p-2 border rounded-md"
-                  rows={3}
-                  placeholder="Optional notes (e.g. feedback, what happened)..."
-                  onChange={(e) =>
-                    setNoteModal((prev) => ({
-                      ...prev,
-                      apptId: appt.id,
-                      note: e.target.value,
-                    }))
-                  }
-                />
-
-                <Button variant="ghost" 
-                  onClick={submitNote}
-                  className="bg-green-500 text-[#062970] hover:bg-green-600 !bg-transparent hover:!bg-[#f3e8ff]"
-                  style={{ color: "#062970"}}
-                >
-                  💬 Submit Note
-                </Button>
-              </>
-            )}
           </div>
         )}
 
@@ -399,23 +333,7 @@ const AppointmentsPage = () => {
           )}
         </div>
       ),
-    },
-    {
-      key: '3',
-      label: 'Awaiting Confirmation',
-      children: (
-        <div className="mt-4">
-          {awaiting.length === 0 ? (
-            <p className="text-gray-600 text-center py-8">
-              No appointments awaiting confirmation.
-            </p>
-          ) : (
-            <div>{awaiting.map(renderCard)}</div>
-          )}
-        </div>
-      ),
     }
-    
   ];
 
   return (

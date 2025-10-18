@@ -159,12 +159,14 @@ model Appointment {
   serviceProviderId String
   startTime         DateTime
   endTime           DateTime
-  status            String   @default("confirmed")// e.g. confirmed, completed, cancelled, disputed, no_show_client, no_show_provider
+  status            String   @default("confirmed")// e.g. confirmed, completed, cancelled, disputed, no_show_client, no_show_provider, checked_in, checked_out
   clientConfirmed   Boolean  @default(false)
   providerConfirmed Boolean  @default(false)
   clientConfirmedAt DateTime?
   providerConfirmedAt DateTime?
   autoCompleted     Boolean  @default(false)
+  checkedInAt       DateTime?
+  checkedOutAt      DateTime?
   notes             String?  // optional field for leaving details after session
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
@@ -352,6 +354,8 @@ enum NotificationType {
   APPOINTMENT_NO_SHOW
   APPOINTMENT_COMPLETED
   APPOINTMENT_FAILED
+  APPOINTMENT_CHECKED_IN
+  APPOINTMENT_CHECKED_OUT
   
   // Payments
   PAYMENT_RECEIVED
