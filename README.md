@@ -1,10 +1,10 @@
-# Aro
+# Campus Connect
 
-Aro is a platform connecting college students with service providers for beauty and grooming services. The application facilitates booking appointments, community discussions, and social interactions within college communities.
+Campus Connect is a platform connecting college students with service providers for beauty and grooming services. The application facilitates booking appointments, community discussions, and social interactions within college communities.
 
 ## Project Overview
 
-Aro is a full-stack web application with the following key features:
+CampusConnect is a full-stack web application with the following key features:
 
 - **User Authentication**: Email/password and Google OAuth login with role-based access
 - **Service Provider Features**: Profile management, service listings, availability management
@@ -289,7 +289,7 @@ const useProviderSearch = (searchParams) => {
 
 ## Managing Feature Flags
 
-Aro uses a comprehensive feature flag system to enable controlled feature releases and A/B testing. These flags can be configured at both the backend and frontend levels.
+CampusConnect uses a comprehensive feature flag system to enable controlled feature releases and A/B testing. These flags can be configured at both the backend and frontend levels.
 
 ### Types of Feature Flags
 
